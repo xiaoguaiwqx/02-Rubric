@@ -31,7 +31,12 @@ from prettytable import PrettyTable
 from tqdm import tqdm
 
 from .agent import Agent
-from .evaluator import PairEvaluator, ZeroOneEvaluator, get_evaluator_cls_from_dataset
+from .evaluator import (
+    MultiModalPairEvaluator,
+    PairEvaluator,
+    ZeroOneEvaluator,
+    get_evaluator_cls_from_dataset,
+)
 from .i18n import local_prompts
 from .utils import (
     MANAGER_MAX_CONCURRENT,
@@ -47,6 +52,13 @@ from .utils import (
     random_reverse,
     reverse_ab,
 )
+
+
+EVALUATOR_REGISTRY = {
+    "pair": PairEvaluator,
+    "zero_one": ZeroOneEvaluator,
+    "multimodal_pair": MultiModalPairEvaluator,
+}
 
 
 class Workflow:
@@ -76,7 +88,23 @@ class Workflow:
         manager_prompt: str | None = None,
         manager_prompt_postfix: str | None = None,
         worker_prompt: str | None = None,
+        evaluator_type: str | None = None,
+        evaluator_kwargs: dict[str, Any] | None = None,
     ) -> None:
+        """初始化一个 criterion 演化 workflow。
+
+        参数大致分成三类：
+
+        - agent 配置：
+          `manager_args` 控制负责生成/改写标准的模型，`worker_args` 控制负责执行评估的模型。
+          两者都允许只传局部配置，剩余字段会沿用这里的默认值。
+        - criterion 配置：
+          `init_criteria` 是外部预置的起始标准，`n_criteria` 是 workflow 希望长期维持的标准数量。
+          后续每轮优化会尽量通过“保留 + 改写 + 补新”把数量维持在这个目标附近。
+        - prompt 配置：
+          manager prompt 决定“怎样生成 criterion”，worker prompt 决定“怎样使用 criterion 判样本”。
+          这些模板可覆写，因此同一个 workflow 可以迁移到不同数据质量定义或偏好任务上。
+        """
         # manager 负责提出或改写 criterion，worker 负责将 criterion 用到数据上。
         # 默认给 manager 更强、温度更高的配置，是因为它承担“发散式生成/改写”任务；
         # worker 更像执行器，通常更需要稳定而不是发散。
@@ -107,7 +135,7 @@ class Workflow:
         )
         self.banned_criteria: set[str] = set()
 
-        # `all_criteria` 保存“截至目前见过的最好版本”。
+        # `all_criteria` 保存截至目前见过的最好版本“”。
         # 它和 current_criteria 不同：后者会在优化中被覆盖，前者更像历史排行榜。
         self.all_criteria: list[Criterion] = deepcopy(self.current_criteria)
 
@@ -124,6 +152,10 @@ class Workflow:
         )
 
         self.worker_prompt = worker_prompt
+        self.evaluator_type = (evaluator_type or "auto").lower()
+        self.evaluator_kwargs = evaluator_kwargs or {}
+        # 预留的思维轨迹缓存。当前保存逻辑主要通过 `save(..., thought=...)` 传入，
+        # 这个字段保留给未来需要在对象级别累积中间反思的场景。
         self.thoughts = []
 
     def _update_criteria(
@@ -141,6 +173,9 @@ class Workflow:
         - 如果名称不存在，则直接加入。
 
         这个行为对 `all_criteria` 很关键，因为它的职责就是保留历史最优版本。
+
+        注意：`old` 会被原地修改。调用方如果传入 `self.current_criteria` 或
+        `self.all_criteria`，对应的 workflow 状态会立即发生变化。
         """
         if only_higher_score:
             _old = {c.name: c for c in deepcopy(old)}
@@ -153,6 +188,47 @@ class Workflow:
             old[:] = list(_old.values())
         else:
             old[:] = list(criteria_list_to_dict(deepcopy(old) + deepcopy(new)).values())
+
+    def _get_evaluator_cls(self, dataset: Sequence[dict]):
+        """根据 workflow 配置和数据格式选择 evaluator 类。
+
+        默认 `evaluator_type="auto"` 时保持旧行为：根据 A/B pair 或 zero-one
+        数据格式自动选择 evaluator。显式配置时会做数据格式校验，避免把
+        multimodal_pair 用到 zero-one 数据上这类难排查错误。
+        """
+        evaluator_type = self.evaluator_type or "auto"
+        if evaluator_type == "auto":
+            return get_evaluator_cls_from_dataset(dataset)
+
+        if evaluator_type not in EVALUATOR_REGISTRY:
+            valid_types = ", ".join(["auto", *sorted(EVALUATOR_REGISTRY)])
+            raise ValueError(
+                f"Unknown evaluator_type={evaluator_type!r}. "
+                f"Expected one of: {valid_types}"
+            )
+
+        if evaluator_type in ("pair", "multimodal_pair"):
+            if not is_pair_dataset(dataset):
+                raise ValueError(
+                    f"evaluator_type={evaluator_type!r} requires pair data"
+                )
+        elif evaluator_type == "zero_one":
+            if not is_zero_one_dataset(dataset):
+                raise ValueError("evaluator_type='zero_one' requires zero-one data")
+
+        return EVALUATOR_REGISTRY[evaluator_type]
+
+    def _make_evaluator(self, dataset: Sequence[dict], max_retries: int = 3):
+        """统一创建 worker evaluator，供初始化、优化和验证阶段复用。"""
+        evaluator_cls = self._get_evaluator_cls(dataset)
+        return evaluator_cls(
+            worker_args=self.worker_args,
+            dataset=dataset,
+            max_concurrent=self.worker_max_concurrent,
+            worker_prompt=self.worker_prompt,
+            max_retries=max_retries,
+            **self.evaluator_kwargs,
+        )
 
     @staticmethod
     def _warmup_zero_one(
@@ -206,11 +282,15 @@ class Workflow:
 
         prompts = []
         for data in dataset:
-            prompts.append(
+            prompt = (
                 prompt_template[0 if data["answer"] == "A" else 1]
                 .replace("{A}", data["A"])
                 .replace("{B}", data["B"])
             )
+            prompt = prompt.replace("{question}", str(data.get("question", "")))
+            # image_path 只用于 evaluator 构造图片请求，不作为文本 prompt 暴露给 manager。
+            prompt = prompt.replace("{image_path}", "")
+            prompts.append(prompt)
         random.shuffle(prompts)
 
         for prompt in tqdm(
@@ -244,6 +324,12 @@ class Workflow:
         这样做的动机是：
         - 知识库能提供强先验，降低冷启动成本；
         - 新生成能补足知识库的覆盖盲区，避免完全受限于已有标准。
+
+        参数里几个容易混淆的点：
+        - `knowledge_base` 不是直接并入，而是先在当前数据集上评估，再按分数筛选；
+        - `n_shot` 只影响 manager warm-up 用多少条样本，不改变 evaluator 对知识库的评估数据；
+        - `max_retrived` 限制最多从知识库拿多少条，剩余缺口由 manager 生成补齐；
+        - `retrieval_threashold` 是知识库 criterion 的最低通过分数。
         """
         init_criteria = []
         if knowledge_base is not None:
@@ -255,14 +341,7 @@ class Workflow:
             )
             knowledge_base = deepcopy(knowledge_base)
 
-            evaluator_cls = get_evaluator_cls_from_dataset(dataset)
-            evaluator = evaluator_cls(
-                self.worker_args,
-                dataset,
-                self.worker_max_concurrent,
-                worker_prompt=self.worker_prompt,
-                max_retries=max_retries,
-            )
+            evaluator = self._make_evaluator(dataset, max_retries=max_retries)
 
             # 这里直接复用 evaluator 给知识库标准打分，而不是让 manager 主观挑选。
             # 好处是：是否适用当前任务，由“在数据上表现如何”决定，而不是由另一层 prompt 判断。
@@ -342,6 +421,7 @@ class Workflow:
         self,
         train_set: Sequence[PairData],
         threshold: tuple[float, float],
+        max_retries: int = 3,
     ):
         """在成对数据集上执行一轮 criterion 优化。
 
@@ -369,12 +449,7 @@ class Workflow:
                 "content": f"```json\n{json.dumps({c.name: c.description for c in self.current_criteria}, indent=4, ensure_ascii=False)}\n```",
             },
         ]
-        evaluator = PairEvaluator(
-            worker_args=self.worker_args,
-            dataset=train_set,
-            max_concurrent=self.worker_max_concurrent,
-            worker_prompt=self.worker_prompt,
-        )
+        evaluator = self._make_evaluator(train_set, max_retries=max_retries)
 
         # `update_score=True` 会把每条 criterion 的 score 更新成其在 train_set 上的准确率。
         eval_output = evaluator.eval(self.current_criteria, update_score=True)
@@ -411,6 +486,8 @@ class Workflow:
 
         pred_result = eval_output.prediction
         thoughts = eval_output.thoughts
+        # `new_criteria` 是下一轮要使用的完整集合，最后会重建成 Criterion 对象。
+        # good 会原样放入，mid 会被改写后放入，low 会被新生成的 criterion 替换。
         new_criteria = {}
         if len(good_criteria) > 0:
             prompt += "\n\n"
@@ -479,6 +556,9 @@ class Workflow:
             with ThreadPoolExecutor(
                 max_workers=MANAGER_MAX_CONCURRENT  # TODO: by config instead of env var
             ) as executor:
+                # futures 的结构是：
+                #   criterion_name -> [每个失败样本对应的 critique future]
+                # 这样做能让不同 criterion 的反思结果分开收集，后面分别汇总改写。
                 futures = {}
                 for criterion_name in mid_criteria:
                     f_c = []
@@ -487,7 +567,8 @@ class Workflow:
                         thought = thoughts[idx][criterion_name]
                         answer = data["answer"]
                         wrong_answer = reverse_ab(data["answer"])
-                        # Only do refletion on false cases
+                        # 只对错误案例做 reflection。正确案例说明该 criterion 至少在这个样本上可用，
+                        # 对改写的帮助通常不如失败案例直接。
                         if stat[wrong_answer] > stat[answer]:
                             # 每个失败案例都在 manager 的独立 fork 分支里分析，
                             # 避免多个错误案例相互污染上下文。
@@ -505,6 +586,8 @@ class Workflow:
                     futures[criterion_name] = f_c
 
                 all_futures = sum(futures.values(), [])
+                # 第一段并发只负责“找问题”：把每个失败样本转成一句 critique。
+                # tqdm 包住 as_completed，是为了让长批量 LLM 调用时能看到反思进度。
                 for _ in tqdm(
                     as_completed(all_futures),
                     desc="Reflection",
@@ -517,6 +600,8 @@ class Workflow:
                     for c, futures_c in futures.items()
                 }
 
+                # 第二段并发负责“改标准”：每个 mid criterion 汇总自己的全部 critique，
+                # 让 manager 生成一个更清晰、更能区分偏好的新描述。
                 futures = []
                 for criterion_name in mid_criteria:
                     # 将多个具体错误案例的 critique 汇总，生成同一 criterion 的
@@ -559,6 +644,8 @@ class Workflow:
                     )
                 ]
 
+                # 将 manager 返回的 JSON 写回新 criterion 池。
+                # 解析失败不会中断整个 workflow，只打印 debug 信息并跳过该条改写。
                 for criterion_name, response in zip(mid_criteria, responses):
                     if response is not None:
                         try:
@@ -625,6 +712,7 @@ class Workflow:
         self,
         train_set: Sequence[ZeroOneData],
         threshold: tuple[float, float],
+        max_retries: int = 3,
     ):
         """在二分类数据集上执行一轮 criterion 优化。
 
@@ -644,12 +732,7 @@ class Workflow:
                 "content": f"```json\n{json.dumps({c.name: c.description for c in self.current_criteria}, indent=4, ensure_ascii=False)}\n```",
             },
         ]
-        evaluator = ZeroOneEvaluator(
-            worker_args=self.worker_args,
-            dataset=train_set,
-            max_concurrent=self.worker_max_concurrent,
-            worker_prompt=self.worker_prompt,
-        )
+        evaluator = self._make_evaluator(train_set, max_retries=max_retries)
 
         eval_output = evaluator.eval(self.current_criteria, update_score=True)
         self._update_criteria(self.all_criteria, self.current_criteria)
@@ -660,6 +743,8 @@ class Workflow:
         good_criteria: dict[str, Criterion] = {}
         mid_criteria: dict[str, Criterion] = {}
         low_criteria: list[str] = []
+        # zero-one 版本没有 PrettyTable 汇总，但分桶逻辑和 pair 版本相同：
+        # 高分保留，中分改写，低分淘汰。
         for criterion_name in sorted(eval_output.per_criterion_acc):
             acc = eval_output.per_criterion_acc[criterion_name]
             print(f"{criterion_name}:\t{acc}")
@@ -673,6 +758,8 @@ class Workflow:
         prompt += "\n"
 
         pred_result = eval_output.prediction
+        # 和 pair 版本一样，new_criteria 表示下一轮完整候选池。
+        # 这里保存的是 name -> description，最后统一转换成 Criterion。
         new_criteria = {}
         if len(good_criteria) > 0:
             prompt += local_prompts.GOOD_CRITERIA_PROMPT_TEMPLATE.format(
@@ -700,6 +787,9 @@ class Workflow:
                 for idx, data in enumerate(train_set):
                     stat = pred_result[idx][criterion_name]
                     if stat[0] != stat[1]:
+                        # evaluator 对二分类样本会返回该 criterion 对 0/1 两类的支持强度。
+                        # 两边不一致时，取更高的一边作为 worker 的实际判断；
+                        # 如果实际判断和数据标签冲突，就把该样本加入改写 prompt。
                         answer = 1 if stat[1] > stat[0] else 0
                         _prompt += (
                             local_prompts.MID_01_PROMPT_TEMPLATE.format(
@@ -734,6 +824,8 @@ class Workflow:
         if len(low_criteria) > 0:
             print("\n===== Low")
             print(", ".join(low_criteria))
+            # 低质量 criterion 的名字会进入 ban list。下一次补新时，manager 会被提示
+            # 避免复用这些名字，从而减少“换汤不换药”的循环。
             self.banned_criteria.update(low_criteria)
             prompt += (
                 local_prompts.LOW_PROMPT_TEMPLATE.format(
@@ -783,6 +875,10 @@ class Workflow:
         - `acc >= high`    -> good，直接保留
         - `low < acc < high` -> mid，反思后重写
         - `acc <= low`     -> low，删除并补新
+
+        `valid_set` 只用于观察泛化效果，不会更新 criterion 的训练分数。
+        `output_dir` 如果提供，会保存每一轮 checkpoint，方便中断后检查或复现实验。
+        `save_thought` 目前保留为接口参数，实际保存思维轨迹的代码仍在下方以注释形式保留。
         """
         do_valid = valid_set is not None and len(valid_set) != 0
         if len(self.current_criteria) <= 0:
@@ -795,20 +891,11 @@ class Workflow:
         elif not os.path.exists(output_dir):
             os.mkdir(output_dir)
 
-        # 根据 train_set 的结构自动选择 evaluator 类型。
-        if is_zero_one_dataset(train_set):
-            evaluator_class = ZeroOneEvaluator
-        elif is_pair_dataset(train_set):
-            evaluator_class = PairEvaluator
-        else:
+        if not is_zero_one_dataset(train_set) and not is_pair_dataset(train_set):
             raise ValueError("Invalid dataset format")
         if do_valid:
-            valid_evaluator = evaluator_class(
-                self.worker_args,
-                valid_set,
-                self.worker_max_concurrent,
-                worker_prompt=self.worker_prompt,
-                max_retries=max_retries,
+            valid_evaluator = self._make_evaluator(
+                valid_set, max_retries=max_retries
             )
 
         if is_pair_dataset(train_set):
@@ -826,9 +913,13 @@ class Workflow:
             # After this loop, you'll get a new **unmerged** `current_criteria`
             # and an updated `all_criteria`.
             if is_pair_dataset(train_set):
-                self._optimize_loop_pair_data(train_set, threshold)
+                self._optimize_loop_pair_data(
+                    train_set, threshold, max_retries=max_retries
+                )
             elif is_zero_one_dataset(train_set):
-                self._optimize_loop_zero_one_data(train_set, threshold)
+                self._optimize_loop_zero_one_data(
+                    train_set, threshold, max_retries=max_retries
+                )
             else:
                 raise ValueError("Invalid trainset format")
             if do_valid:
@@ -847,12 +938,7 @@ class Workflow:
         #
         # 也就是说，循环内部保存出来的 `epoch_i.json` 更像“这一轮生成出了哪些标准”，
         # 而最后这一步才负责给最终 current_criteria 补上正式 score 并合并进 all_criteria。
-        evaluator = evaluator_class(
-            worker_args=self.worker_args,
-            dataset=train_set,
-            max_concurrent=self.worker_max_concurrent,
-            worker_prompt=self.worker_prompt,
-        )
+        evaluator = self._make_evaluator(train_set, max_retries=max_retries)
         eval_output = evaluator.eval(self.current_criteria, update_score=True)
         self._update_criteria(self.all_criteria, self.current_criteria)
         print("Final Train Acc:", eval_output.accuracy, eval_output.is_correct)
@@ -884,6 +970,8 @@ class Workflow:
             "manager_prompt": self.manager_prompt,
             "manager_prompt_postfix": self.manager_prompt_postfix,
             "worker_prompt": self.worker_prompt,
+            "evaluator_type": self.evaluator_type,
+            "evaluator_kwargs": self.evaluator_kwargs,
         }
 
     def load_state_dict(self, state: dict[str, Any]):
@@ -913,6 +1001,8 @@ class Workflow:
         self.manager_prompt = current_state["manager_prompt"]
         self.manager_prompt_postfix = current_state["manager_prompt_postfix"]
         self.worker_prompt = current_state["worker_prompt"]
+        self.evaluator_type = (current_state["evaluator_type"] or "auto").lower()
+        self.evaluator_kwargs = current_state["evaluator_kwargs"] or {}
 
     def save(self, path, epoch, thought) -> None:
         """保存 workflow 状态，以及可选的思维轨迹。

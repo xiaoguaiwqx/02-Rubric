@@ -5,6 +5,7 @@ from .agent import Agent
 from .evaluator import (
     BaselinePairEvaluator,
     EvaluationOutput,
+    MultiModalPairEvaluator,
     PairEvaluator,
     PredictionOutput,
     PredictionOutputWithAnswer,
@@ -38,6 +39,7 @@ __all__ = [
     Agent,
     BaselinePairEvaluator,
     EvaluationOutput,
+    MultiModalPairEvaluator,
     PairEvaluator,
     PredictionOutput,
     PredictionOutputWithAnswer,

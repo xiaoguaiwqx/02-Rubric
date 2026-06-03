@@ -1,8 +1,22 @@
+# Ignore Python bytecode and cache files
 __pycache__
 .local
 *.egg-info/
 build/
-data/
+
+# Ignore output and log directories
 output/
 logs/
+
+# Environment files
 .env
+
+# IDE files
+.vscode/
+.idea/
+
+# Data files
+data/**/*.json*
+data/**/*.csv*
+data/**/*.xlsx*
+data/**/*.arrow
