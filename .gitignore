@@ -5,8 +5,8 @@ __pycache__
 build/
 
 # Ignore output and log directories
-output/
-logs/
+# output/
+# logs/
 
 # Environment files
 .env

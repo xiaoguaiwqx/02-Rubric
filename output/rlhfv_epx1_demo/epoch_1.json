@@ -1,0 +1,118 @@
+{
+    "manager_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "api_keys": "EMPTY",
+        "base_url": "http://localhost:8000/v1",
+        "request_kwargs": {
+            "temperature": 1.0
+        }
+    },
+    "worker_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "base_url": "http://localhost:8000/v1",
+        "api_keys": "EMPTY",
+        "request_kwargs": {
+            "temperature": 0.5
+        }
+    },
+    "worker_max_concurrent": 20,
+    "current_criteria": [
+        {
+            "name": "interpretive_fidelity",
+            "description": "Interpretive fidelity evaluates whether an answer selects the most plausible interpretation of the visual content — but only when the image is ambiguous or open to multiple interpretations. It rewards answers that are grounded in visible evidence, avoid hallucinated or unsupported details, and acknowledge uncertainty when appropriate. It does NOT apply when the image is unambiguous or when the question demands a literal, non-interpretive response. Annotators should prioritize visual evidence over speculative plausibility, and penalize answers that invent details (e.g., clothing, behavior, or anatomy) not supported by the image. When two interpretations are equally plausible, the one with stronger visual grounding wins. If neither answer is grounded, the one that avoids hallucination is preferred. Examples: If an image shows a person partially submerged in water, 'near knees' is preferred over 'middle of legs' — both are plausible, but the former is visually grounded. If one answer invents a 'bow tie' not visible, it loses points regardless of narrative plausibility. This criterion does not resolve ties — if both answers are grounded and visually consistent, defer to other criteria like factual consistency or visual grounding.",
+            "score": 0
+        },
+        {
+            "name": "multimodal_alignment",
+            "description": "The answer must be factually grounded in visually observable content — no hallucinated, invented, or unsupported visual details are permitted. Alignment is evaluated by whether the answer accurately reflects object identities, spatial relationships, and contextual interactions as directly visible or plausibly inferable from visual cues without contradiction. Annotators should penalize answers that misrepresent, omit, or invent key visual elements (e.g., claiming a person is below when they are above, or describing an object not present). Ambiguous or unclear visual evidence must be explicitly acknowledged — answers that speculate without visual support are disqualified. Alignment is not about aesthetic plausibility or narrative completeness, but about strict visual fidelity: correct object identification, accurate spatial positioning, and absence of hallucinated attributes. Examples: 'The cat is on the mat' is aligned; 'The cat is wearing a hat' (if no hat is visible) is not. Answers that infer plausible context (e.g., 'a warehouse in the background') are acceptable if grounded in visible cues (e.g., large structure, pallets) — but must not contradict or invent visual evidence.",
+            "score": 0
+        },
+        {
+            "name": "completeness_of_response",
+            "description": "The answer should cover all aspects of the question without omitting key information that is visually evident or logically implied. Annotators should evaluate whether the answer fully addresses the intent of the question, especially when multiple objects, actions, or relationships are involved. This criterion is applicable when one answer leaves out critical elements visible in the image that are necessary to fully answer the question.",
+            "score": 0
+        },
+        {
+            "name": "specificity_and_detail_level",
+            "description": "The answer should provide the right level of detail — neither overly vague nor unnecessarily granular. Annotators prefer responses that specify exact locations, object properties, or relationships when the image supports them, while avoiding generic or vague descriptors unless the question permits it. This criterion is especially useful when comparing answers that are factually correct but differ in precision or granularity.",
+            "score": 0
+        },
+        {
+            "name": "robustness_to_visual_noise",
+            "description": "The answer should remain accurate and meaningful even when parts of the image are occluded, blurry, or ambiguous. Annotators should prefer answers that do not rely on speculative or inferred details that are not clearly supported by the visual evidence. This criterion applies when evaluating answers that differ in how they handle uncertain or noisy visual regions.",
+            "score": 0
+        }
+    ],
+    "banned_criteria": [
+        "audience_appropriateness",
+        "factual_consistency_with_the_image",
+        "calibrated_uncertainty",
+        "question_relevance",
+        "visual_grounding",
+        "avoidance_of_hallucinated_visual_details",
+        "conciseness_and_efficiency",
+        "clarity_and_coherence"
+    ],
+    "all_criteria": [
+        {
+            "name": "visual_grounding",
+            "description": "The answer must be directly supported by visible elements in the image. Annotators prefer answers that explicitly reference observable objects, positions, colors, or actions — and penalize those that make unsupported inferences or invent details not present in the image.",
+            "score": 0.5681818181818182
+        },
+        {
+            "name": "question_relevance",
+            "description": "The answer must directly address the question without straying into irrelevant topics or adding extraneous information. Annotators prefer responses that focus on what is asked, even if the answer is negative or ambiguous — as long as it’s directly responsive.",
+            "score": 0.5319148936170213
+        },
+        {
+            "name": "factual_consistency_with_the_image",
+            "description": "The answer must not contradict or misrepresent what is visibly present. Annotators penalize answers that misidentify objects, people, or actions — for example, claiming someone is taking a photo when the camera is idle, or mislabeling a bird species without visual evidence.",
+            "score": 0.574468085106383
+        },
+        {
+            "name": "avoidance_of_hallucinated_visual_details",
+            "description": "The answer must not invent or fabricate visual elements that are not present in the image. Annotators prefer cautious, evidence-based descriptions — even if they are vague — over confident claims that hallucinate details (e.g., ‘a red car is parked behind the building’ when none is visible).",
+            "score": 0.4418604651162791
+        },
+        {
+            "name": "calibrated_uncertainty",
+            "description": "Annotators prefer answers that are cautious and honest when the visual evidence is ambiguous or insufficient. For example, saying ‘it is unclear what this object is’ is preferred over confidently asserting an unverifiable interpretation. This aligns with human preference for humility in the face of uncertainty.",
+            "score": 0.55
+        },
+        {
+            "name": "clarity_and_coherence",
+            "description": "The answer must be linguistically clear, grammatically correct, and logically structured. Annotators prefer responses that are easy to understand without ambiguity, even if they are brief. This criterion is applicable when comparing answers that may be factually correct but poorly expressed or confusing.",
+            "score": 0.52
+        },
+        {
+            "name": "conciseness_and_efficiency",
+            "description": "The answer should convey the necessary information without unnecessary words or redundancy. Annotators prefer responses that are succinct and to the point — avoiding verbose explanations that do not add value to the answer’s correctness or usefulness.",
+            "score": 0.42857142857142855
+        },
+        {
+            "name": "multimodal_alignment",
+            "description": "The answer should align well with the visual context in terms of spatial, temporal, or semantic relationships. For example, if the question asks about object interactions, the answer should reflect those interactions as shown in the image — not just describe objects in isolation.",
+            "score": 0.625
+        },
+        {
+            "name": "interpretive_fidelity",
+            "description": "The answer should reflect the most reasonable interpretation of the visual content, especially when the image is ambiguous or open to multiple interpretations. Annotators prefer answers that show awareness of ambiguity and choose the most plausible or contextually grounded interpretation.",
+            "score": 0.6122448979591837
+        },
+        {
+            "name": "audience_appropriateness",
+            "description": "The answer should be suitable for the target audience (e.g., general public, experts) based on the question’s context. Annotators prefer answers that avoid overly technical jargon unless the question clearly requires it, and that adjust tone and depth appropriately for the expected user.",
+            "score": 0.3877551020408163
+        }
+    ],
+    "n_criteria": 5,
+    "manager_prompt": "List and describe 5 criteria for how human annotators compare the quality of two answers to the same visual question.\n\nThe task is RLHF-V style preference comparison for visual question answering and image-text responses. The worker model will receive:\n- the image,\n- the source question,\n- candidate answer A,\n- candidate answer B.\n\nFocus on human preference factors such as visual grounding, question relevance, factual consistency with the image, avoidance of hallucinated visual details, completeness, specificity, calibrated uncertainty, and clear language.",
+    "manager_prompt_postfix": "\n\nYour response should be in the following **json** format:\n```json\n{\n    \"name_of_the_criterion\": \"Detailed description for the criterion such as what it is, how it can be evaluated, when it is applicable, or other relevant information... Be specific and detailed while keep concise.\",\n    ...\n}\n```",
+    "worker_prompt": "## Instruction\nYou are judging an RLHF-V visual QA / image-text preference pair under one criterion. You are given the image, the source question, and two candidate answers.\n\nUse the image when the criterion depends on visual evidence. If the criterion is not applicable to this pair, answer None.\n\n## Question\n{question}\n\n## Criterion\n**{criterion}**: {description}\n\n## Candidate A\n{A}\n\n## Candidate B\n{B}\n\nWhich candidate better matches the criterion and is more likely to align with human preference?",
+    "evaluator_type": "multimodal_pair",
+    "evaluator_kwargs": {
+        "image_field": "image_path",
+        "question_field": "question",
+        "encode_local_image": true
+    }
+}

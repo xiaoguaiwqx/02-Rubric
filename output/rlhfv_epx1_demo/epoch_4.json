@@ -1,0 +1,161 @@
+{
+    "manager_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "api_keys": "EMPTY",
+        "base_url": "http://localhost:8000/v1",
+        "request_kwargs": {
+            "temperature": 1.0
+        }
+    },
+    "worker_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "base_url": "http://localhost:8000/v1",
+        "api_keys": "EMPTY",
+        "request_kwargs": {
+            "temperature": 0.5
+        }
+    },
+    "worker_max_concurrent": 20,
+    "current_criteria": [
+        {
+            "name": "interpretive_fidelity",
+            "description": "Interpretive fidelity is a tie-breaking criterion that applies ONLY when: (1) both candidate answers are factually grounded — meaning neither contains hallucinated visual elements or factual errors — and (2) the visual scene is ambiguous or open to multiple plausible interpretations (e.g., emotional tone, narrative intent, symbolic meaning, or behavioral inference). It is inapplicable in any of the following cases: (a) the image is unambiguous or literal (e.g., object count, presence/absence, spatial positioning), (b) the question demands a literal factual answer (e.g., ‘How many people are in the image?’), or (c) one candidate contains a hallucination or factual error — in which case that candidate is disqualified and interpretive fidelity cannot be applied. Annotators must first verify factual grounding via visual alignment before invoking this criterion. If both answers are grounded and ambiguous, interpretive fidelity compares which interpretation is more contextually consistent with visible cues (e.g., facial expression, posture, composition, motion blur, object arrangement) — even if speculative — as long as it does not contradict visual evidence. For example, ‘the person is smiling’ is grounded; ‘the person is joyful’ is interpretive but valid if the smile is visible. ‘The person is arrogant’ is valid only if visual cues (e.g., smirk, raised brow) support it — it is not hallucination if grounded in visible cues. If both interpretations are equally grounded and plausible, interpretive fidelity does not resolve the tie — the tie is broken by other criteria (e.g., specificity, completeness, or calibrated uncertainty). Hallucination = invented visual elements not present in the image (e.g., ‘the cat is flying’ when no wings are visible). Speculation = plausible inference supported by visual context (e.g., inferring emotion from expression). Interpretive fidelity does not penalize plausible speculation — only favors the interpretation with stronger visual anchors. It must NEVER be used to override factual grounding — if one answer is hallucinated or factually incorrect, it is disqualified regardless of interpretive plausibility. Example: ‘The cat is near the edge of the pond’ > ‘The cat is swimming’ (if no water visible — the latter is hallucination, so interpretive fidelity does not apply). ‘The woman is waiting for her turn to speak’ > ‘The woman is reading’ (if stage cues visible — the former is contextually supported, the latter is less grounded). If both are grounded and ambiguous, ‘waiting’ wins over ‘reading’ if stage cues support waiting. If neither is grounded, interpretive fidelity is inapplicable — the case is resolved via visual grounding or factual consistency. Annotators must explicitly mark ‘inapplicable’ for literal factual comparisons or when either candidate is hallucinated/factually incorrect — and must not use interpretive fidelity to evaluate uncertainty, lack of interpretation, or spatial precision.",
+            "score": 0
+        },
+        {
+            "name": "response_coherence_with_context",
+            "description": "Evaluates whether the answer logically connects to the visual context and question without introducing contradictory or irrelevant elements. This includes checking if the answer maintains internal consistency (e.g., object relationships, spatial logic, temporal logic) and aligns with the image’s narrative or compositional intent. Applicable only when the image contains multiple objects or actions that could be misinterpreted or conflated. Example: if the image shows a dog chasing a ball, and the answer says 'the dog is chasing a cat', it violates coherence with context. This criterion is distinct from factual consistency (which checks if elements exist) and interpretive fidelity (which checks interpretive plausibility). Coherence is about internal and contextual logic — e.g., 'the dog is sitting near the ball' is coherent; 'the dog is playing with a ball that is not in the image' is incoherent if the ball is absent. Annotators should flag answers that introduce logical contradictions (e.g., 'the person is holding a cup' while 'the cup is empty' and 'the person is pouring liquid' without visual evidence) or ignore contextual cues (e.g., ignoring a visible 'no entry' sign to say 'the person is entering').",
+            "score": 0
+        },
+        {
+            "name": "calibrated_uncertainty",
+            "description": "Assesses whether the answer appropriately expresses uncertainty when the image is ambiguous, incomplete, or lacks sufficient evidence — avoiding overconfident claims that exceed visual support. This criterion applies when the image is ambiguous or the question invites probabilistic or inferential answers. Annotators should penalize answers that make strong claims without visual justification (e.g., 'definitely' or 'always' without evidence) and reward answers that use cautious language ('possibly', 'likely', 'appears to be', 'based on visual cues') when appropriate. This criterion does NOT apply to clear, unambiguous images — if the visual evidence is strong, uncertainty should not be expressed. Also, it does NOT apply to factual assertions (which are covered by visual grounding or factual consistency). Example: 'The person is holding a book' (clear visual evidence) — no uncertainty needed. 'The person might be holding a book' (if visual evidence is ambiguous, e.g., blurry hand) — calibrated uncertainty is appropriate. This criterion is distinct from interpretive fidelity — it evaluates confidence level, not interpretive plausibility.",
+            "score": 0
+        },
+        {
+            "name": "response_completeness",
+            "description": "Evaluates whether the answer addresses all key components of the question without omitting essential information. This includes ensuring that the answer covers all necessary visual elements mentioned in the question (e.g., object, location, action, person, etc.) — not just the most prominent one. Applicable when the question explicitly asks for multiple elements (e.g., 'What is the person doing, and what object are they holding?'). Annotators should check whether the answer is missing any part of the question’s scope — e.g., if the question asks for 'the color and shape of the object', and the answer only mentions 'the color', it is incomplete. This criterion does NOT apply to questions that only require a single focal point (e.g., 'What is this object?' — answer can be focused). Also, does NOT apply to questions with implied or optional components (e.g., 'Is there a cat?' — if answer says 'no', it is complete). Annotators should not penalize for omitting minor or non-essential details unless explicitly required by the question. Example: 'The person is standing near a red circle' — complete if the question asks for 'what is the person doing and what is nearby'. 'The person is standing' — incomplete if the question asks for 'what is the person doing and what object are they holding' — the object is missing.",
+            "score": 0
+        },
+        {
+            "name": "visual_saliency_alignment",
+            "description": "Assesses whether the answer prioritizes or emphasizes visual elements that are most salient or central to the question — avoiding irrelevant or distracting details. This criterion applies when the image contains multiple objects or regions that could distract from the focal point of the question. Annotators should reward answers that focus on the most relevant visual cues (e.g., foreground object, person’s face, prominent action) and penalize those that include minor or peripheral details that do not directly answer the question. Example: If the question is 'What is the person doing?', an answer that says 'The person is wearing a blue shirt' is off-topic unless the shirt is visually central or relevant to the action. If the question is 'What is the object in the center of the image?', an answer that mentions background objects is less aligned with saliency. This criterion is distinct from visual grounding — it focuses on relevance to the question’s intent, not just visual presence. It also does not penalize detailed descriptions if they are contextually relevant (e.g., 'The person is holding a red book with a black cover' — the book’s cover color is relevant to identifying the object).",
+            "score": 0
+        }
+    ],
+    "banned_criteria": [
+        "multimodal_alignment",
+        "response_coherence_with_context",
+        "audience_appropriateness",
+        "completeness_of_response",
+        "factual_consistency_with_the_image",
+        "calibrated_uncertainty",
+        "question_relevance",
+        "robustness_to_visual_noise",
+        "action_grounding",
+        "visual_grounding",
+        "stylistic_compliance",
+        "avoidance_of_hallucinated_visual_details",
+        "specificity_and_detail_level",
+        "temporal_consistency",
+        "conciseness_and_efficiency",
+        "clarity_and_coherence"
+    ],
+    "all_criteria": [
+        {
+            "name": "visual_grounding",
+            "description": "The answer must be directly supported by visible elements in the image. Annotators prefer answers that explicitly reference observable objects, positions, colors, or actions — and penalize those that make unsupported inferences or invent details not present in the image.",
+            "score": 0.5681818181818182
+        },
+        {
+            "name": "question_relevance",
+            "description": "The answer must directly address the question without straying into irrelevant topics or adding extraneous information. Annotators prefer responses that focus on what is asked, even if the answer is negative or ambiguous — as long as it’s directly responsive.",
+            "score": 0.5319148936170213
+        },
+        {
+            "name": "factual_consistency_with_the_image",
+            "description": "The answer must not contradict or misrepresent what is visibly present. Annotators penalize answers that misidentify objects, people, or actions — for example, claiming someone is taking a photo when the camera is idle, or mislabeling a bird species without visual evidence.",
+            "score": 0.574468085106383
+        },
+        {
+            "name": "avoidance_of_hallucinated_visual_details",
+            "description": "The answer must not invent or fabricate visual elements that are not present in the image. Annotators prefer cautious, evidence-based descriptions — even if they are vague — over confident claims that hallucinate details (e.g., ‘a red car is parked behind the building’ when none is visible).",
+            "score": 0.4418604651162791
+        },
+        {
+            "name": "calibrated_uncertainty",
+            "description": "Annotators prefer answers that are cautious and honest when the visual evidence is ambiguous or insufficient. For example, saying ‘it is unclear what this object is’ is preferred over confidently asserting an unverifiable interpretation. This aligns with human preference for humility in the face of uncertainty.",
+            "score": 0.55
+        },
+        {
+            "name": "clarity_and_coherence",
+            "description": "The answer must be linguistically clear, grammatically correct, and logically structured. Annotators prefer responses that are easy to understand without ambiguity, even if they are brief. This criterion is applicable when comparing answers that may be factually correct but poorly expressed or confusing.",
+            "score": 0.52
+        },
+        {
+            "name": "conciseness_and_efficiency",
+            "description": "The answer should convey the necessary information without unnecessary words or redundancy. Annotators prefer responses that are succinct and to the point — avoiding verbose explanations that do not add value to the answer’s correctness or usefulness.",
+            "score": 0.42857142857142855
+        },
+        {
+            "name": "multimodal_alignment",
+            "description": "The answer should align well with the visual context in terms of spatial, temporal, or semantic relationships. For example, if the question asks about object interactions, the answer should reflect those interactions as shown in the image — not just describe objects in isolation.",
+            "score": 0.625
+        },
+        {
+            "name": "interpretive_fidelity",
+            "description": "Interpretive fidelity is a tie-breaking criterion that applies ONLY when (1) both candidate answers are factually grounded (i.e., neither contains hallucinated visual elements or factual errors), and (2) the visual scene is ambiguous or open to multiple plausible interpretations (e.g., emotional tone, narrative context, symbolic meaning, or behavioral intent). It does NOT apply when: (a) the image is unambiguous or literal (e.g., object count, presence/absence, spatial positioning), (b) the question demands a literal factual answer, or (c) one candidate contains a hallucination — in which case that answer is disqualified and interpretive fidelity is inapplicable. Annotators must first verify factual grounding (via visual alignment) before applying this criterion. If both answers are grounded and ambiguous, interpretive fidelity compares which interpretation is more contextually consistent with visible cues (e.g., facial expression, posture, composition, object arrangement) — even if speculative — as long as it does not contradict visual evidence. For example, 'the person is smiling' is grounded; 'the person is joyful' is interpretive but still valid if the smile is visible. 'The person is arrogant' is valid only if visual cues (e.g., smirk, raised brow) support it — it is not hallucination if grounded in visible cues. If both interpretations are equally grounded and plausible, interpretive fidelity does not resolve the tie — the tie is broken by other criteria (e.g., specificity, completeness, or calibrated uncertainty). Hallucination = invented visual elements not present in the image (e.g., 'the cat is flying' when no wings are visible). Speculation = plausible interpretation supported by visual context (e.g., inferring emotion from expression). Interpretive fidelity does not penalize plausible speculation — only favors the interpretation with stronger visual anchors. It must NEVER be used to override factual grounding — if one answer is hallucinated or factually incorrect, it is disqualified regardless of interpretive plausibility. Examples: 'The cat is near the edge of the pond' > 'The cat is swimming' (if no water visible — the latter is hallucination, so interpretive fidelity does not apply). 'The woman is waiting for her turn to speak' > 'The woman is reading' (if stage cues visible — the former is contextually supported, the latter is less grounded). If both are grounded and ambiguous, 'waiting' wins over 'reading' if stage cues support waiting. If neither is grounded, interpretive fidelity is inapplicable — the case is resolved via visual grounding or factual consistency.",
+            "score": 0.6956521739130435
+        },
+        {
+            "name": "audience_appropriateness",
+            "description": "Assesses whether the answer is suitable for the implied audience based on the question’s context and image content — for example, whether it uses language or detail level appropriate for children, experts, or general users. This criterion applies when the question or image suggests a specific target audience (e.g., educational materials, children’s books, professional reports). Annotators should evaluate whether the answer avoids overly technical jargon, simplifies complex concepts when appropriate, or uses culturally or contextually sensitive language. This criterion does not apply to neutral or universally accessible content, or when audience is not implied.",
+            "score": 0.44
+        },
+        {
+            "name": "completeness_of_response",
+            "description": "The answer should cover all aspects of the question without omitting key information that is visually evident or logically implied. Annotators should evaluate whether the answer fully addresses the intent of the question, especially when multiple objects, actions, or relationships are involved. This criterion is applicable when one answer leaves out critical elements visible in the image that are necessary to fully answer the question.",
+            "score": 0.6
+        },
+        {
+            "name": "specificity_and_detail_level",
+            "description": "The answer should provide the right level of detail — neither overly vague nor unnecessarily granular. Annotators prefer responses that specify exact locations, object properties, or relationships when the image supports them, while avoiding generic or vague descriptors unless the question permits it. This criterion is especially useful when comparing answers that are factually correct but differ in precision or granularity.",
+            "score": 0.5416666666666666
+        },
+        {
+            "name": "robustness_to_visual_noise",
+            "description": "The answer should remain accurate and meaningful even when parts of the image are occluded, blurry, or ambiguous. Annotators should prefer answers that do not rely on speculative or inferred details that are not clearly supported by the visual evidence. This criterion applies when evaluating answers that differ in how they handle uncertain or noisy visual regions.",
+            "score": 0.5
+        },
+        {
+            "name": "response_coherence_with_context",
+            "description": "Evaluates whether the answer logically flows from the visual context and maintains internal consistency. Annotators should assess if the answer avoids contradictions within its own statements or with implied context from the image (e.g., object relationships, spatial layout). This criterion applies when comparing answers that are visually correct but differ in logical flow or contextual plausibility. A high-scoring answer should feel natural and consistent with the visual scene — avoiding abrupt or illogical assertions even if factually correct. Example: If the image shows a dog next to a ball, an answer saying 'the dog is chasing the ball' is coherent, but one saying 'the dog is holding the ball in its mouth while flying' is not, despite being visually plausible.",
+            "score": 0.4791666666666667
+        },
+        {
+            "name": "temporal_consistency",
+            "description": "Assesses whether the answer is consistent with the implied temporal sequence or state of the scene — particularly when motion, action, or change over time is involved. This criterion applies when the image contains dynamic elements (e.g., people in motion, moving objects, or implied sequence). Annotators should penalize answers that suggest actions or states that are temporally inconsistent with the visual evidence. Example: If the image shows a person mid-jump, an answer claiming 'the person has just landed' is inconsistent, while 'the person is in mid-air' is temporally accurate. This criterion is not applicable for static images or questions without implied temporal dynamics.",
+            "score": 0.6428571428571429
+        },
+        {
+            "name": "action_grounding",
+            "description": "Evaluates whether the answer explicitly and accurately grounds actions or behaviors on observable visual cues — not inferred or imagined. Annotators should check if the answer describes actions that are visibly supported by motion, posture, or interaction cues in the image. This criterion is distinct from visual grounding and focuses specifically on behavioral or action-related claims. Example: If an image shows a person lifting weights, an answer stating 'the person is lifting' is action-grounded, while 'the person is straining' (without visual evidence of strain) is not. This criterion is not applicable when no action is depicted or implied.",
+            "score": 0.6190476190476191
+        },
+        {
+            "name": "stylistic_compliance",
+            "description": "Assesses whether the answer adheres to the expected style, tone, or formality appropriate to the visual context or question type. This includes avoiding overly casual, overly technical, or unnecessarily formal language unless explicitly required. Annotators should evaluate whether the answer’s tone matches the visual content — for example, a medical image might require more formal language, while a children’s cartoon might warrant simpler, playful phrasing. This criterion applies when the question or image implies a specific communicative style. Example: For a scientific visual query, an answer using vague or colloquial terms like 'looks like' may be penalized, while for a casual meme image, such phrasing may be acceptable. This criterion does not apply when style is irrelevant or not implied by context.",
+            "score": 0.38
+        }
+    ],
+    "n_criteria": 5,
+    "manager_prompt": "List and describe 5 criteria for how human annotators compare the quality of two answers to the same visual question.\n\nThe task is RLHF-V style preference comparison for visual question answering and image-text responses. The worker model will receive:\n- the image,\n- the source question,\n- candidate answer A,\n- candidate answer B.\n\nFocus on human preference factors such as visual grounding, question relevance, factual consistency with the image, avoidance of hallucinated visual details, completeness, specificity, calibrated uncertainty, and clear language.",
+    "manager_prompt_postfix": "\n\nYour response should be in the following **json** format:\n```json\n{\n    \"name_of_the_criterion\": \"Detailed description for the criterion such as what it is, how it can be evaluated, when it is applicable, or other relevant information... Be specific and detailed while keep concise.\",\n    ...\n}\n```",
+    "worker_prompt": "## Instruction\nYou are judging an RLHF-V visual QA / image-text preference pair under one criterion. You are given the image, the source question, and two candidate answers.\n\nUse the image when the criterion depends on visual evidence. If the criterion is not applicable to this pair, answer None.\n\n## Question\n{question}\n\n## Criterion\n**{criterion}**: {description}\n\n## Candidate A\n{A}\n\n## Candidate B\n{B}\n\nWhich candidate better matches the criterion and is more likely to align with human preference?",
+    "evaluator_type": "multimodal_pair",
+    "evaluator_kwargs": {
+        "image_field": "image_path",
+        "question_field": "question",
+        "encode_local_image": true
+    }
+}

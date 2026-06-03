@@ -1,0 +1,710 @@
+Setting workflow prompt language to `Language.ENGLISH`. You can change this by setting the WORKFLOW_LANG environment variable.
+Loaded RLHF-V pairs: train=50, valid=40
+0it [00:00, ?it/s]
+Retrieved 0 criteria from knowledge base.
+Generating 5 new criteria
+Warming up: 100%|████████████████████████████████████████████████████████████████████████| 5/5 [01:06<00:00, 13.31s/it]
+```json
+{
+    "visual_grounding": "The answer must be directly supported by visible elements in the image. Annotators prefer answers that explicitly reference observable objects, positions, colors, or actions — and penalize those that make unsupported inferences or invent details not present in the image.",
+    "question_relevance": "The answer must directly address the question without straying into irrelevant topics or adding extraneous information. Annotators prefer responses that focus on what is asked, even if the answer is negative or ambiguous — as long as it’s directly responsive.",
+    "factual_consistency_with_the_image": "The answer must not contradict or misrepresent what is visibly present. Annotators penalize answers that misidentify objects, people, or actions — for example, claiming someone is taking a photo when the camera is idle, or mislabeling a bird species without visual evidence.",
+    "avoidance_of_hallucinated_visual_details": "The answer must not invent or fabricate visual elements that are not present in the image. Annotators prefer cautious, evidence-based descriptions — even if they are vague — over confident claims that hallucinate details (e.g., ‘a red car is parked behind the building’ when none is visible).",
+    "calibrated_uncertainty": "Annotators prefer answers that are cautious and honest when the visual evidence is ambiguous or insufficient. For example, saying ‘it is unclear what this object is’ is preferred over confidently asserting an unverifiable interpretation. This aligns with human preference for humility in the face of uncertainty."
+}
+```
+100%|████████████████████████████████████████████████████████████████████████████████| 200/200 [04:42<00:00,  1.41s/it]
+After warm up: 0.65 [False, False, True, True, True, True, False, True, False, True, True, False, True, True, True, True, True, True, False, True, False, True, True, True, False, True, True, False, False, False, False, True, False, True, True, True, False, True, True, True]
+## Iteration 0
+100%|████████████████████████████████████████████████████████████████████████████████| 250/250 [02:34<00:00,  1.62it/s]
+Train: 0.54 [True, True, True, True, False, False, True, True, True, True, False, False, False, True, False, False, False, True, True, False, True, True, False, False, True, True, False, True, False, True, True, True, True, False, True, False, False, True, True, True, False, False, False, True, False, True, False, True, False, False]
++------------------------------------------+------+--------------------+
+|                Criterion                 | Type |      Accuracy      |
++------------------------------------------+------+--------------------+
+| avoidance_of_hallucinated_visual_details | Low  | 0.4418604651162791 |
+|          calibrated_uncertainty          | Low  |        0.55        |
+|    factual_consistency_with_the_image    | Low  | 0.574468085106383  |
+|            question_relevance            | Low  | 0.5319148936170213 |
+|             visual_grounding             | Low  | 0.5681818181818182 |
++------------------------------------------+------+--------------------+
+
+#### Low
+avoidance_of_hallucinated_visual_details, calibrated_uncertainty, factual_consistency_with_the_image, question_relevance, visual_grounding
++----------------------------+------------------------------------------------------------------------------------------------------+
+|         Criterion          | Description                                                                                          |
++----------------------------+------------------------------------------------------------------------------------------------------+
+|   clarity_and_coherence    | The answer must be linguistically clear, grammatically correct, and logically structured. Annotators |
+|                            | prefer responses that are easy to understand without ambiguity, even if they are brief. This         |
+|                            | criterion is applicable when comparing answers that may be factually correct but poorly expressed or |
+|                            | confusing.                                                                                           |
+| conciseness_and_efficiency | The answer should convey the necessary information without unnecessary words or redundancy.          |
+|                            | Annotators prefer responses that are succinct and to the point — avoiding verbose explanations that  |
+|                            | do not add value to the answer’s correctness or usefulness.                                          |
+|    multimodal_alignment    | The answer should align well with the visual context in terms of spatial, temporal, or semantic      |
+|                            | relationships. For example, if the question asks about object interactions, the answer should        |
+|                            | reflect those interactions as shown in the image — not just describe objects in isolation.           |
+|   interpretive_fidelity    | The answer should reflect the most reasonable interpretation of the visual content, especially when  |
+|                            | the image is ambiguous or open to multiple interpretations. Annotators prefer answers that show      |
+|                            | awareness of ambiguity and choose the most plausible or contextually grounded interpretation.        |
+|  audience_appropriateness  | The answer should be suitable for the target audience (e.g., general public, experts) based on the   |
+|                            | question’s context. Annotators prefer answers that avoid overly technical jargon unless the question |
+|                            | clearly requires it, and that adjust tone and depth appropriately for the expected user.             |
++----------------------------+------------------------------------------------------------------------------------------------------+
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 200/200 [01:49<00:00,  1.83it/s]
+Accuracy: 0.6
+Correct: [False, False, True, True, True, True, False, False, True, False, True, False, False, True, True, False, True, True, False, True, True, True, True, True, True, True, True, True, False, True, False, True, False, True, True, True, False, False, False, False]
+{
+    "clarity_and_coherence": {
+        "Accuracy": 0.5128205128205128,
+        "Refuse to Respond": "0.025 (1)"
+    },
+    "conciseness_and_efficiency": {
+        "Accuracy": 0.5757575757575758,
+        "Refuse to Respond": "0.175 (7)"
+    },
+    "multimodal_alignment": {
+        "Accuracy": 0.6923076923076923,
+        "Refuse to Respond": "0.025 (1)"
+    },
+    "interpretive_fidelity": {
+        "Accuracy": 0.625,
+        "Refuse to Respond": "0.0 (0)"
+    },
+    "audience_appropriateness": {
+        "Accuracy": 0.48717948717948717,
+        "Refuse to Respond": "0.025 (1)"
+    }
+}
+## Iteration 1
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 250/250 [02:27<00:00,  1.69it/s]
+Train: 0.5 [True, False, False, False, False, False, True, True, True, False, False, False, True, True, True, False, False, True, False, False, True, True, True, False, True, True, False, True, False, True, True, True, True, False, True, False, False, True, False, True, True, False, False, True, True, True, False, False, False, False]
++----------------------------+------+---------------------+
+|         Criterion          | Type |       Accuracy      |
++----------------------------+------+---------------------+
+|  audience_appropriateness  | Low  |  0.3877551020408163 |
+|   clarity_and_coherence    | Low  |         0.52        |
+| conciseness_and_efficiency | Low  | 0.42857142857142855 |
+|   interpretive_fidelity    | Mid  |  0.6122448979591837 |
+|    multimodal_alignment    | Mid  |        0.625        |
++----------------------------+------+---------------------+
+
+
+#### Mid
+Reflection: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 37/37 [03:33<00:00,  5.77s/it]
+Optimization: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:11<00:00,  5.84s/it]
++-----------------------+----------------------------------------------------+----------------------------------------------------+
+|       Criterion       | Old                                                | New                                                |
++-----------------------+----------------------------------------------------+----------------------------------------------------+
+| interpretive_fidelity | The answer should reflect the most reasonable      | Interpretive fidelity evaluates whether an answer  |
+|                       | interpretation of the visual content, especially   | selects the most plausible interpretation of the   |
+|                       | when the image is ambiguous or open to multiple    | visual content — but only when the image is        |
+|                       | interpretations. Annotators prefer answers that    | ambiguous or open to multiple interpretations. It  |
+|                       | show awareness of ambiguity and choose the most    | rewards answers that are grounded in visible       |
+|                       | plausible or contextually grounded interpretation. | evidence, avoid hallucinated or unsupported        |
+|                       |                                                    | details, and acknowledge uncertainty when          |
+|                       |                                                    | appropriate. It does NOT apply when the image is   |
+|                       |                                                    | unambiguous or when the question demands a         |
+|                       |                                                    | literal, non-interpretive response. Annotators     |
+|                       |                                                    | should prioritize visual evidence over speculative |
+|                       |                                                    | plausibility, and penalize answers that invent     |
+|                       |                                                    | details (e.g., clothing, behavior, or anatomy) not |
+|                       |                                                    | supported by the image. When two interpretations   |
+|                       |                                                    | are equally plausible, the one with stronger       |
+|                       |                                                    | visual grounding wins. If neither answer is        |
+|                       |                                                    | grounded, the one that avoids hallucination is     |
+|                       |                                                    | preferred. Examples: If an image shows a person    |
+|                       |                                                    | partially submerged in water, 'near knees' is      |
+|                       |                                                    | preferred over 'middle of legs' — both are         |
+|                       |                                                    | plausible, but the former is visually grounded. If |
+|                       |                                                    | one answer invents a 'bow tie' not visible, it     |
+|                       |                                                    | loses points regardless of narrative plausibility. |
+|                       |                                                    | This criterion does not resolve ties — if both     |
+|                       |                                                    | answers are grounded and visually consistent,      |
+|                       |                                                    | defer to other criteria like factual consistency   |
+|                       |                                                    | or visual grounding.                               |
+|  multimodal_alignment | The answer should align well with the visual       | The answer must be factually grounded in visually  |
+|                       | context in terms of spatial, temporal, or semantic | observable content — no hallucinated, invented, or |
+|                       | relationships. For example, if the question asks   | unsupported visual details are permitted.          |
+|                       | about object interactions, the answer should       | Alignment is evaluated by whether the answer       |
+|                       | reflect those interactions as shown in the image — | accurately reflects object identities, spatial     |
+|                       | not just describe objects in isolation.            | relationships, and contextual interactions as      |
+|                       |                                                    | directly visible or plausibly inferable from       |
+|                       |                                                    | visual cues without contradiction. Annotators      |
+|                       |                                                    | should penalize answers that misrepresent, omit,   |
+|                       |                                                    | or invent key visual elements (e.g., claiming a    |
+|                       |                                                    | person is below when they are above, or describing |
+|                       |                                                    | an object not present). Ambiguous or unclear       |
+|                       |                                                    | visual evidence must be explicitly acknowledged —  |
+|                       |                                                    | answers that speculate without visual support are  |
+|                       |                                                    | disqualified. Alignment is not about aesthetic     |
+|                       |                                                    | plausibility or narrative completeness, but about  |
+|                       |                                                    | strict visual fidelity: correct object             |
+|                       |                                                    | identification, accurate spatial positioning, and  |
+|                       |                                                    | absence of hallucinated attributes. Examples: 'The |
+|                       |                                                    | cat is on the mat' is aligned; 'The cat is wearing |
+|                       |                                                    | a hat' (if no hat is visible) is not. Answers that |
+|                       |                                                    | infer plausible context (e.g., 'a warehouse in the |
+|                       |                                                    | background') are acceptable if grounded in visible |
+|                       |                                                    | cues (e.g., large structure, pallets) — but must   |
+|                       |                                                    | not contradict or invent visual evidence.          |
++-----------------------+----------------------------------------------------+----------------------------------------------------+
+
+#### Low
+audience_appropriateness, clarity_and_coherence, conciseness_and_efficiency
++------------------------------+------------------------------------------------------------------------------------------------------+
+|          Criterion           | Description                                                                                          |
++------------------------------+------------------------------------------------------------------------------------------------------+
+|   completeness_of_response   | The answer should cover all aspects of the question without omitting key information that is         |
+|                              | visually evident or logically implied. Annotators should evaluate whether the answer fully addresses |
+|                              | the intent of the question, especially when multiple objects, actions, or relationships are          |
+|                              | involved. This criterion is applicable when one answer leaves out critical elements visible in the   |
+|                              | image that are necessary to fully answer the question.                                               |
+| specificity_and_detail_level | The answer should provide the right level of detail — neither overly vague nor unnecessarily         |
+|                              | granular. Annotators prefer responses that specify exact locations, object properties, or            |
+|                              | relationships when the image supports them, while avoiding generic or vague descriptors unless the   |
+|                              | question permits it. This criterion is especially useful when comparing answers that are factually   |
+|                              | correct but differ in precision or granularity.                                                      |
+|  robustness_to_visual_noise  | The answer should remain accurate and meaningful even when parts of the image are occluded, blurry,  |
+|                              | or ambiguous. Annotators should prefer answers that do not rely on speculative or inferred details   |
+|                              | that are not clearly supported by the visual evidence. This criterion applies when evaluating        |
+|                              | answers that differ in how they handle uncertain or noisy visual regions.                            |
++------------------------------+------------------------------------------------------------------------------------------------------+
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 200/200 [04:56<00:00,  1.48s/it]
+Accuracy: 0.7
+Correct: [False, False, True, True, True, True, False, True, False, True, True, False, True, True, False, True, True, True, False, True, True, True, True, True, True, True, True, True, False, True, False, True, False, True, True, True, False, True, True, False]
+{
+    "interpretive_fidelity": {
+        "Accuracy": 0.6842105263157895,
+        "Refuse to Respond": "0.05 (2)"
+    },
+    "multimodal_alignment": {
+        "Accuracy": 0.6216216216216216,
+        "Refuse to Respond": "0.075 (3)"
+    },
+    "completeness_of_response": {
+        "Accuracy": 0.6842105263157895,
+        "Refuse to Respond": "0.05 (2)"
+    },
+    "specificity_and_detail_level": {
+        "Accuracy": 0.7435897435897436,
+        "Refuse to Respond": "0.025 (1)"
+    },
+    "robustness_to_visual_noise": {
+        "Accuracy": 0.5897435897435898,
+        "Refuse to Respond": "0.025 (1)"
+    }
+}
+## Iteration 2
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 250/250 [05:19<00:00,  1.28s/it]
+Train: 0.56 [True, False, True, True, False, False, True, True, True, True, True, False, False, True, True, False, False, True, True, False, True, True, False, False, True, True, False, True, False, True, True, True, True, False, False, False, False, True, True, True, True, False, False, True, False, True, False, True, False, False]
++------------------------------+------+--------------------+
+|          Criterion           | Type |      Accuracy      |
++------------------------------+------+--------------------+
+|   completeness_of_response   | Low  |        0.6         |
+|    interpretive_fidelity     | Mid  | 0.6382978723404256 |
+|     multimodal_alignment     | Low  | 0.5609756097560976 |
+|  robustness_to_visual_noise  | Low  |        0.5         |
+| specificity_and_detail_level | Low  | 0.5416666666666666 |
++------------------------------+------+--------------------+
+
+
+#### Mid
+Reflection: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 17/17 [02:11<00:00,  7.74s/it]
+Optimization: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:08<00:00,  8.99s/it]
++-----------------------+----------------------------------------------------+----------------------------------------------------+
+|       Criterion       | Old                                                | New                                                |
++-----------------------+----------------------------------------------------+----------------------------------------------------+
+| interpretive_fidelity | Interpretive fidelity evaluates whether an answer  | Interpretive fidelity evaluates which answer       |
+|                       | selects the most plausible interpretation of the   | better resolves ambiguity in the visual content    |
+|                       | visual content — but only when the image is        | when multiple plausible interpretations exist —    |
+|                       | ambiguous or open to multiple interpretations. It  | and only applies when the image is ambiguous or    |
+|                       | rewards answers that are grounded in visible       | open to interpretation, and when both candidate    |
+|                       | evidence, avoid hallucinated or unsupported        | answers are factually grounded (i.e., do not       |
+|                       | details, and acknowledge uncertainty when          | hallucinate visual details). It does NOT apply     |
+|                       | appropriate. It does NOT apply when the image is   | when the image is unambiguous, when the question   |
+|                       | unambiguous or when the question demands a         | demands a literal answer, or when factual accuracy |
+|                       | literal, non-interpretive response. Annotators     | (e.g., object count, presence/absence) is the      |
+|                       | should prioritize visual evidence over speculative | primary criterion. Annotators should: (1) confirm  |
+|                       | plausibility, and penalize answers that invent     | both answers avoid hallucination (i.e., no         |
+|                       | details (e.g., clothing, behavior, or anatomy) not | invented visual elements not supported by the      |
+|                       | supported by the image. When two interpretations   | image), (2) compare only the interpretive          |
+|                       | are equally plausible, the one with stronger       | components (e.g., emotional tone, narrative        |
+|                       | visual grounding wins. If neither answer is        | context, symbolic meaning) that are visually       |
+|                       | grounded, the one that avoids hallucination is     | plausible and grounded in visible cues (e.g.,      |
+|                       | preferred. Examples: If an image shows a person    | facial expression, posture, composition), (3)      |
+|                       | partially submerged in water, 'near knees' is      | favor the answer that selects the most visually    |
+|                       | preferred over 'middle of legs' — both are         | consistent, contextually supported interpretation  |
+|                       | plausible, but the former is visually grounded. If | — even if it is speculative — as long as it does   |
+|                       | one answer invents a 'bow tie' not visible, it     | not contradict visual evidence, and (4) defer to   |
+|                       | loses points regardless of narrative plausibility. | other criteria (e.g., factual consistency, visual  |
+|                       | This criterion does not resolve ties — if both     | grounding) if both answers are equally plausible   |
+|                       | answers are grounded and visually consistent,      | or if one contains a hallucination. For example,   |
+|                       | defer to other criteria like factual consistency   | if an image shows a person smiling at a crowd,     |
+|                       | or visual grounding.                               | 'joyful' is acceptable; 'arrogant' is not unless   |
+|                       |                                                    | facial cues (e.g., smirk, raised brow) support it. |
+|                       |                                                    | If both answers are grounded and equally           |
+|                       |                                                    | plausible, interpretive fidelity does not resolve  |
+|                       |                                                    | the tie — the tie is broken by other criteria      |
+|                       |                                                    | (e.g., specificity, completeness). This criterion  |
+|                       |                                                    | is NOT for penalizing plausible inferences — only  |
+|                       |                                                    | for choosing the more visually grounded            |
+|                       |                                                    | interpretation when ambiguity exists. It is also   |
+|                       |                                                    | NOT for resolving factual errors — those are       |
+|                       |                                                    | handled under multimodal_alignment. Examples: 'The |
+|                       |                                                    | cat is near the edge of the pond' (grounded) >     |
+|                       |                                                    | 'The cat is swimming' (if no water is visible) —   |
+|                       |                                                    | the latter is hallucination. 'The woman is waiting |
+|                       |                                                    | for her turn to speak' (if stage cues visible) >   |
+|                       |                                                    | 'The woman is reading' (if no stage visible) — the |
+|                       |                                                    | former is a plausible contextual inference, not    |
+|                       |                                                    | hallucination. If both are plausible and grounded, |
+|                       |                                                    | the answer with fewer speculative elements wins.   |
++-----------------------+----------------------------------------------------+----------------------------------------------------+
+
+#### Low
+completeness_of_response, multimodal_alignment, robustness_to_visual_noise, specificity_and_detail_level
++---------------------------------+------------------------------------------------------------------------------------------------------+
+|            Criterion            | Description                                                                                          |
++---------------------------------+------------------------------------------------------------------------------------------------------+
+| response_coherence_with_context | Evaluates whether the answer logically flows from the visual context and maintains internal          |
+|                                 | consistency. Annotators should assess if the answer avoids contradictions within its own statements  |
+|                                 | or with implied context from the image (e.g., object relationships, spatial layout). This criterion  |
+|                                 | applies when comparing answers that are visually correct but differ in logical flow or contextual    |
+|                                 | plausibility. A high-scoring answer should feel natural and consistent with the visual scene —       |
+|                                 | avoiding abrupt or illogical assertions even if factually correct. Example: If the image shows a dog |
+|                                 | next to a ball, an answer saying 'the dog is chasing the ball' is coherent, but one saying 'the dog  |
+|                                 | is holding the ball in its mouth while flying' is not, despite being visually plausible.             |
+|       temporal_consistency      | Assesses whether the answer is consistent with the implied temporal sequence or state of the scene — |
+|                                 | particularly when motion, action, or change over time is involved. This criterion applies when the   |
+|                                 | image contains dynamic elements (e.g., people in motion, moving objects, or implied sequence).       |
+|                                 | Annotators should penalize answers that suggest actions or states that are temporally inconsistent   |
+|                                 | with the visual evidence. Example: If the image shows a person mid-jump, an answer claiming 'the     |
+|                                 | person has just landed' is inconsistent, while 'the person is in mid-air' is temporally accurate.    |
+|                                 | This criterion is not applicable for static images or questions without implied temporal dynamics.   |
+|         action_grounding        | Evaluates whether the answer explicitly and accurately grounds actions or behaviors on observable    |
+|                                 | visual cues — not inferred or imagined. Annotators should check if the answer describes actions that |
+|                                 | are visibly supported by motion, posture, or interaction cues in the image. This criterion is        |
+|                                 | distinct from visual grounding and focuses specifically on behavioral or action-related claims.      |
+|                                 | Example: If an image shows a person lifting weights, an answer stating 'the person is lifting' is    |
+|                                 | action-grounded, while 'the person is straining' (without visual evidence of strain) is not. This    |
+|                                 | criterion is not applicable when no action is depicted or implied.                                   |
+|       stylistic_compliance      | Assesses whether the answer adheres to the expected style, tone, or formality appropriate to the     |
+|                                 | visual context or question type. This includes avoiding overly casual, overly technical, or          |
+|                                 | unnecessarily formal language unless explicitly required. Annotators should evaluate whether the     |
+|                                 | answer’s tone matches the visual content — for example, a medical image might require more formal    |
+|                                 | language, while a children’s cartoon might warrant simpler, playful phrasing. This criterion applies |
+|                                 | when the question or image implies a specific communicative style. Example: For a scientific visual  |
+|                                 | query, an answer using vague or colloquial terms like 'looks like' may be penalized, while for a     |
+|                                 | casual meme image, such phrasing may be acceptable. This criterion does not apply when style is      |
+|                                 | irrelevant or not implied by context.                                                                |
++---------------------------------+------------------------------------------------------------------------------------------------------+
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 200/200 [04:46<00:00,  1.43s/it]
+Accuracy: 0.65
+Correct: [False, True, True, True, True, True, False, True, False, False, True, False, False, True, False, True, True, True, False, True, True, True, True, True, True, True, True, True, False, True, False, True, False, True, True, True, False, False, True, False]
+{
+    "interpretive_fidelity": {
+        "Accuracy": 0.6944444444444444,
+        "Refuse to Respond": "0.1 (4)"
+    },
+    "response_coherence_with_context": {
+        "Accuracy": 0.631578947368421,
+        "Refuse to Respond": "0.05 (2)"
+    },
+    "temporal_consistency": {
+        "Accuracy": 0.7272727272727273,
+        "Refuse to Respond": "0.175 (7)"
+    },
+    "action_grounding": {
+        "Accuracy": 0.5333333333333333,
+        "Refuse to Respond": "0.625 (25)"
+    },
+    "stylistic_compliance": {
+        "Accuracy": 0.5277777777777778,
+        "Refuse to Respond": "0.1 (4)"
+    }
+}
+## Iteration 3
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 250/250 [02:52<00:00,  1.45it/s]
+Train: 0.56 [True, True, False, True, False, False, True, True, True, True, False, False, False, True, False, True, False, True, False, False, True, True, True, False, True, True, False, True, True, True, True, True, True, False, False, False, False, True, True, True, True, False, False, False, True, True, False, True, False, False]
++---------------------------------+------+--------------------+
+|            Criterion            | Type |      Accuracy      |
++---------------------------------+------+--------------------+
+|         action_grounding        | Mid  | 0.6190476190476191 |
+|      interpretive_fidelity      | Mid  | 0.6326530612244898 |
+| response_coherence_with_context | Low  | 0.4791666666666667 |
+|       stylistic_compliance      | Low  |        0.38        |
+|       temporal_consistency      | Mid  | 0.6428571428571429 |
++---------------------------------+------+--------------------+
+
+
+#### Mid
+Reflection: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 41/41 [05:22<00:00,  7.86s/it]
+Optimization: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:24<00:00,  8.00s/it]
++-----------------------+----------------------------------------------------+----------------------------------------------------+
+|       Criterion       | Old                                                | New                                                |
++-----------------------+----------------------------------------------------+----------------------------------------------------+
+|    action_grounding   | Evaluates whether the answer explicitly and        | Evaluates whether an answer describes a specific,  |
+|                       | accurately grounds actions or behaviors on         | observable action (e.g., running, holding,         |
+|                       | observable visual cues — not inferred or imagined. | throwing, jumping) that is visibly supported by    |
+|                       | Annotators should check if the answer describes    | motion, posture, interaction, or implied dynamic   |
+|                       | actions that are visibly supported by motion,      | behavior in the image. This criterion applies ONLY |
+|                       | posture, or interaction cues in the image. This    | when the answer explicitly describes an action —   |
+|                       | criterion is distinct from visual grounding and    | if no action is described or if the image depicts  |
+|                       | focuses specifically on behavioral or action-      | no dynamic behavior, the criterion is inapplicable |
+|                       | related claims. Example: If an image shows a       | and should not be used for comparison. If both     |
+|                       | person lifting weights, an answer stating 'the     | answers describe actions, the one with stronger    |
+|                       | person is lifting' is action-grounded, while 'the  | visual support (e.g., clear motion blur, body      |
+|                       | person is straining' (without visual evidence of   | posture indicating movement, object interaction)   |
+|                       | strain) is not. This criterion is not applicable   | scores higher. If one answer describes an action   |
+|                       | when no action is depicted or implied.             | unsupported by visual evidence (e.g., 'the person  |
+|                       |                                                    | is straining' without visual cues of effort), it   |
+|                       |                                                    | is penalized. If neither answer is action-         |
+|                       |                                                    | grounded, they are considered equally poor — or    |
+|                       |                                                    | inapplicable if no action is visible. This         |
+|                       |                                                    | criterion does NOT apply to static object          |
+|                       |                                                    | descriptions (e.g., 'on shelf', 'hanging from      |
+|                       |                                                    | ceiling') or inferred mental states (e.g.,         |
+|                       |                                                    | 'waiting', 'observing', 'looking away') unless     |
+|                       |                                                    | accompanied by visual cues of motion or behavioral |
+|                       |                                                    | intent. Annotators should avoid penalizing         |
+|                       |                                                    | plausible contextual inferences that are visually  |
+|                       |                                                    | grounded — only penalize ungrounded inferences.    |
+|                       |                                                    | The criterion is NOT for evaluating object         |
+|                       |                                                    | identification or spatial relationships — those    |
+|                       |                                                    | are covered by visual grounding or spatial         |
+|                       |                                                    | accuracy criteria.                                 |
+| interpretive_fidelity | Interpretive fidelity evaluates which answer       | Interpretive fidelity is a tie-breaking criterion  |
+|                       | better resolves ambiguity in the visual content    | that applies ONLY when (1) both candidate answers  |
+|                       | when multiple plausible interpretations exist —    | are factually grounded (i.e., neither contains     |
+|                       | and only applies when the image is ambiguous or    | hallucinated visual elements or factual errors),   |
+|                       | open to interpretation, and when both candidate    | and (2) the visual scene is ambiguous or open to   |
+|                       | answers are factually grounded (i.e., do not       | multiple plausible interpretations (e.g.,          |
+|                       | hallucinate visual details). It does NOT apply     | emotional tone, narrative context, symbolic        |
+|                       | when the image is unambiguous, when the question   | meaning, or behavioral intent). It does NOT apply  |
+|                       | demands a literal answer, or when factual accuracy | when: (a) the image is unambiguous or literal      |
+|                       | (e.g., object count, presence/absence) is the      | (e.g., object count, presence/absence, spatial     |
+|                       | primary criterion. Annotators should: (1) confirm  | positioning), (b) the question demands a literal   |
+|                       | both answers avoid hallucination (i.e., no         | factual answer, or (c) one candidate contains a    |
+|                       | invented visual elements not supported by the      | hallucination — in which case that answer is       |
+|                       | image), (2) compare only the interpretive          | disqualified and interpretive fidelity is          |
+|                       | components (e.g., emotional tone, narrative        | inapplicable. Annotators must first verify factual |
+|                       | context, symbolic meaning) that are visually       | grounding (via visual alignment) before applying   |
+|                       | plausible and grounded in visible cues (e.g.,      | this criterion. If both answers are grounded and   |
+|                       | facial expression, posture, composition), (3)      | ambiguous, interpretive fidelity compares which    |
+|                       | favor the answer that selects the most visually    | interpretation is more contextually consistent     |
+|                       | consistent, contextually supported interpretation  | with visible cues (e.g., facial expression,        |
+|                       | — even if it is speculative — as long as it does   | posture, composition, object arrangement) — even   |
+|                       | not contradict visual evidence, and (4) defer to   | if speculative — as long as it does not contradict |
+|                       | other criteria (e.g., factual consistency, visual  | visual evidence. For example, 'the person is       |
+|                       | grounding) if both answers are equally plausible   | smiling' is grounded; 'the person is joyful' is    |
+|                       | or if one contains a hallucination. For example,   | interpretive but still valid if the smile is       |
+|                       | if an image shows a person smiling at a crowd,     | visible. 'The person is arrogant' is valid only if |
+|                       | 'joyful' is acceptable; 'arrogant' is not unless   | visual cues (e.g., smirk, raised brow) support it  |
+|                       | facial cues (e.g., smirk, raised brow) support it. | — it is not hallucination if grounded in visible   |
+|                       | If both answers are grounded and equally           | cues. If both interpretations are equally grounded |
+|                       | plausible, interpretive fidelity does not resolve  | and plausible, interpretive fidelity does not      |
+|                       | the tie — the tie is broken by other criteria      | resolve the tie — the tie is broken by other       |
+|                       | (e.g., specificity, completeness). This criterion  | criteria (e.g., specificity, completeness, or      |
+|                       | is NOT for penalizing plausible inferences — only  | calibrated uncertainty). Hallucination = invented  |
+|                       | for choosing the more visually grounded            | visual elements not present in the image (e.g.,    |
+|                       | interpretation when ambiguity exists. It is also   | 'the cat is flying' when no wings are visible).    |
+|                       | NOT for resolving factual errors — those are       | Speculation = plausible interpretation supported   |
+|                       | handled under multimodal_alignment. Examples: 'The | by visual context (e.g., inferring emotion from    |
+|                       | cat is near the edge of the pond' (grounded) >     | expression). Interpretive fidelity does not        |
+|                       | 'The cat is swimming' (if no water is visible) —   | penalize plausible speculation — only favors the   |
+|                       | the latter is hallucination. 'The woman is waiting | interpretation with stronger visual anchors. It    |
+|                       | for her turn to speak' (if stage cues visible) >   | must NEVER be used to override factual grounding — |
+|                       | 'The woman is reading' (if no stage visible) — the | if one answer is hallucinated or factually         |
+|                       | former is a plausible contextual inference, not    | incorrect, it is disqualified regardless of        |
+|                       | hallucination. If both are plausible and grounded, | interpretive plausibility. Examples: 'The cat is   |
+|                       | the answer with fewer speculative elements wins.   | near the edge of the pond' > 'The cat is swimming' |
+|                       |                                                    | (if no water visible — the latter is               |
+|                       |                                                    | hallucination, so interpretive fidelity does not   |
+|                       |                                                    | apply). 'The woman is waiting for her turn to      |
+|                       |                                                    | speak' > 'The woman is reading' (if stage cues     |
+|                       |                                                    | visible — the former is contextually supported,    |
+|                       |                                                    | the latter is less grounded). If both are grounded |
+|                       |                                                    | and ambiguous, 'waiting' wins over 'reading' if    |
+|                       |                                                    | stage cues support waiting. If neither is          |
+|                       |                                                    | grounded, interpretive fidelity is inapplicable —  |
+|                       |                                                    | the case is resolved via visual grounding or       |
+|                       |                                                    | factual consistency.                               |
+|  temporal_consistency | Assesses whether the answer is consistent with the | Evaluates whether the answer correctly describes   |
+|                       | implied temporal sequence or state of the scene —  | the visual state or temporal phase of the scene —  |
+|                       | particularly when motion, action, or change over   | specifically when motion, action, or implied       |
+|                       | time is involved. This criterion applies when the  | sequence is visually evident (e.g., blurred        |
+|                       | image contains dynamic elements (e.g., people in   | motion, directional posture, mid-action poses,     |
+|                       | motion, moving objects, or implied sequence).      | changing object states). This criterion applies    |
+|                       | Annotators should penalize answers that suggest    | ONLY when the image contains dynamic or implied    |
+|                       | actions or states that are temporally inconsistent | temporal elements; if the scene is static (e.g., a |
+|                       | with the visual evidence. Example: If the image    | still portrait, object at rest, no motion cues),   |
+|                       | shows a person mid-jump, an answer claiming 'the   | this criterion is INAPPLICABLE and must be         |
+|                       | person has just landed' is inconsistent, while     | explicitly marked as such. Annotators should       |
+|                       | 'the person is in mid-air' is temporally accurate. | penalize answers that misrepresent the visual      |
+|                       | This criterion is not applicable for static images | moment (e.g., claiming 'has landed' when the       |
+|                       | or questions without implied temporal dynamics.    | person is clearly mid-air), but should NOT         |
+|                       |                                                    | penalize answers for plausible inferences or       |
+|                       |                                                    | uncertainty unless they contradict visible motion. |
+|                       |                                                    | Factual errors (e.g., misidentifying objects) or   |
+|                       |                                                    | hallucinated details are NOT evaluated under this  |
+|                       |                                                    | criterion — those are handled under                |
+|                       |                                                    | visual_grounding or factual_consistency. This      |
+|                       |                                                    | criterion does NOT apply to emotional inferences   |
+|                       |                                                    | (e.g., 'angry' or 'happy') unless those states are |
+|                       |                                                    | visibly implied by motion (e.g., facial expression |
+|                       |                                                    | transitioning across frames). In static scenes,    |
+|                       |                                                    | workers must defer to visual_grounding or          |
+|                       |                                                    | factual_consistency for preference judgment.       |
+|                       |                                                    | Example valid use: 'The dog is running' (visible   |
+|                       |                                                    | motion) > 'The dog is sleeping' (if no motion is   |
+|                       |                                                    | visible, this criterion is inapplicable — defer to |
+|                       |                                                    | visual_grounding). Example invalid use: 'The man   |
+|                       |                                                    | is using a laptop' (unsupported activity           |
+|                       |                                                    | inference) — handled under visual_grounding; 'The  |
+|                       |                                                    | man is arrogant' (interpretive error) — handled    |
+|                       |                                                    | under interpretive_fidelity. Always mark           |
+|                       |                                                    | 'inapplicable' for static scenes.                  |
++-----------------------+----------------------------------------------------+----------------------------------------------------+
+
+#### Low
+response_coherence_with_context, stylistic_compliance
++--------------------------+------------------------------------------------------------------------------------------------------+
+|        Criterion         | Description                                                                                          |
++--------------------------+------------------------------------------------------------------------------------------------------+
+|   multimodal_alignment   | Evaluates whether the answer aligns correctly with both the visual and textual modalities — ensuring |
+|                          | that the response’s content and structure match the image’s content and the question’s intent        |
+|                          | without introducing mismatched or misaligned information. For example, if the image shows a dog and  |
+|                          | the question asks about a cat, the answer should not misattribute visual elements. This criterion is |
+|                          | not applicable when the question is ambiguous or the image is irrelevant. Annotators should check    |
+|                          | for alignment in object identification, spatial relationships, and action descriptions. This         |
+|                          | criterion is distinct from visual grounding or factual consistency — it focuses on ensuring that the |
+|                          | answer does not introduce semantic or modal mismatches (e.g., describing a person in the image as a  |
+|                          | car, or describing a static image as if it were a video).                                            |
+| audience_appropriateness | Assesses whether the answer is suitable for the implied audience based on the question’s context and |
+|                          | image content — for example, whether it uses language or detail level appropriate for children,      |
+|                          | experts, or general users. This criterion applies when the question or image suggests a specific     |
+|                          | target audience (e.g., educational materials, children’s books, professional reports). Annotators    |
+|                          | should evaluate whether the answer avoids overly technical jargon, simplifies complex concepts when  |
+|                          | appropriate, or uses culturally or contextually sensitive language. This criterion does not apply to |
+|                          | neutral or universally accessible content, or when audience is not implied.                          |
++--------------------------+------------------------------------------------------------------------------------------------------+
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 200/200 [02:13<00:00,  1.50it/s]
+Accuracy: 0.625
+Correct: [False, False, True, True, True, True, False, False, False, False, True, False, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, False, True, False, True, False, True, True, True, False, False, False, False]
+{
+    "action_grounding": {
+        "Accuracy": 0.6666666666666666,
+        "Refuse to Respond": "0.925 (37)"
+    },
+    "interpretive_fidelity": {
+        "Accuracy": 0.7272727272727273,
+        "Refuse to Respond": "0.175 (7)"
+    },
+    "temporal_consistency": {
+        "Accuracy": 0.8888888888888888,
+        "Refuse to Respond": "0.775 (31)"
+    },
+    "multimodal_alignment": {
+        "Accuracy": 0.6842105263157895,
+        "Refuse to Respond": "0.05 (2)"
+    },
+    "audience_appropriateness": {
+        "Accuracy": 0.5526315789473685,
+        "Refuse to Respond": "0.05 (2)"
+    }
+}
+## Iteration 4
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 250/250 [03:03<00:00,  1.36it/s]
+Train: 0.5 [True, False, False, False, False, False, True, True, False, False, False, False, False, True, True, False, False, True, True, False, True, True, True, False, True, True, False, True, True, True, True, True, True, False, True, False, False, True, False, True, True, False, False, False, True, True, False, True, False, False]
++--------------------------+------+---------------------+
+|        Criterion         | Type |       Accuracy      |
++--------------------------+------+---------------------+
+|     action_grounding     | Low  | 0.45454545454545453 |
+| audience_appropriateness | Low  |         0.44        |
+|  interpretive_fidelity   | Mid  |  0.6956521739130435 |
+|   multimodal_alignment   | Low  |         0.5         |
+|   temporal_consistency   | Low  |  0.5882352941176471 |
++--------------------------+------+---------------------+
+
+
+#### Mid
+Reflection: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 14/14 [04:11<00:00, 17.94s/it]
+Optimization: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:11<00:00, 11.05s/it]
++-----------------------+----------------------------------------------------+----------------------------------------------------+
+|       Criterion       | Old                                                | New                                                |
++-----------------------+----------------------------------------------------+----------------------------------------------------+
+| interpretive_fidelity | Interpretive fidelity is a tie-breaking criterion  | Interpretive fidelity is a tie-breaking criterion  |
+|                       | that applies ONLY when (1) both candidate answers  | that applies ONLY when: (1) both candidate answers |
+|                       | are factually grounded (i.e., neither contains     | are factually grounded — meaning neither contains  |
+|                       | hallucinated visual elements or factual errors),   | hallucinated visual elements or factual errors —   |
+|                       | and (2) the visual scene is ambiguous or open to   | and (2) the visual scene is ambiguous or open to   |
+|                       | multiple plausible interpretations (e.g.,          | multiple plausible interpretations (e.g.,          |
+|                       | emotional tone, narrative context, symbolic        | emotional tone, narrative intent, symbolic         |
+|                       | meaning, or behavioral intent). It does NOT apply  | meaning, or behavioral inference). It is           |
+|                       | when: (a) the image is unambiguous or literal      | inapplicable in any of the following cases: (a)    |
+|                       | (e.g., object count, presence/absence, spatial     | the image is unambiguous or literal (e.g., object  |
+|                       | positioning), (b) the question demands a literal   | count, presence/absence, spatial positioning), (b) |
+|                       | factual answer, or (c) one candidate contains a    | the question demands a literal factual answer      |
+|                       | hallucination — in which case that answer is       | (e.g., ‘How many people are in the image?’), or    |
+|                       | disqualified and interpretive fidelity is          | (c) one candidate contains a hallucination or      |
+|                       | inapplicable. Annotators must first verify factual | factual error — in which case that candidate is    |
+|                       | grounding (via visual alignment) before applying   | disqualified and interpretive fidelity cannot be   |
+|                       | this criterion. If both answers are grounded and   | applied. Annotators must first verify factual      |
+|                       | ambiguous, interpretive fidelity compares which    | grounding via visual alignment before invoking     |
+|                       | interpretation is more contextually consistent     | this criterion. If both answers are grounded and   |
+|                       | with visible cues (e.g., facial expression,        | ambiguous, interpretive fidelity compares which    |
+|                       | posture, composition, object arrangement) — even   | interpretation is more contextually consistent     |
+|                       | if speculative — as long as it does not contradict | with visible cues (e.g., facial expression,        |
+|                       | visual evidence. For example, 'the person is       | posture, composition, motion blur, object          |
+|                       | smiling' is grounded; 'the person is joyful' is    | arrangement) — even if speculative — as long as it |
+|                       | interpretive but still valid if the smile is       | does not contradict visual evidence. For example,  |
+|                       | visible. 'The person is arrogant' is valid only if | ‘the person is smiling’ is grounded; ‘the person   |
+|                       | visual cues (e.g., smirk, raised brow) support it  | is joyful’ is interpretive but valid if the smile  |
+|                       | — it is not hallucination if grounded in visible   | is visible. ‘The person is arrogant’ is valid only |
+|                       | cues. If both interpretations are equally grounded | if visual cues (e.g., smirk, raised brow) support  |
+|                       | and plausible, interpretive fidelity does not      | it — it is not hallucination if grounded in        |
+|                       | resolve the tie — the tie is broken by other       | visible cues. If both interpretations are equally  |
+|                       | criteria (e.g., specificity, completeness, or      | grounded and plausible, interpretive fidelity does |
+|                       | calibrated uncertainty). Hallucination = invented  | not resolve the tie — the tie is broken by other   |
+|                       | visual elements not present in the image (e.g.,    | criteria (e.g., specificity, completeness, or      |
+|                       | 'the cat is flying' when no wings are visible).    | calibrated uncertainty). Hallucination = invented  |
+|                       | Speculation = plausible interpretation supported   | visual elements not present in the image (e.g.,    |
+|                       | by visual context (e.g., inferring emotion from    | ‘the cat is flying’ when no wings are visible).    |
+|                       | expression). Interpretive fidelity does not        | Speculation = plausible inference supported by     |
+|                       | penalize plausible speculation — only favors the   | visual context (e.g., inferring emotion from       |
+|                       | interpretation with stronger visual anchors. It    | expression). Interpretive fidelity does not        |
+|                       | must NEVER be used to override factual grounding — | penalize plausible speculation — only favors the   |
+|                       | if one answer is hallucinated or factually         | interpretation with stronger visual anchors. It    |
+|                       | incorrect, it is disqualified regardless of        | must NEVER be used to override factual grounding — |
+|                       | interpretive plausibility. Examples: 'The cat is   | if one answer is hallucinated or factually         |
+|                       | near the edge of the pond' > 'The cat is swimming' | incorrect, it is disqualified regardless of        |
+|                       | (if no water visible — the latter is               | interpretive plausibility. Example: ‘The cat is    |
+|                       | hallucination, so interpretive fidelity does not   | near the edge of the pond’ > ‘The cat is swimming’ |
+|                       | apply). 'The woman is waiting for her turn to      | (if no water visible — the latter is               |
+|                       | speak' > 'The woman is reading' (if stage cues     | hallucination, so interpretive fidelity does not   |
+|                       | visible — the former is contextually supported,    | apply). ‘The woman is waiting for her turn to      |
+|                       | the latter is less grounded). If both are grounded | speak’ > ‘The woman is reading’ (if stage cues     |
+|                       | and ambiguous, 'waiting' wins over 'reading' if    | visible — the former is contextually supported,    |
+|                       | stage cues support waiting. If neither is          | the latter is less grounded). If both are grounded |
+|                       | grounded, interpretive fidelity is inapplicable —  | and ambiguous, ‘waiting’ wins over ‘reading’ if    |
+|                       | the case is resolved via visual grounding or       | stage cues support waiting. If neither is          |
+|                       | factual consistency.                               | grounded, interpretive fidelity is inapplicable —  |
+|                       |                                                    | the case is resolved via visual grounding or       |
+|                       |                                                    | factual consistency. Annotators must explicitly    |
+|                       |                                                    | mark ‘inapplicable’ for literal factual            |
+|                       |                                                    | comparisons or when either candidate is            |
+|                       |                                                    | hallucinated/factually incorrect — and must not    |
+|                       |                                                    | use interpretive fidelity to evaluate uncertainty, |
+|                       |                                                    | lack of interpretation, or spatial precision.      |
++-----------------------+----------------------------------------------------+----------------------------------------------------+
+
+#### Low
+action_grounding, audience_appropriateness, multimodal_alignment, temporal_consistency
++---------------------------------+------------------------------------------------------------------------------------------------------+
+|            Criterion            | Description                                                                                          |
++---------------------------------+------------------------------------------------------------------------------------------------------+
+| response_coherence_with_context | Evaluates whether the answer logically connects to the visual context and question without           |
+|                                 | introducing contradictory or irrelevant elements. This includes checking if the answer maintains     |
+|                                 | internal consistency (e.g., object relationships, spatial logic, temporal logic) and aligns with the |
+|                                 | image’s narrative or compositional intent. Applicable only when the image contains multiple objects  |
+|                                 | or actions that could be misinterpreted or conflated. Example: if the image shows a dog chasing a    |
+|                                 | ball, and the answer says 'the dog is chasing a cat', it violates coherence with context. This       |
+|                                 | criterion is distinct from factual consistency (which checks if elements exist) and interpretive     |
+|                                 | fidelity (which checks interpretive plausibility). Coherence is about internal and contextual logic  |
+|                                 | — e.g., 'the dog is sitting near the ball' is coherent; 'the dog is playing with a ball that is not  |
+|                                 | in the image' is incoherent if the ball is absent. Annotators should flag answers that introduce     |
+|                                 | logical contradictions (e.g., 'the person is holding a cup' while 'the cup is empty' and 'the person |
+|                                 | is pouring liquid' without visual evidence) or ignore contextual cues (e.g., ignoring a visible 'no  |
+|                                 | entry' sign to say 'the person is entering').                                                        |
+|      calibrated_uncertainty     | Assesses whether the answer appropriately expresses uncertainty when the image is ambiguous,         |
+|                                 | incomplete, or lacks sufficient evidence — avoiding overconfident claims that exceed visual support. |
+|                                 | This criterion applies when the image is ambiguous or the question invites probabilistic or          |
+|                                 | inferential answers. Annotators should penalize answers that make strong claims without visual       |
+|                                 | justification (e.g., 'definitely' or 'always' without evidence) and reward answers that use cautious |
+|                                 | language ('possibly', 'likely', 'appears to be', 'based on visual cues') when appropriate. This      |
+|                                 | criterion does NOT apply to clear, unambiguous images — if the visual evidence is strong,            |
+|                                 | uncertainty should not be expressed. Also, it does NOT apply to factual assertions (which are        |
+|                                 | covered by visual grounding or factual consistency). Example: 'The person is holding a book' (clear  |
+|                                 | visual evidence) — no uncertainty needed. 'The person might be holding a book' (if visual evidence   |
+|                                 | is ambiguous, e.g., blurry hand) — calibrated uncertainty is appropriate. This criterion is distinct |
+|                                 | from interpretive fidelity — it evaluates confidence level, not interpretive plausibility.           |
+|      response_completeness      | Evaluates whether the answer addresses all key components of the question without omitting essential |
+|                                 | information. This includes ensuring that the answer covers all necessary visual elements mentioned   |
+|                                 | in the question (e.g., object, location, action, person, etc.) — not just the most prominent one.    |
+|                                 | Applicable when the question explicitly asks for multiple elements (e.g., 'What is the person doing, |
+|                                 | and what object are they holding?'). Annotators should check whether the answer is missing any part  |
+|                                 | of the question’s scope — e.g., if the question asks for 'the color and shape of the object', and    |
+|                                 | the answer only mentions 'the color', it is incomplete. This criterion does NOT apply to questions   |
+|                                 | that only require a single focal point (e.g., 'What is this object?' — answer can be focused). Also, |
+|                                 | does NOT apply to questions with implied or optional components (e.g., 'Is there a cat?' — if answer |
+|                                 | says 'no', it is complete). Annotators should not penalize for omitting minor or non-essential       |
+|                                 | details unless explicitly required by the question. Example: 'The person is standing near a red      |
+|                                 | circle' — complete if the question asks for 'what is the person doing and what is nearby'. 'The      |
+|                                 | person is standing' — incomplete if the question asks for 'what is the person doing and what object  |
+|                                 | are they holding' — the object is missing.                                                           |
+|    visual_saliency_alignment    | Assesses whether the answer prioritizes or emphasizes visual elements that are most salient or       |
+|                                 | central to the question — avoiding irrelevant or distracting details. This criterion applies when    |
+|                                 | the image contains multiple objects or regions that could distract from the focal point of the       |
+|                                 | question. Annotators should reward answers that focus on the most relevant visual cues (e.g.,        |
+|                                 | foreground object, person’s face, prominent action) and penalize those that include minor or         |
+|                                 | peripheral details that do not directly answer the question. Example: If the question is 'What is    |
+|                                 | the person doing?', an answer that says 'The person is wearing a blue shirt' is off-topic unless the |
+|                                 | shirt is visually central or relevant to the action. If the question is 'What is the object in the   |
+|                                 | center of the image?', an answer that mentions background objects is less aligned with saliency.     |
+|                                 | This criterion is distinct from visual grounding — it focuses on relevance to the question’s intent, |
+|                                 | not just visual presence. It also does not penalize detailed descriptions if they are contextually   |
+|                                 | relevant (e.g., 'The person is holding a red book with a black cover' — the book’s cover color is    |
+|                                 | relevant to identifying the object).                                                                 |
++---------------------------------+------------------------------------------------------------------------------------------------------+
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 200/200 [08:17<00:00,  2.49s/it]
+Accuracy: 0.65
+Correct: [False, False, True, True, True, True, False, True, False, False, True, False, False, True, True, True, True, True, False, True, True, True, True, True, True, True, True, False, True, True, False, True, False, True, True, True, True, False, False, False]
+{
+    "interpretive_fidelity": {
+        "Accuracy": 0.7837837837837838,
+        "Refuse to Respond": "0.075 (3)"
+    },
+    "response_coherence_with_context": {
+        "Accuracy": 0.6923076923076923,
+        "Refuse to Respond": "0.025 (1)"
+    },
+    "calibrated_uncertainty": {
+        "Accuracy": 0.7307692307692307,
+        "Refuse to Respond": "0.35 (14)"
+    },
+    "response_completeness": {
+        "Accuracy": 0.6,
+        "Refuse to Respond": "0.125 (5)"
+    },
+    "visual_saliency_alignment": {
+        "Accuracy": 0.4358974358974359,
+        "Refuse to Respond": "0.025 (1)"
+    }
+}
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 250/250 [06:27<00:00,  1.55s/it]
+Final Train Acc: 0.52 [True, False, True, True, False, False, True, True, True, False, False, False, False, True, True, True, False, True, True, False, False, True, True, False, True, True, False, True, False, True, True, True, True, False, True, False, False, True, False, False, True, False, False, False, True, True, False, True, False, False]
++------------------------------------------+-----------------+--------------------+---------------------+---------------------+---------------------+---------------------+---------------------+
+|                Criterion                 | epoch_init.json |    epoch_0.json    |     epoch_1.json    |     epoch_2.json    |     epoch_3.json    |     epoch_4.json    |   epoch_final.json  |
++------------------------------------------+-----------------+--------------------+---------------------+---------------------+---------------------+---------------------+---------------------+
+|             visual_grounding             |       0.0       | 0.5681818181818182 |  0.5681818181818182 |  0.5681818181818182 |  0.5681818181818182 |  0.5681818181818182 |  0.5681818181818182 |
+|            question_relevance            |       0.0       | 0.5319148936170213 |  0.5319148936170213 |  0.5319148936170213 |  0.5319148936170213 |  0.5319148936170213 |  0.5319148936170213 |
+|    factual_consistency_with_the_image    |       0.0       | 0.574468085106383  |  0.574468085106383  |  0.574468085106383  |  0.574468085106383  |  0.574468085106383  |  0.574468085106383  |
+| avoidance_of_hallucinated_visual_details |       0.0       | 0.4418604651162791 |  0.4418604651162791 |  0.4418604651162791 |  0.4418604651162791 |  0.4418604651162791 |  0.4418604651162791 |
+|          calibrated_uncertainty          |       0.0       |        0.55        |         0.55        |         0.55        |         0.55        |         0.55        |  0.5897435897435898 |
+|          clarity_and_coherence           |        0        |         0          |         0.52        |         0.52        |         0.52        |         0.52        |         0.52        |
+|        conciseness_and_efficiency        |        0        |         0          | 0.42857142857142855 | 0.42857142857142855 | 0.42857142857142855 | 0.42857142857142855 | 0.42857142857142855 |
+|           multimodal_alignment           |        0        |         0          |        0.625        |        0.625        |        0.625        |        0.625        |        0.625        |
+|          interpretive_fidelity           |        0        |         0          |  0.6122448979591837 |  0.6382978723404256 |  0.6382978723404256 |  0.6956521739130435 |  0.6956521739130435 |
+|         audience_appropriateness         |        0        |         0          |  0.3877551020408163 |  0.3877551020408163 |  0.3877551020408163 |         0.44        |         0.44        |
+|         completeness_of_response         |        0        |         0          |          0          |         0.6         |         0.6         |         0.6         |         0.6         |
+|       specificity_and_detail_level       |        0        |         0          |          0          |  0.5416666666666666 |  0.5416666666666666 |  0.5416666666666666 |  0.5416666666666666 |
+|        robustness_to_visual_noise        |        0        |         0          |          0          |         0.5         |         0.5         |         0.5         |         0.5         |
+|     response_coherence_with_context      |        0        |         0          |          0          |          0          |  0.4791666666666667 |  0.4791666666666667 |  0.5319148936170213 |
+|           temporal_consistency           |        0        |         0          |          0          |          0          |  0.6428571428571429 |  0.6428571428571429 |  0.6428571428571429 |
+|             action_grounding             |        0        |         0          |          0          |          0          |  0.6190476190476191 |  0.6190476190476191 |  0.6190476190476191 |
+|           stylistic_compliance           |        0        |         0          |          0          |          0          |         0.38        |         0.38        |         0.38        |
+|          response_completeness           |        0        |         0          |          0          |          0          |          0          |          0          |  0.5581395348837209 |
+|        visual_saliency_alignment         |        0        |         0          |          0          |          0          |          0          |          0          | 0.42857142857142855 |
++------------------------------------------+-----------------+--------------------+---------------------+---------------------+---------------------+---------------------+---------------------+
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 200/200 [04:45<00:00,  1.43s/it]
+Final: 0.65 [False, False, True, True, True, False, False, True, True, True, True, False, False, True, False, True, True, True, False, True, True, True, True, True, True, True, True, True, False, True, False, True, False, True, True, True, False, False, True, False]
