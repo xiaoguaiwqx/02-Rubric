@@ -553,8 +553,7 @@ class MultiModalPairEvaluator(PairEvaluator):
     这个类继承 PairEvaluator，复用它的投票、并发、pred/eval 逻辑，只改两件事：
 
     1. prompt 里除了 {criterion}/{description}/{A}/{B}，还可以使用：
-       - {question}: 原始视觉问题；
-       - {image_path}: 图片路径，主要用于日志或显式提醒模型。
+       - {question}: 原始视觉问题。
 
     2. 当样本带有 image_path 时，worker 收到的 user content 不再是纯字符串，
        而是 OpenAI 兼容的多模态内容：
@@ -586,6 +585,19 @@ class MultiModalPairEvaluator(PairEvaluator):
         question_field: str = "question",
         encode_local_image: bool = True,
     ) -> None:
+        # 验证数据格式：每条样本必须有非空的 image_field 和 question_field。
+        for idx, data in enumerate(dataset):
+            image_value = data.get(image_field)
+            question_value = data.get(question_field)
+            if not isinstance(image_value, str) or not image_value.strip():
+                raise ValueError(
+                    f"multimodal_pair requires a non-empty {image_field!r} at row {idx + 1}"
+                )
+            if not isinstance(question_value, str) or not question_value.strip():
+                raise ValueError(
+                    f"multimodal_pair requires a non-empty {question_field!r} at row {idx + 1}"
+                )
+
         # 先初始化父类。父类会检查 worker_prompt 至少包含
         # {criterion}/{description}/{A}/{B} 四个占位符。
         super().__init__(
@@ -632,19 +644,17 @@ class MultiModalPairEvaluator(PairEvaluator):
 
         与 PairEvaluator._make_prompt 相比，这里多替换了：
         - {question}
-        - {image_path}
 
         图片本体不会拼进文本；真正的图片会在 _make_user_content() 中作为
-        image_url content 传给模型。
+        image_url content 传给模型。image_path 只用于读取/发送图片，不作为文本
+        提示词暴露给 worker。
         """
         a = data["A"][: self.max_data_chars] if self.max_data_chars else data["A"]
         b = data["B"][: self.max_data_chars] if self.max_data_chars else data["B"]
         question = data.get(self.question_field, "")
-        image_path = data.get(self.image_field, "")
 
-        # 避免 question/image_path 为 None、Path 或其他类型时 replace 报错。
+        # 避免 question 为 None、Path 或其他类型时 replace 报错。
         question = "" if question is None else str(question)
-        image_path = "" if image_path is None else str(image_path)
 
         prompt = (
             self.worker_prompt.replace("{criterion}", criterion.name)
@@ -652,7 +662,7 @@ class MultiModalPairEvaluator(PairEvaluator):
             .replace("{A}", a)
             .replace("{B}", b)
             .replace("{question}", question)
-            # .replace("{image_path}", image_path)  # 这里不把 image_path 拼进 prompt，避免模型直接把路径当成文本内容分析，而是通过 image_url content 真正传图片
+            .replace("{image_path}", "")
         )
         prompt += self.worker_prompt_postfix
         # postfix 会要求 worker 按 JSON 返回 thought 和 answer，供 parse_json 解析。
@@ -923,7 +933,7 @@ def get_evaluator_cls_from_dataset(dataset: Sequence[dict]):
 def _demo_multimodal_pair_evaluator():
     """本地自测 MultiModalPairEvaluator 的 prompt/content 构造。
     1. 能从 RLHF-V pair JSONL 里读到一条样本；
-    2. 能把 {question}/{image_path}/{A}/{B} 填进文本 prompt；
+    2. 能把 {question}/{A}/{B} 填进文本 prompt；
     3. 如果 image_path 存在，能生成 OpenAI 兼容的 text + image_url content。
     4. 使用 vllm 服务本地模型时，能正确把 content 传给 Agent，并得到响应。
 
