@@ -7,7 +7,8 @@
 2. RLHF-V 的 A/B 是同一个视觉问题下的两个候选回答，所以脚本会保留顶层
    `question` 和 `image_path`，并交给 MultiModalPairEvaluator 传给 VLM。
 3. 定义 RLHF-V 专用的 manager / worker / warmup prompt。
-4. 用 90 条 discovery 数据中的 60 条优化 criteria，30 条做观察验证。
+4. 用 90 条 discovery pair 数据优化 criteria；从 heldout validation pair 数据中随机抽 100 条做过程观察。
+5. 最后用完整 heldout validation 500 条样本做最终评估。
 
 注意：manager 仍然只处理文本 prompt；真正需要看图的是 worker evaluator。
 图片本体由 MultiModalPairEvaluator 读取 `image_path` 并编码成 VLM 可接收的
@@ -32,7 +33,7 @@ from critiq import (
 
 
 # 任务名会用在输出目录里，例如 ./output/rlhfv。
-TASK_NAME = "rlhfv_epx1_demo"
+TASK_NAME = "rlhfv_exp2_dis90_val100_wp-final-heldout500_e5"
 
 # manager 最终要维护多少条评价标准。这里先按需求设成 5，方便快速试跑。
 N_CRITERIA = 5
@@ -50,7 +51,16 @@ SEED = 42
 DATA_DIR = Path("./data/RLHF-V")
 
 # 由 data/RLHF-V/convert_to_pair.py 生成的 CritiQ pair 数据。
-PAIR_DATA_PATH = DATA_DIR / "discovery_train_90_pair.jsonl"
+# discovery 90 条只用于 criteria 优化，避免把 heldout 数据混进训练循环。
+TRAIN_PAIR_DATA_PATH = DATA_DIR / "discovery_train_90_pair.jsonl"
+
+# heldout 500 条用于观察验证和最终评估：
+# - 优化过程中只随机抽 50 条作为 valid_set，降低每轮 API 成本；
+# - 最后再用完整 500 条做一次 final evaluation。
+HELDOUT_PAIR_DATA_PATH = DATA_DIR / "heldout_validation_500_pair.jsonl"
+
+# 从 heldout validation 中固定随机抽取多少条作为优化过程中的观察集。
+VALID_SIZE = 100
 
 # 当前任务的所有日志、checkpoint、criteria 都会写到这个目录。
 OUTPUT_DIR = Path("./output") / TASK_NAME
@@ -290,24 +300,38 @@ def main() -> None:
     os.environ["WORKFLOW_AGENT_LOGFILE"] = str(OUTPUT_DIR / "workflow_agent.log")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # 读取 pair 数据，并把 question 拼回 A/B。最后每条样本仍然符合 CritiQ 的格式：
+    # 读取 pair 数据，并把 question/image_path 保留下来。最后每条样本仍然符合 CritiQ 的格式：
     # {"A": "...", "B": "...", "answer": "A" 或 "B"}
-    dataset = load_rlhfv_pair_data(PAIR_DATA_PATH)
-    random.shuffle(dataset)
+    train_set = load_rlhfv_pair_data(TRAIN_PAIR_DATA_PATH)
+    heldout_set = load_rlhfv_pair_data(HELDOUT_PAIR_DATA_PATH)
 
-    # 90 条 discovery 数据里：
-    # - train_set: 前 50 条，用于优化 criteria；
-    # - valid_set: 后 40 条，只用于观察泛化，不参与当前轮 criteria 改写。
-    train_set = dataset[:50]
-    valid_set = dataset[50:90]
+    if len(heldout_set) < VALID_SIZE:
+        raise ValueError(
+            f"Need at least {VALID_SIZE} heldout samples, got {len(heldout_set)}"
+        )
 
-    print(f"Loaded RLHF-V pairs: train={len(train_set)}, valid={len(valid_set)}")
+    # valid_set 只用于每轮优化后的过程观察，不参与 criteria 改写。
+    # 使用局部 RNG 可以保证抽样稳定，同时不影响 workflow 内部可能使用的 random 状态。
+    valid_set = random.Random(SEED).sample(heldout_set, VALID_SIZE)
+
+    print(
+        "Loaded RLHF-V pairs: "
+        f"train={len(train_set)}, valid={len(valid_set)}, heldout={len(heldout_set)}"
+    )
 
     # evaluator 负责把一组 criteria 应用到 valid_set 上，并计算准确率。
     # MultiModalPairEvaluator 会把 image_path 对应图片编码成 image_url 发给 VLM。
     evaluator = MultiModalPairEvaluator(
         WORKER_ARGS,
         dataset=valid_set,
+        max_concurrent=MAX_CONCURRENT,
+        max_retries=MAX_RETRIES,
+        worker_prompt=WORKER_PROMPT,
+    )
+
+    final_evaluator = MultiModalPairEvaluator(
+        WORKER_ARGS,
+        dataset=heldout_set,
         max_concurrent=MAX_CONCURRENT,
         max_retries=MAX_RETRIES,
         worker_prompt=WORKER_PROMPT,
@@ -358,10 +382,14 @@ def main() -> None:
         max_retrived=None,
     )
 
-    # warmup 后先在 valid_set 上观察初始 criteria 的表现。这里 update_score=False，
-    # 因为只是观察泛化表现，不想用 valid_set 分数更新 criterion 内部 score。
-    eval_output = evaluator.eval(workflow.current_criteria, update_score=False)
-    print("After warm up:", eval_output.accuracy, eval_output.is_correct)
+    # warmup 后先在 500-final-heldout_set 上观察初始 criteria 的表现,最后看提高多少。
+    # 这里 update_score=False，
+    eval_output = final_evaluator.eval(workflow.current_criteria, update_score=False)
+    print("### After warm up (500-heldout evaluation):", eval_output.accuracy, eval_output.is_correct)
+    print(
+        "### After warm up (500-heldout per-criterion accuracy):",
+        json.dumps(eval_output.per_criterion_acc, indent=4, ensure_ascii=False),
+    )
 
     # 保存初始化后的状态，文件名类似 ./output/rlhfv/epoch_init.json。
     workflow.save(str(OUTPUT_DIR), "init", None)
@@ -392,9 +420,19 @@ def main() -> None:
     )
 
     # 最终评估只使用历史上 score >= 0.6 的 best criteria。
+    # 这里不再复用只含 100 条样本的 valid evaluator，而是在完整 heldout 500 条上做 final evaluation。
     # 如果这里为空，说明阈值太严或训练样本太少，可以临时调低 get_best_criteria 的阈值。
-    eval_output = evaluator.eval(workflow.get_best_criteria(0.6), update_score=False)
-    print("Final:", eval_output.accuracy, eval_output.is_correct)
+    best_criteria = workflow.get_best_criteria(0.6)
+    print(
+        "### Final eval criteria:",
+        [criterion.name for criterion in best_criteria],
+    )
+    eval_output = final_evaluator.eval(best_criteria, update_score=False)
+    print("### Final 500-heldout evaluation:", eval_output.accuracy, eval_output.is_correct)
+    print(
+        "### Final 500-heldout per-criterion accuracy:",
+        json.dumps(eval_output.per_criterion_acc, indent=4, ensure_ascii=False),
+    )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,98 @@
+{
+    "manager_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "api_keys": "EMPTY",
+        "base_url": "http://localhost:8000/v1",
+        "request_kwargs": {
+            "temperature": 1.0
+        }
+    },
+    "worker_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "base_url": "http://localhost:8000/v1",
+        "api_keys": "EMPTY",
+        "request_kwargs": {
+            "temperature": 0.5
+        }
+    },
+    "worker_max_concurrent": 20,
+    "current_criteria": [
+        {
+            "name": "calibrated_uncertainty",
+            "description": "Calibrated uncertainty evaluates whether the answer appropriately signals uncertainty — using phrases like 'I’m not sure,' 'possibly,' or 'based on what’s visible, it seems...' — only when the visual evidence is genuinely ambiguous, insufficient, or inconclusive. It does NOT apply when the visual evidence is clear and unambiguous, or when the answer is factually correct and confidently grounded. It also does NOT apply to hallucinated or factually incorrect claims — those are evaluated under factual consistency. The criterion is only relevant when the answer is factually consistent with the image and visually grounded, and the worker must first verify that the answer is correct before assessing whether the uncertainty signal is calibrated. A well-calibrated answer may be vague or cautious when visual evidence is limited, but over-hedging (e.g., using uncertainty for clear claims) or under-hedging (e.g., confidently asserting an ambiguous claim) is penalized. Uncertainty must be proportionate to visual ambiguity — not used to mask factual errors or to justify unsupported inferences. The criterion is inapplicable if the answer contains hallucinated details, is factually wrong, or if the visual evidence is clearly sufficient to support a confident claim. Workers should prioritize factual correctness and visual grounding before applying this criterion, and should not use it to evaluate stylistic vagueness or interpretive speculation unless visually ambiguous. Evaluation: Check if uncertainty was signaled only when visually warranted and not overused in clear cases or underused in ambiguous ones.",
+            "score": 0
+        },
+        {
+            "name": "completeness_and_specificity",
+            "description": "This criterion evaluates whether an answer fully and precisely addresses the visual content relevant to the question, using only verifiable, directly observable details from the image. Completeness means covering all visually relevant aspects of the question without omitting clearly visible elements critical to the answer. Specificity is rewarded only when it enhances clarity or precision by referencing verifiable visual attributes (e.g., object position, color, texture, count, spatial relationships) — and never for speculative, inferred, or hallucinated details (e.g., sounds, emotions, internal states, or non-visible objects). Factual consistency with the image is a mandatory precondition: if an answer contains any hallucination or misrepresentation, it is automatically disqualified from evaluation under this criterion and must be assessed under 'factual_consistency_with_the_image'. If both answers are factually correct, the one that is more complete and specific (without hallucination) is preferred. Ambiguity in the image (e.g., partial occlusion, lighting) does not justify penalizing completeness or specificity — only hallucination or omission of visible, relevant elements. This criterion is inapplicable if the answer is factually incorrect or hallucinated. Workers must evaluate only factually grounded answers — and should not reward verbosity, aesthetic interpretation, or speculative inference unless it is visually supported. Completeness does not require exhaustive listing of every visual detail — only coverage of all elements relevant to answering the question. Specificity must be grounded in visible evidence — not inferred context or plausible but unsupported claims. Example: describing a ‘blue couch with patterned fabric’ is specific and complete if visible; saying ‘the couch is comfortable’ is acceptable if the texture implies comfort — but saying ‘the cat is purring’ is hallucination and disqualified. The goal is visual fidelity, not stylistic richness or inferential depth — and hallucination is defined as any claim not visually supported, regardless of plausibility.",
+            "score": 0
+        },
+        {
+            "name": "factual_consistency_with_the_image",
+            "description": "The answer must strictly align with what is visually verifiable in the image — including object presence, spatial relationships, attributes, and actions — without introducing hallucinated details, even if they are plausible. Hallucinations are defined as claims that assert the existence or attribute of something not visible, or that contradict clearly visible evidence. Minor mislabeling (e.g., ‘umpire’ vs. ‘referee’) is acceptable if the visual entity is confirmed and the label is contextually plausible. The criterion does not penalize omission of visible details or ambiguity — only false or unsupported assertions. When visual evidence is ambiguous or insufficient to support a claim, the answer should express uncertainty (e.g., ‘possibly,’ ‘not clearly visible,’ ‘ambiguous’) rather than assert a definitive claim. The criterion applies only to claims about observable visual content — not subjective interpretations, inferred user intent, or contextual knowledge not grounded in the image. It does not apply to questions that explicitly invite inference or interpretation beyond visual evidence (e.g., ‘What might the person be thinking?’). Visual inferences are allowed if strongly implied by visual context (e.g., posture, proximity, hand placement) and supported by the image — such as inferring a person is holding an object based on their hand position — as long as they do not invent non-visible elements. Uncertainty should be expressed only when visually ambiguous, not when the inference is plausible. The criterion penalizes hallucinations, not misinterpretations or reasonable semantic variations (e.g., ‘couch’ vs. ‘sofa’), as long as the visual entity is confirmed. If both candidates contain hallucinations, the answer with fewer hallucinations or the one that is more cautious and visually aligned (e.g., using ‘appears to be,’ ‘possibly’) should be preferred. The criterion is inapplicable for questions inviting aesthetic judgment, metaphor, or non-visual interpretation unless the claim is visually fabricated. Evaluation: cross-check every claim against the image — if a claim is visually unsupported, penalize; if visually ambiguous, reward uncertainty; if visually verifiable, reward accuracy. Do not penalize for descriptive richness, plausible inference, or contextual interpretation as long as it is grounded in visual cues and does not fabricate visual elements.",
+            "score": 0
+        },
+        {
+            "name": "visual_grounding",
+            "description": "Visual grounding evaluates whether an answer strictly adheres to what is visually verifiable in the image — defined as elements directly observable, inferable from clear visual structure (e.g., bounding boxes, spatial relationships, textures, colors), or reasonably implied by contextual cues (e.g., ‘indoor’ from visible walls). It rewards descriptions that accurately reflect visible objects, attributes, positions, and interactions without inventing, mislabeling, or over-claiming non-visible elements — even if those claims are plausible or contextually reasonable. Hallucination is defined as any assertion that contradicts visual evidence or adds non-visible content (e.g., ‘smiling’ when no face is visible, ‘a traffic light’ when none is shown, or miscounting). The criterion does not penalize reasonable semantic interpretation (e.g., calling a can ‘packaging’ or a statue ‘bent legs’) or contextually supported inferences (e.g., ‘holding hands’ if hands are visible) — as long as no non-visible elements are invented. It also does not penalize omission of non-critical or ambiguous details — only false or unsupported claims. Ambiguity in the image (e.g., partial objects, occlusions) should not be used to justify hallucinations; instead, workers should select the answer most consistent with observable evidence, even if it is cautious or less specific. The criterion does not apply to non-visual questions, abstract interpretations, or opinion-based answers. To evaluate: verify each claim against the image — if a claim is visually unsupported, it is a hallucination and penalized; if it is inferable from visual structure or context, it is acceptable — even if interpretive. Workers must avoid conflating ‘plausibility’ with ‘grounding’ — grounding is about visual evidence, not logic or common sense. The goal is fidelity to the image, not literalness or exhaustiveness. If two answers are equally grounded, prefer the one with fewer hallucinations or the more conservative interpretation. If both are hallucinated, prefer the less confident or more cautious one.",
+            "score": 0
+        },
+        {
+            "name": "question_relevance",
+            "description": "This criterion is being removed as per instructions, since its accuracy is below 0.6. The original description is retained for archival purposes but will not be included in the final criteria list.",
+            "score": 0
+        }
+    ],
+    "banned_criteria": [
+        "avoidance_of_hallucinated_visual_details",
+        "language_clarity_and_coherence",
+        "question_relevance"
+    ],
+    "all_criteria": [
+        {
+            "name": "visual_grounding",
+            "description": "The answer must accurately reflect what is visible in the image — including objects, their positions, colors, textures, and spatial relationships. It should not invent or misrepresent visual elements. This is evaluated by checking whether the description matches the image directly, without over-interpreting or omitting key visual features.",
+            "score": 0.6625
+        },
+        {
+            "name": "question_relevance",
+            "description": "The answer must directly address the question asked, without drifting into irrelevant topics or tangential interpretations. This is evaluated by checking whether the response’s focus aligns with the question’s intent — e.g., if the question asks about arrangement, the answer should describe arrangement, not backstory or unrelated properties.",
+            "score": 0.5432098765432098
+        },
+        {
+            "name": "factual_consistency_with_the_image",
+            "description": "The answer must be consistent with the visual evidence — e.g., if an object is not present, it should not be claimed to be there; if an object’s position is ambiguous, the answer should not assert a definitive location. This is evaluated by cross-referencing each claim in the answer with what is visibly present or absent in the image.",
+            "score": 0.6533333333333333
+        },
+        {
+            "name": "avoidance_of_hallucinated_visual_details",
+            "description": "The answer must not include details that are not visible or verifiable in the image — such as object attributes, actions, or relationships not supported by the visual evidence. This is evaluated by flagging any unsupported claims, especially those that introduce speculative or fabricated elements (e.g., “the cat is purring,” “the sky is blue,” when not visible).",
+            "score": 0.547945205479452
+        },
+        {
+            "name": "completeness_and_specificity",
+            "description": "The answer should be thorough enough to cover the question’s scope without being overly verbose, and should include specific, observable details rather than vague or generic statements. This is evaluated by checking whether the answer includes concrete, descriptive details (e.g., “the dog is on the left side of the bed,” rather than “the dog is there”) and whether it omits important visual information.",
+            "score": 0.6436781609195402
+        },
+        {
+            "name": "calibrated_uncertainty",
+            "description": "The answer should appropriately signal when it is uncertain — for example, by using phrases like 'I’m not sure,' 'possibly,' or 'based on what’s visible, it seems...' — without over-claiming confidence when the visual evidence is ambiguous or incomplete. This is evaluated by checking whether the response avoids overconfidence in ambiguous cases and whether it explicitly acknowledges uncertainty when warranted, without unnecessarily hedging in clear cases.",
+            "score": 0.6486486486486487
+        },
+        {
+            "name": "language_clarity_and_coherence",
+            "description": "The answer must be grammatically correct, syntactically clear, and logically structured — avoiding jargon, ambiguity, or confusing phrasing that could mislead the reader. This is evaluated by assessing whether the language is easy to understand, free of redundancy or contradictions, and conveys the intended meaning without requiring interpretation or inference beyond what’s visually supported.",
+            "score": 0.4772727272727273
+        }
+    ],
+    "n_criteria": 5,
+    "manager_prompt": "List and describe 5 criteria for how human annotators compare the quality of two answers to the same visual question.\n\nThe task is RLHF-V style preference comparison for visual question answering and image-text responses. The worker model will receive:\n- the image,\n- the source question,\n- candidate answer A,\n- candidate answer B.\n\nFocus on human preference factors such as visual grounding, question relevance, factual consistency with the image, avoidance of hallucinated visual details, completeness, specificity, calibrated uncertainty, and clear language.",
+    "manager_prompt_postfix": "\n\nYour response should be in the following **json** format:\n```json\n{\n    \"name_of_the_criterion\": \"Detailed description for the criterion such as what it is, how it can be evaluated, when it is applicable, or other relevant information... Be specific and detailed while keep concise.\",\n    ...\n}\n```",
+    "worker_prompt": "## Instruction\nYou are judging an RLHF-V visual QA / image-text preference pair under one criterion. You are given the image, the source question, and two candidate answers.\n\nUse the image when the criterion depends on visual evidence. If the criterion is not applicable to this pair, answer None.\n\n## Question\n{question}\n\n## Criterion\n**{criterion}**: {description}\n\n## Candidate A\n{A}\n\n## Candidate B\n{B}\n\nWhich candidate better matches the criterion and is more likely to align with human preference?",
+    "evaluator_type": "multimodal_pair",
+    "evaluator_kwargs": {
+        "image_field": "image_path",
+        "question_field": "question",
+        "encode_local_image": true
+    }
+}

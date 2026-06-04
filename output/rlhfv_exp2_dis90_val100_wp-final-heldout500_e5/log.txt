@@ -1,0 +1,1403 @@
+(critiq) PS D:\3-Work\02-DD-LLM\CritiQ> python .\demo_rlhfv.py
+Setting workflow prompt language to `Language.ENGLISH`. You can change this by setting the WORKFLOW_LANG environment variable.
+Loaded RLHF-V pairs: train=90, valid=100, heldout=500
+0it [00:00, ?it/s]
+Retrieved 0 criteria from knowledge base.
+Generating 5 new criteria
+Warming up: 100%|████████████████████████████████████████████████████████████████████████| 5/5 [01:10<00:00, 14.08s/it]
+```json
+{
+    "visual_grounding": "The answer must accurately reflect what is visible in the image — including objects, their positions, colors, textures, and spatial relationships. It should not invent or misrepresent visual elements. This is evaluated by checking whether the description matches the image directly, without over-interpreting or omitting key visual features.",
+    "question_relevance": "The answer must directly address the question asked, without drifting into irrelevant topics or tangential interpretations. This is evaluated by checking whether the response’s focus aligns with the question’s intent — e.g., if the question asks about arrangement, the answer should describe arrangement, not backstory or unrelated properties.",
+    "factual_consistency_with_the_image": "The answer must be consistent with the visual evidence — e.g., if an object is not present, it should not be claimed to be there; if an object’s position is ambiguous, the answer should not assert a definitive location. This is evaluated by cross-referencing each claim in the answer with what is visibly present or absent in the image.",
+    "avoidance_of_hallucinated_visual_details": "The answer must not include details that are not visible or verifiable in the image — such as object attributes, actions, or relationships not supported by the visual evidence. This is evaluated by flagging any unsupported claims, especially those that introduce speculative or fabricated elements (e.g., “the cat is purring,” “the sky is blue,” when not visible).",
+    "completeness_and_specificity": "The answer should be thorough enough to cover the question’s scope without being overly verbose, and should include specific, observable details rather than vague or generic statements. This is evaluated by checking whether the answer includes concrete, descriptive details (e.g., “the dog is on the left side of the bed,” rather than “the dog is there”) and whether it omits important visual information."
+}
+```
+100%|██████████████████████████████████████████████████████████████████████████████| 2500/2500 [30:56<00:00,  1.35it/s]
+### After warm up (500-heldout evaluation): 0.644 [False, True, True, True, True, False, True, True, False, False, False, False, True, True, True, True, True, True, True, True, False, False, True, False, True, True, True, True, True, True, True, True, False, True, False, True, True, False, False, True, False, True, True, False, True, True, True, True, True, True, True, False, True, True, False, False, False, False, False, True, True, False, True, False, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, False, True, False, False, True, False, False, True, False, False, False, True, False, False, True, True, True, False, False, True, True, True, True, False, True, True, True, False, True, True, True, True, False, True, True, True, True, True, True, False, False, False, False, True, True, False, False, True, False, True, True, True, True, True, True, False, False, True, True, False, True, True, True, True, False, False, True, False, True, True, True, False, False, True, True, False, True, True, False, True, False, True, True, True, True, True, False, False, True, False, False, False, False, False, True, True, False, True, True, True, False, True, False, True, True, False, False, True, True, True, False, False, True, True, False, True, False, True, False, True, True, True, True, True, False, True, False, True, False, True, True, True, True, True, True, True, True, False, False, True, True, True, True, True, True, False, True, False, True, False, True, True, False, True, True, True, False, True, False, False, False, True, False, True, True, False, False, True, False, True, True, True, False, True, True, True, False, False, True, True, False, False, True, True, False, False, True, True, True, False, False, False, True, True, True, True, True, False, True, True, True, True, True, False, True, True, True, False, True, True, False, True, True, False, False, False, False, False, True, True, True, True, False, True, True, True, False, True, False, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, False, False, True, True, True, False, True, True, True, True, True, True, True, False, True, True, False, False, True, True, True, True, False, False, False, True, False, False, True, True, True, False, True, True, True, False, True, False, True, False, False, False, True, True, True, False, False, True, True, False, False, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, False, True, True, False, True, True, True, False, True, False, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, False, False, False, False, True, True, True, False, True, True, True, True, True, True, False, False, True, False, True, False, True, True, False, True, True, True, True, True, True, True, True, True, True, False, False, False, False, False, False, True, False, True, False, True, False, True, True, True, True, False, True, True, True, True, True, True, False, False, False, False, False, True, True, False, False, False, True, False, True, True, False, False, True, True, False, False, False, False, True, True, True]
+### After warm up (500-heldout per-criterion accuracy): {
+    "visual_grounding": 0.6997690531177829,
+    "question_relevance": 0.5785876993166287,
+    "factual_consistency_with_the_image": 0.7219730941704036,
+    "avoidance_of_hallucinated_visual_details": 0.6421319796954315,
+    "completeness_and_specificity": 0.6846652267818575
+}
+## Iteration 0
+100%|████████████████████████████████████████████████████████████████████████████████| 450/450 [09:44<00:00,  1.30s/it]
+Train: 0.5777777777777777 [True, True, True, False, False, True, False, True, False, True, False, False, False, False, True, True, False, True, False, True, False, False, True, True, True, False, False, True, False, False, True, True, False, True, True, True, False, False, False, True, False, True, True, True, True, True, False, False, True, True, True, True, False, True, False, True, True, False, False, True, True, False, True, True, False, True, True, True, True, True, True, False, False, False, False, True, False, True, False, True, True, True, False, True, True, True, True, False, True, False]
++------------------------------------------+------+--------------------+
+|                Criterion                 | Type |      Accuracy      |
++------------------------------------------+------+--------------------+
+| avoidance_of_hallucinated_visual_details | Low  | 0.547945205479452  |
+|       completeness_and_specificity       | Mid  | 0.6436781609195402 |
+|    factual_consistency_with_the_image    | Mid  | 0.6533333333333333 |
+|            question_relevance            | Low  | 0.5432098765432098 |
+|             visual_grounding             | Mid  |       0.6625       |
++------------------------------------------+------+--------------------+
+
+
+#### Mid
+Reflection: 100%|██████████████████████████████████████████████████████████████████████| 84/84 [08:15<00:00,  5.90s/it]
+Optimization: 100%|██████████████████████████████████████████████████████████████████████| 3/3 [00:19<00:00,  6.36s/it]
++------------------------------------+----------------------------------------------------+----------------------------------------------------+
+|             Criterion              | Old                                                | New                                                |
++------------------------------------+----------------------------------------------------+----------------------------------------------------+
+|    completeness_and_specificity    | The answer should be thorough enough to cover the  | The answer must be factually grounded in the       |
+|                                    | question’s scope without being overly verbose, and | visual evidence and cover all relevant visual      |
+|                                    | should include specific, observable details rather | aspects of the question without omitting key       |
+|                                    | than vague or generic statements. This is          | observable details. Specificity is rewarded only   |
+|                                    | evaluated by checking whether the answer includes  | when it enhances clarity and precision using       |
+|                                    | concrete, descriptive details (e.g., “the dog is   | directly verifiable elements from the image (e.g., |
+|                                    | on the left side of the bed,” rather than “the dog | object position, color, texture, spatial           |
+|                                    | is there”) and whether it omits important visual   | relationships) — not by inventing, exaggerating,   |
+|                                    | information.                                       | or hallucinating details. Completeness means       |
+|                                    |                                                    | addressing the full scope of the question without  |
+|                                    |                                                    | adding speculative or irrelevant elaborations.     |
+|                                    |                                                    | This criterion is inapplicable if the answer is    |
+|                                    |                                                    | factually incorrect or hallucinated — factual      |
+|                                    |                                                    | consistency must be verified first. Evaluate by    |
+|                                    |                                                    | comparing how well each answer describes visible   |
+|                                    |                                                    | elements accurately and exhaustively, prioritizing |
+|                                    |                                                    | verifiable detail over verbosity or aesthetic      |
+|                                    |                                                    | interpretation. Penalize answers that add          |
+|                                    |                                                    | unsupported specifics (e.g., ‘the cat is purring’  |
+|                                    |                                                    | when no sound is visible) or omit critical visual  |
+|                                    |                                                    | information relevant to the question.              |
+| factual_consistency_with_the_image | The answer must be consistent with the visual      | The answer must strictly align with what is        |
+|                                    | evidence — e.g., if an object is not present, it   | visually verifiable in the image — including       |
+|                                    | should not be claimed to be there; if an object’s  | object presence, spatial relationships,            |
+|                                    | position is ambiguous, the answer should not       | attributes, and actions — without introducing      |
+|                                    | assert a definitive location. This is evaluated by | hallucinated details, even if they are plausible.  |
+|                                    | cross-referencing each claim in the answer with    | It is evaluated by cross-checking each claim       |
+|                                    | what is visibly present or absent in the image.    | against the image: if a claim is visually          |
+|                                    |                                                    | unsupported, it is a hallucination and penalized;  |
+|                                    |                                                    | if visually ambiguous, the answer should express   |
+|                                    |                                                    | uncertainty (e.g., ‘possibly,’ ‘not clearly        |
+|                                    |                                                    | visible,’ ‘ambiguous’) rather than assert a        |
+|                                    |                                                    | definitive claim. The criterion applies only to    |
+|                                    |                                                    | claims about observable visual content — not       |
+|                                    |                                                    | subjective interpretations, inferred user intent,  |
+|                                    |                                                    | or contextual knowledge not grounded in the image. |
+|                                    |                                                    | Minor mislabeling (e.g., ‘umpire’ vs. ‘referee’)   |
+|                                    |                                                    | is acceptable if the visual entity is confirmed.   |
+|                                    |                                                    | The criterion does not penalize omission of        |
+|                                    |                                                    | visible details or ambiguity; it only penalizes    |
+|                                    |                                                    | false or unsupported assertions. When in doubt,    |
+|                                    |                                                    | prioritize visual fidelity over speculative or     |
+|                                    |                                                    | stylistic interpretation. This criterion is        |
+|                                    |                                                    | inapplicable if the question explicitly invites    |
+|                                    |                                                    | inference or interpretation beyond visual evidence |
+|                                    |                                                    | (e.g., ‘What might the person be thinking?’).      |
+|          visual_grounding          | The answer must accurately reflect what is visible | Visual grounding evaluates whether the answer      |
+|                                    | in the image — including objects, their positions, | accurately reflects only what is visibly present   |
+|                                    | colors, textures, and spatial relationships. It    | or explicitly absent in the image — no             |
+|                                    | should not invent or misrepresent visual elements. | hallucinated, inferred, or speculative details     |
+|                                    | This is evaluated by checking whether the          | (e.g., ‘smiling’, ‘leather jacket’, ‘Iberian ham’, |
+|                                    | description matches the image directly, without    | or ‘cut in half’) — even if they seem plausible or |
+|                                    | over-interpreting or omitting key visual features. | contextually reasonable. It rewards descriptions   |
+|                                    |                                                    | that match observable objects, positions, colors,  |
+|                                    |                                                    | textures, and spatial relationships, including     |
+|                                    |                                                    | minor or background elements, and penalizes both   |
+|                                    |                                                    | omission of clearly visible elements and addition  |
+|                                    |                                                    | of non-verifiable attributes. The criterion does   |
+|                                    |                                                    | not apply when the answer makes no visual          |
+|                                    |                                                    | reference (e.g., opinion-based or abstract         |
+|                                    |                                                    | responses) or when the question is non-visual.     |
+|                                    |                                                    | Workers must verify claims against the image       |
+|                                    |                                                    | directly — no external assumptions or real-world   |
+|                                    |                                                    | knowledge should override visual evidence.         |
+|                                    |                                                    | Ambiguity in the image (e.g., partial objects)     |
+|                                    |                                                    | should not be used to justify hallucinations;      |
+|                                    |                                                    | instead, workers should select the answer most     |
+|                                    |                                                    | consistent with observable features. Inferences    |
+|                                    |                                                    | (e.g., ‘likely a picnic table’) are allowed only   |
+|                                    |                                                    | if directly supported by visual cues, not by       |
+|                                    |                                                    | conceptual assumptions. The criterion does not     |
+|                                    |                                                    | penalize reasonable semantic interpretation (e.g., |
+|                                    |                                                    | calling a can a ‘packaging box’) or contextual     |
+|                                    |                                                    | inferences (e.g., inferring posture from shape),   |
+|                                    |                                                    | as long as no non-visible elements are invented.   |
+|                                    |                                                    | The goal is fidelity to visual evidence — not      |
+|                                    |                                                    | literalness or verbosity — and hallucinations are  |
+|                                    |                                                    | defined as any non-visual, unsupported claims,     |
+|                                    |                                                    | including mislabeling, miscounting, or omitting    |
+|                                    |                                                    | visible elements. Workers should flag cases where  |
+|                                    |                                                    | the image lacks sufficient detail to support       |
+|                                    |                                                    | claims, but not when the answer is cautious or     |
+|                                    |                                                    | inferential based on visible cues.                 |
++------------------------------------+----------------------------------------------------+----------------------------------------------------+
+
+#### Low
+avoidance_of_hallucinated_visual_details, question_relevance
++--------------------------------+------------------------------------------------------------------------------------------------------+
+|           Criterion            | Description                                                                                          |
++--------------------------------+------------------------------------------------------------------------------------------------------+
+|     calibrated_uncertainty     | The answer should appropriately signal when it is uncertain — for example, by using phrases like     |
+|                                | 'I’m not sure,' 'possibly,' or 'based on what’s visible, it seems...' — without over-claiming        |
+|                                | confidence when the visual evidence is ambiguous or incomplete. This is evaluated by checking        |
+|                                | whether the response avoids overconfidence in ambiguous cases and whether it explicitly acknowledges |
+|                                | uncertainty when warranted, without unnecessarily hedging in clear cases.                            |
+| language_clarity_and_coherence | The answer must be grammatically correct, syntactically clear, and logically structured — avoiding   |
+|                                | jargon, ambiguity, or confusing phrasing that could mislead the reader. This is evaluated by         |
+|                                | assessing whether the language is easy to understand, free of redundancy or contradictions, and      |
+|                                | conveys the intended meaning without requiring interpretation or inference beyond what’s visually    |
+|                                | supported.                                                                                           |
++--------------------------------+------------------------------------------------------------------------------------------------------+
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [15:21<00:00,  1.84s/it]
+Accuracy: 0.71
+Correct: [True, True, True, True, True, False, True, True, True, False, False, False, True, True, True, True, False, True, True, True, False, False, True, True, True, True, True, True, True, False, False, True, True, True, True, True, True, True, True, True, True, False, True, False, True, True, True, True, False, False, True, True, True, True, True, False, True, True, False, True, True, True, False, True, False, False, False, False, False, True, True, True, False, False, True, True, True, True, True, True, True, True, True, False, False, True, False, True, True, False, True, False, False, True, True, True, True, True, True, True]
+{
+    "completeness_and_specificity": {
+        "Accuracy": 0.7052631578947368,
+        "Refuse to Respond": "0.05 (5)"
+    },
+    "factual_consistency_with_the_image": {
+        "Accuracy": 0.6923076923076923,
+        "Refuse to Respond": "0.09 (9)"
+    },
+    "visual_grounding": {
+        "Accuracy": 0.6813186813186813,
+        "Refuse to Respond": "0.09 (9)"
+    },
+    "calibrated_uncertainty": {
+        "Accuracy": 0.6555555555555556,
+        "Refuse to Respond": "0.1 (10)"
+    },
+    "language_clarity_and_coherence": {
+        "Accuracy": 0.631578947368421,
+        "Refuse to Respond": "0.05 (5)"
+    }
+}
+## Iteration 1
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 450/450 [11:37<00:00,  1.55s/it]
+Train: 0.5666666666666667 [True, True, False, False, False, True, True, True, True, True, False, False, False, False, True, True, False, False, False, True, False, False, True, True, True, False, False, True, False, False, True, True, False, True, False, True, True, False, False, True, False, True, True, True, True, True, True, False, True, True, True, True, False, True, False, True, True, False, False, True, True, False, True, True, False, True, False, True, True, True, True, False, False, False, True, True, False, True, True, True, True, False, False, False, True, True, False, False, True, False]
++------------------------------------+------+--------------------+
+|             Criterion              | Type |      Accuracy      |
++------------------------------------+------+--------------------+
+|       calibrated_uncertainty       | Mid  | 0.6486486486486487 |
+|    completeness_and_specificity    | Mid  |       0.6125       |
+| factual_consistency_with_the_image | Mid  | 0.6351351351351351 |
+|   language_clarity_and_coherence   | Low  | 0.4772727272727273 |
+|          visual_grounding          | Mid  | 0.6172839506172839 |
++------------------------------------+------+--------------------+
+
+
+#### Mid
+Reflection: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 115/115 [22:55<00:00, 11.96s/it]
+Optimization: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4/4 [00:35<00:00,  8.90s/it]
++------------------------------------+----------------------------------------------------+----------------------------------------------------+
+|             Criterion              | Old                                                | New                                                |
++------------------------------------+----------------------------------------------------+----------------------------------------------------+
+|       calibrated_uncertainty       | The answer should appropriately signal when it is  | Calibrated uncertainty evaluates whether the       |
+|                                    | uncertain — for example, by using phrases like     | answer appropriately signals uncertainty — using   |
+|                                    | 'I’m not sure,' 'possibly,' or 'based on what’s    | phrases like 'I’m not sure,' 'possibly,' or 'based |
+|                                    | visible, it seems...' — without over-claiming      | on what’s visible, it seems...' — only when the    |
+|                                    | confidence when the visual evidence is ambiguous   | visual evidence is genuinely ambiguous,            |
+|                                    | or incomplete. This is evaluated by checking       | insufficient, or inconclusive. It does NOT apply   |
+|                                    | whether the response avoids overconfidence in      | when the visual evidence is clear and unambiguous, |
+|                                    | ambiguous cases and whether it explicitly          | or when the answer is factually correct and        |
+|                                    | acknowledges uncertainty when warranted, without   | confidently grounded. It also does NOT apply to    |
+|                                    | unnecessarily hedging in clear cases.              | hallucinated or factually incorrect claims — those |
+|                                    |                                                    | are evaluated under factual consistency. The       |
+|                                    |                                                    | criterion is only relevant when the answer is      |
+|                                    |                                                    | factually consistent with the image and visually   |
+|                                    |                                                    | grounded, and the worker must first verify that    |
+|                                    |                                                    | the answer is correct before assessing whether the |
+|                                    |                                                    | uncertainty signal is calibrated. A well-          |
+|                                    |                                                    | calibrated answer may be vague or cautious when    |
+|                                    |                                                    | visual evidence is limited, but over-hedging       |
+|                                    |                                                    | (e.g., using uncertainty for clear claims) or      |
+|                                    |                                                    | under-hedging (e.g., confidently asserting an      |
+|                                    |                                                    | ambiguous claim) is penalized. Uncertainty must be |
+|                                    |                                                    | proportionate to visual ambiguity — not used to    |
+|                                    |                                                    | mask factual errors or to justify unsupported      |
+|                                    |                                                    | inferences. The criterion is inapplicable if the   |
+|                                    |                                                    | answer contains hallucinated details, is factually |
+|                                    |                                                    | wrong, or if the visual evidence is clearly        |
+|                                    |                                                    | sufficient to support a confident claim. Workers   |
+|                                    |                                                    | should prioritize factual correctness and visual   |
+|                                    |                                                    | grounding before applying this criterion, and      |
+|                                    |                                                    | should not use it to evaluate stylistic vagueness  |
+|                                    |                                                    | or interpretive speculation unless visually        |
+|                                    |                                                    | ambiguous. Evaluation: Check if uncertainty was    |
+|                                    |                                                    | signaled only when visually warranted and not      |
+|                                    |                                                    | overused in clear cases or underused in ambiguous  |
+|                                    |                                                    | ones.                                              |
+|    completeness_and_specificity    | The answer must be factually grounded in the       | This criterion evaluates whether an answer fully   |
+|                                    | visual evidence and cover all relevant visual      | and precisely addresses the visual content         |
+|                                    | aspects of the question without omitting key       | relevant to the question, using only verifiable,   |
+|                                    | observable details. Specificity is rewarded only   | directly observable details from the image.        |
+|                                    | when it enhances clarity and precision using       | Completeness means covering all visually relevant  |
+|                                    | directly verifiable elements from the image (e.g., | aspects of the question without omitting clearly   |
+|                                    | object position, color, texture, spatial           | visible elements critical to the answer.           |
+|                                    | relationships) — not by inventing, exaggerating,   | Specificity is rewarded only when it enhances      |
+|                                    | or hallucinating details. Completeness means       | clarity or precision by referencing verifiable     |
+|                                    | addressing the full scope of the question without  | visual attributes (e.g., object position, color,   |
+|                                    | adding speculative or irrelevant elaborations.     | texture, count, spatial relationships) — and never |
+|                                    | This criterion is inapplicable if the answer is    | for speculative, inferred, or hallucinated details |
+|                                    | factually incorrect or hallucinated — factual      | (e.g., sounds, emotions, internal states, or non-  |
+|                                    | consistency must be verified first. Evaluate by    | visible objects). Factual consistency with the     |
+|                                    | comparing how well each answer describes visible   | image is a mandatory precondition: if an answer    |
+|                                    | elements accurately and exhaustively, prioritizing | contains any hallucination or misrepresentation,   |
+|                                    | verifiable detail over verbosity or aesthetic      | it is automatically disqualified from evaluation   |
+|                                    | interpretation. Penalize answers that add          | under this criterion and must be assessed under    |
+|                                    | unsupported specifics (e.g., ‘the cat is purring’  | 'factual_consistency_with_the_image'. If both      |
+|                                    | when no sound is visible) or omit critical visual  | answers are factually correct, the one that is     |
+|                                    | information relevant to the question.              | more complete and specific (without hallucination) |
+|                                    |                                                    | is preferred. Ambiguity in the image (e.g.,        |
+|                                    |                                                    | partial occlusion, lighting) does not justify      |
+|                                    |                                                    | penalizing completeness or specificity — only      |
+|                                    |                                                    | hallucination or omission of visible, relevant     |
+|                                    |                                                    | elements. This criterion is inapplicable if the    |
+|                                    |                                                    | answer is factually incorrect or hallucinated.     |
+|                                    |                                                    | Workers must evaluate only factually grounded      |
+|                                    |                                                    | answers — and should not reward verbosity,         |
+|                                    |                                                    | aesthetic interpretation, or speculative inference |
+|                                    |                                                    | unless it is visually supported. Completeness does |
+|                                    |                                                    | not require exhaustive listing of every visual     |
+|                                    |                                                    | detail — only coverage of all elements relevant to |
+|                                    |                                                    | answering the question. Specificity must be        |
+|                                    |                                                    | grounded in visible evidence — not inferred        |
+|                                    |                                                    | context or plausible but unsupported claims.       |
+|                                    |                                                    | Example: describing a ‘blue couch with patterned   |
+|                                    |                                                    | fabric’ is specific and complete if visible;       |
+|                                    |                                                    | saying ‘the couch is comfortable’ is acceptable if |
+|                                    |                                                    | the texture implies comfort — but saying ‘the cat  |
+|                                    |                                                    | is purring’ is hallucination and disqualified. The |
+|                                    |                                                    | goal is visual fidelity, not stylistic richness or |
+|                                    |                                                    | inferential depth — and hallucination is defined   |
+|                                    |                                                    | as any claim not visually supported, regardless of |
+|                                    |                                                    | plausibility.                                      |
+| factual_consistency_with_the_image | The answer must strictly align with what is        | The answer must strictly align with what is        |
+|                                    | visually verifiable in the image — including       | visually verifiable in the image — including       |
+|                                    | object presence, spatial relationships,            | object presence, spatial relationships,            |
+|                                    | attributes, and actions — without introducing      | attributes, and actions — without introducing      |
+|                                    | hallucinated details, even if they are plausible.  | hallucinated details, even if they are plausible.  |
+|                                    | It is evaluated by cross-checking each claim       | Hallucinations are defined as claims that assert   |
+|                                    | against the image: if a claim is visually          | the existence or attribute of something not        |
+|                                    | unsupported, it is a hallucination and penalized;  | visible, or that contradict clearly visible        |
+|                                    | if visually ambiguous, the answer should express   | evidence. Minor mislabeling (e.g., ‘umpire’ vs.    |
+|                                    | uncertainty (e.g., ‘possibly,’ ‘not clearly        | ‘referee’) is acceptable if the visual entity is   |
+|                                    | visible,’ ‘ambiguous’) rather than assert a        | confirmed and the label is contextually plausible. |
+|                                    | definitive claim. The criterion applies only to    | The criterion does not penalize omission of        |
+|                                    | claims about observable visual content — not       | visible details or ambiguity — only false or       |
+|                                    | subjective interpretations, inferred user intent,  | unsupported assertions. When visual evidence is    |
+|                                    | or contextual knowledge not grounded in the image. | ambiguous or insufficient to support a claim, the  |
+|                                    | Minor mislabeling (e.g., ‘umpire’ vs. ‘referee’)   | answer should express uncertainty (e.g.,           |
+|                                    | is acceptable if the visual entity is confirmed.   | ‘possibly,’ ‘not clearly visible,’ ‘ambiguous’)    |
+|                                    | The criterion does not penalize omission of        | rather than assert a definitive claim. The         |
+|                                    | visible details or ambiguity; it only penalizes    | criterion applies only to claims about observable  |
+|                                    | false or unsupported assertions. When in doubt,    | visual content — not subjective interpretations,   |
+|                                    | prioritize visual fidelity over speculative or     | inferred user intent, or contextual knowledge not  |
+|                                    | stylistic interpretation. This criterion is        | grounded in the image. It does not apply to        |
+|                                    | inapplicable if the question explicitly invites    | questions that explicitly invite inference or      |
+|                                    | inference or interpretation beyond visual evidence | interpretation beyond visual evidence (e.g., ‘What |
+|                                    | (e.g., ‘What might the person be thinking?’).      | might the person be thinking?’). Visual inferences |
+|                                    |                                                    | are allowed if strongly implied by visual context  |
+|                                    |                                                    | (e.g., posture, proximity, hand placement) and     |
+|                                    |                                                    | supported by the image — such as inferring a       |
+|                                    |                                                    | person is holding an object based on their hand    |
+|                                    |                                                    | position — as long as they do not invent non-      |
+|                                    |                                                    | visible elements. Uncertainty should be expressed  |
+|                                    |                                                    | only when visually ambiguous, not when the         |
+|                                    |                                                    | inference is plausible. The criterion penalizes    |
+|                                    |                                                    | hallucinations, not misinterpretations or          |
+|                                    |                                                    | reasonable semantic variations (e.g., ‘couch’ vs.  |
+|                                    |                                                    | ‘sofa’), as long as the visual entity is           |
+|                                    |                                                    | confirmed. If both candidates contain              |
+|                                    |                                                    | hallucinations, the answer with fewer              |
+|                                    |                                                    | hallucinations or the one that is more cautious    |
+|                                    |                                                    | and visually aligned (e.g., using ‘appears to be,’ |
+|                                    |                                                    | ‘possibly’) should be preferred. The criterion is  |
+|                                    |                                                    | inapplicable for questions inviting aesthetic      |
+|                                    |                                                    | judgment, metaphor, or non-visual interpretation   |
+|                                    |                                                    | unless the claim is visually fabricated.           |
+|                                    |                                                    | Evaluation: cross-check every claim against the    |
+|                                    |                                                    | image — if a claim is visually unsupported,        |
+|                                    |                                                    | penalize; if visually ambiguous, reward            |
+|                                    |                                                    | uncertainty; if visually verifiable, reward        |
+|                                    |                                                    | accuracy. Do not penalize for descriptive          |
+|                                    |                                                    | richness, plausible inference, or contextual       |
+|                                    |                                                    | interpretation as long as it is grounded in visual |
+|                                    |                                                    | cues and does not fabricate visual elements.       |
+|          visual_grounding          | Visual grounding evaluates whether the answer      | Visual grounding evaluates whether an answer       |
+|                                    | accurately reflects only what is visibly present   | strictly adheres to what is visually verifiable in |
+|                                    | or explicitly absent in the image — no             | the image — defined as elements directly           |
+|                                    | hallucinated, inferred, or speculative details     | observable, inferable from clear visual structure  |
+|                                    | (e.g., ‘smiling’, ‘leather jacket’, ‘Iberian ham’, | (e.g., bounding boxes, spatial relationships,      |
+|                                    | or ‘cut in half’) — even if they seem plausible or | textures, colors), or reasonably implied by        |
+|                                    | contextually reasonable. It rewards descriptions   | contextual cues (e.g., ‘indoor’ from visible       |
+|                                    | that match observable objects, positions, colors,  | walls). It rewards descriptions that accurately    |
+|                                    | textures, and spatial relationships, including     | reflect visible objects, attributes, positions,    |
+|                                    | minor or background elements, and penalizes both   | and interactions without inventing, mislabeling,   |
+|                                    | omission of clearly visible elements and addition  | or over-claiming non-visible elements — even if    |
+|                                    | of non-verifiable attributes. The criterion does   | those claims are plausible or contextually         |
+|                                    | not apply when the answer makes no visual          | reasonable. Hallucination is defined as any        |
+|                                    | reference (e.g., opinion-based or abstract         | assertion that contradicts visual evidence or adds |
+|                                    | responses) or when the question is non-visual.     | non-visible content (e.g., ‘smiling’ when no face  |
+|                                    | Workers must verify claims against the image       | is visible, ‘a traffic light’ when none is shown,  |
+|                                    | directly — no external assumptions or real-world   | or miscounting). The criterion does not penalize   |
+|                                    | knowledge should override visual evidence.         | reasonable semantic interpretation (e.g., calling  |
+|                                    | Ambiguity in the image (e.g., partial objects)     | a can ‘packaging’ or a statue ‘bent legs’) or      |
+|                                    | should not be used to justify hallucinations;      | contextually supported inferences (e.g., ‘holding  |
+|                                    | instead, workers should select the answer most     | hands’ if hands are visible) — as long as no non-  |
+|                                    | consistent with observable features. Inferences    | visible elements are invented. It also does not    |
+|                                    | (e.g., ‘likely a picnic table’) are allowed only   | penalize omission of non-critical or ambiguous     |
+|                                    | if directly supported by visual cues, not by       | details — only false or unsupported claims.        |
+|                                    | conceptual assumptions. The criterion does not     | Ambiguity in the image (e.g., partial objects,     |
+|                                    | penalize reasonable semantic interpretation (e.g., | occlusions) should not be used to justify          |
+|                                    | calling a can a ‘packaging box’) or contextual     | hallucinations; instead, workers should select the |
+|                                    | inferences (e.g., inferring posture from shape),   | answer most consistent with observable evidence,   |
+|                                    | as long as no non-visible elements are invented.   | even if it is cautious or less specific. The       |
+|                                    | The goal is fidelity to visual evidence — not      | criterion does not apply to non-visual questions,  |
+|                                    | literalness or verbosity — and hallucinations are  | abstract interpretations, or opinion-based         |
+|                                    | defined as any non-visual, unsupported claims,     | answers. To evaluate: verify each claim against    |
+|                                    | including mislabeling, miscounting, or omitting    | the image — if a claim is visually unsupported, it |
+|                                    | visible elements. Workers should flag cases where  | is a hallucination and penalized; if it is         |
+|                                    | the image lacks sufficient detail to support       | inferable from visual structure or context, it is  |
+|                                    | claims, but not when the answer is cautious or     | acceptable — even if interpretive. Workers must    |
+|                                    | inferential based on visible cues.                 | avoid conflating ‘plausibility’ with ‘grounding’ — |
+|                                    |                                                    | grounding is about visual evidence, not logic or   |
+|                                    |                                                    | common sense. The goal is fidelity to the image,   |
+|                                    |                                                    | not literalness or exhaustiveness. If two answers  |
+|                                    |                                                    | are equally grounded, prefer the one with fewer    |
+|                                    |                                                    | hallucinations or the more conservative            |
+|                                    |                                                    | interpretation. If both are hallucinated, prefer   |
+|                                    |                                                    | the less confident or more cautious one.           |
++------------------------------------+----------------------------------------------------+----------------------------------------------------+
+
+#### Low
+language_clarity_and_coherence
++--------------------+------------------------------------------------------------------------------------------------------+
+|     Criterion      | Description                                                                                          |
++--------------------+------------------------------------------------------------------------------------------------------+
+| question_relevance | This criterion is being removed as per instructions, since its accuracy is below 0.6. The original   |
+|                    | description is retained for archival purposes but will not be included in the final criteria list.   |
++--------------------+------------------------------------------------------------------------------------------------------+
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [12:11<00:00,  1.46s/it]
+Accuracy: 0.72
+Correct: [True, True, True, True, True, False, True, True, True, True, True, False, False, True, True, True, False, True, True, True, False, False, True, True, True, True, True, True, True, False, False, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, False, False, True, True, True, True, False, True, True, False, True, True, True, False, True, False, False, False, False, False, True, True, True, False, False, True, True, True, False, True, True, True, True, True, False, False, True, False, True, True, True, True, False, True, False, False, True, True, True, True, True]
+{
+    "calibrated_uncertainty": {
+        "Accuracy": 0.6785714285714286,
+        "Refuse to Respond": "0.16 (16)"
+    },
+    "completeness_and_specificity": {
+        "Accuracy": 0.7613636363636364,
+        "Refuse to Respond": "0.12 (12)"
+    },
+    "factual_consistency_with_the_image": {
+        "Accuracy": 0.6842105263157895,
+        "Refuse to Respond": "0.05 (5)"
+    },
+    "visual_grounding": {
+        "Accuracy": 0.71875,
+        "Refuse to Respond": "0.04 (4)"
+    },
+    "question_relevance": {
+        "Accuracy": 0.7021276595744681,
+        "Refuse to Respond": "0.06 (6)"
+    }
+}
+## Iteration 2
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 450/450 [19:12<00:00,  2.56s/it]
+Train: 0.5666666666666667 [True, True, True, False, False, True, True, True, False, True, True, False, False, True, True, True, False, True, False, True, False, False, True, True, True, True, False, True, False, False, True, True, False, True, False, True, False, False, False, True, False, True, True, True, True, True, False, False, True, True, True, True, False, False, False, True, True, False, False, True, False, False, True, True, False, True, True, True, True, True, False, False, False, False, False, True, True, True, False, True, True, False, False, False, True, True, True, False, True, False]
++------------------------------------+------+--------------------+
+|             Criterion              | Type |      Accuracy      |
++------------------------------------+------+--------------------+
+|       calibrated_uncertainty       | Low  | 0.5675675675675675 |
+|    completeness_and_specificity    | Mid  | 0.6753246753246753 |
+| factual_consistency_with_the_image | Low  | 0.5977011494252874 |
+|         question_relevance         | Mid  |       0.7125       |
+|          visual_grounding          | Low  | 0.5681818181818182 |
++------------------------------------+------+--------------------+
+
+
+#### Mid
+Reflection: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 48/48 [09:30<00:00, 11.89s/it]
+Optimization: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:24<00:00, 12.28s/it]
++------------------------------+----------------------------------------------------+----------------------------------------------------+
+|          Criterion           | Old                                                | New                                                |
++------------------------------+----------------------------------------------------+----------------------------------------------------+
+| completeness_and_specificity | This criterion evaluates whether an answer fully   | This criterion evaluates the degree to which an    |
+|                              | and precisely addresses the visual content         | answer fully and precisely addresses the visual    |
+|                              | relevant to the question, using only verifiable,   | content relevant to the question, using only       |
+|                              | directly observable details from the image.        | verifiable, directly observable details from the   |
+|                              | Completeness means covering all visually relevant  | image — and ONLY when the answer is factually      |
+|                              | aspects of the question without omitting clearly   | consistent with the image. If either candidate     |
+|                              | visible elements critical to the answer.           | contains a hallucination or factual                |
+|                              | Specificity is rewarded only when it enhances      | misrepresentation, it is automatically             |
+|                              | clarity or precision by referencing verifiable     | disqualified from evaluation under this criterion  |
+|                              | visual attributes (e.g., object position, color,   | and must be assessed under                         |
+|                              | texture, count, spatial relationships) — and never | 'factual_consistency_with_the_image'. The          |
+|                              | for speculative, inferred, or hallucinated details | criterion is inapplicable if either answer is      |
+|                              | (e.g., sounds, emotions, internal states, or non-  | hallucinated or factually incorrect — comparison   |
+|                              | visible objects). Factual consistency with the     | under this criterion is only valid between         |
+|                              | image is a mandatory precondition: if an answer    | factually correct answers. Completeness means      |
+|                              | contains any hallucination or misrepresentation,   | covering all visually relevant elements necessary  |
+|                              | it is automatically disqualified from evaluation   | to answer the question (e.g., object identity,     |
+|                              | under this criterion and must be assessed under    | position, count, spatial relationships) — not      |
+|                              | 'factual_consistency_with_the_image'. If both      | background details or inferred environmental       |
+|                              | answers are factually correct, the one that is     | context. Specificity is rewarded only when it      |
+|                              | more complete and specific (without hallucination) | enhances precision by referencing verifiable       |
+|                              | is preferred. Ambiguity in the image (e.g.,        | visual attributes (e.g., color, texture, shape,    |
+|                              | partial occlusion, lighting) does not justify      | exact position, count, or spatial hierarchy) — and |
+|                              | penalizing completeness or specificity — only      | never for speculative, inferred, or non-visual     |
+|                              | hallucination or omission of visible, relevant     | claims (e.g., emotions, sounds, internal states,   |
+|                              | elements. This criterion is inapplicable if the    | or non-visible objects). Visual inferences are     |
+|                              | answer is factually incorrect or hallucinated.     | allowed only if directly implied by visual         |
+|                              | Workers must evaluate only factually grounded      | structure or context (e.g., posture suggesting     |
+|                              | answers — and should not reward verbosity,         | movement, occlusion implying depth) — but not if   |
+|                              | aesthetic interpretation, or speculative inference | they assert non-visible elements. Ambiguity in the |
+|                              | unless it is visually supported. Completeness does | image (e.g., partial occlusion, lighting) does not |
+|                              | not require exhaustive listing of every visual     | justify penalizing completeness or specificity —   |
+|                              | detail — only coverage of all elements relevant to | only hallucination or omission of visible,         |
+|                              | answering the question. Specificity must be        | relevant elements. The goal is visual fidelity,    |
+|                              | grounded in visible evidence — not inferred        | not stylistic richness, aesthetic interpretation,  |
+|                              | context or plausible but unsupported claims.       | or inferential depth — and hallucination is        |
+|                              | Example: describing a ‘blue couch with patterned   | defined as any claim not visually supported,       |
+|                              | fabric’ is specific and complete if visible;       | regardless of plausibility. Specificity must be    |
+|                              | saying ‘the couch is comfortable’ is acceptable if | grounded in visible evidence — not subjective      |
+|                              | the texture implies comfort — but saying ‘the cat  | interpretation, plausible but unsupported          |
+|                              | is purring’ is hallucination and disqualified. The | inferences, or exaggerated quantifiers (e.g.,      |
+|                              | goal is visual fidelity, not stylistic richness or | 'most,' 'largest') unless visually confirmed.      |
+|                              | inferential depth — and hallucination is defined   | Completeness does not require exhaustive listing   |
+|                              | as any claim not visually supported, regardless of | of every visual detail — only coverage of all      |
+|                              | plausibility.                                      | elements relevant to answering the question.       |
+|                              |                                                    | Workers must first verify factual correctness      |
+|                              |                                                    | before applying this criterion — and if one answer |
+|                              |                                                    | is hallucinated, the comparison under this         |
+|                              |                                                    | criterion is invalid — the worker should defer to  |
+|                              |                                                    | 'factual_consistency_with_the_image'. If both      |
+|                              |                                                    | answers are factually correct, the one that is     |
+|                              |                                                    | more complete and specific (without hallucination) |
+|                              |                                                    | is preferred — but if one answer is hallucinated,  |
+|                              |                                                    | it is automatically disqualified, and the other is |
+|                              |                                                    | preferred — even if less specific or complete.     |
+|                              |                                                    | Example: describing a ‘blue couch with patterned   |
+|                              |                                                    | fabric’ is specific and complete if visible;       |
+|                              |                                                    | saying ‘the couch is comfortable’ is acceptable if |
+|                              |                                                    | texture implies comfort — but saying ‘the cat is   |
+|                              |                                                    | purring’ is hallucination and disqualified. Visual |
+|                              |                                                    | motion, trajectory, or spatial relationships       |
+|                              |                                                    | (e.g., ‘drawing an arc’, ‘landing outside the      |
+|                              |                                                    | circle’) are acceptable if directly supported by   |
+|                              |                                                    | visual evidence — not penalized for being          |
+|                              |                                                    | metaphorical or dynamic. Aesthetic or              |
+|                              |                                                    | compositional interpretations (e.g., ‘scenic       |
+|                              |                                                    | beauty’, ‘contrast’, ‘composition’) are allowed if |
+|                              |                                                    | grounded in visually verifiable elements (e.g.,    |
+|                              |                                                    | foreground/background, color contrast, spatial     |
+|                              |                                                    | framing) — but not if they fabricate non-visible   |
+|                              |                                                    | content. Workers should not reward ‘more visual    |
+|                              |                                                    | elements’ — only those that are verifiable and     |
+|                              |                                                    | relevant to the question. The criterion does not   |
+|                              |                                                    | penalize cautious or plausible inferences — only   |
+|                              |                                                    | hallucinations, misrepresentations, or unsupported |
+|                              |                                                    | claims. Workers should flag hallucinated answers   |
+|                              |                                                    | and not apply this criterion to them — even if the |
+|                              |                                                    | hallucinated answer appears more complete or       |
+|                              |                                                    | specific. This criterion is not a tie-breaker — if |
+|                              |                                                    | both answers are hallucinated, the worker must     |
+|                              |                                                    | evaluate them under                                |
+|                              |                                                    | 'factual_consistency_with_the_image' first — and   |
+|                              |                                                    | then, if both are factually correct, apply this    |
+|                              |                                                    | criterion. If one answer is hallucinated and the   |
+|                              |                                                    | other is factually correct, the factually correct  |
+|                              |                                                    | answer is preferred — regardless of completeness   |
+|                              |                                                    | or specificity under this criterion.               |
+|      question_relevance      | This criterion is being removed as per             | This criterion evaluates whether the answer        |
+|                              | instructions, since its accuracy is below 0.6. The | directly addresses the core semantic intent of the |
+|                              | original description is retained for archival      | question — and only applies when both candidate    |
+|                              | purposes but will not be included in the final     | answers are factually consistent with the image    |
+|                              | criteria list.                                     | and visually grounded. It does not override or     |
+|                              |                                                    | substitute for factual consistency or visual       |
+|                              |                                                    | grounding; those must be verified first. A         |
+|                              |                                                    | relevant answer must cover the essential visual    |
+|                              |                                                    | elements or functional context required by the     |
+|                              |                                                    | question (e.g., object identity, spatial           |
+|                              |                                                    | relationship, activity, or attribute) without      |
+|                              |                                                    | introducing hallucinated, misattributed, or        |
+|                              |                                                    | irrelevant details. Relevance is not about         |
+|                              |                                                    | linguistic precision, verbosity, or interpretive   |
+|                              |                                                    | richness — it is about semantic alignment with the |
+|                              |                                                    | question’s intent. If both answers are factually   |
+|                              |                                                    | correct and visually grounded, preference should   |
+|                              |                                                    | be deferred to other criteria (e.g., completeness, |
+|                              |                                                    | specificity, or calibrated uncertainty). Relevance |
+|                              |                                                    | is inapplicable if either answer contains          |
+|                              |                                                    | hallucination, misrepresentation, or factual error |
+|                              |                                                    | — such answers must be rejected under              |
+|                              |                                                    | ‘factual_consistency_with_the_image’ or            |
+|                              |                                                    | ‘visual_grounding’. Examples: ‘What is the dog     |
+|                              |                                                    | doing?’ — an answer ‘running’ is relevant if the   |
+|                              |                                                    | dog is visibly running; ‘barking’ is relevant if   |
+|                              |                                                    | the dog is visibly barking. An answer ‘chasing a   |
+|                              |                                                    | squirrel’ is relevant if the visual context        |
+|                              |                                                    | supports the chase and squirrel is visible. An     |
+|                              |                                                    | answer ‘sleeping’ is irrelevant if the dog is      |
+|                              |                                                    | visibly active. Relevance does not penalize        |
+|                              |                                                    | conservative or less specific answers if they are  |
+|                              |                                                    | factually correct — e.g., ‘a cat’ is relevant if   |
+|                              |                                                    | the image shows a cat, even if the answer omits    |
+|                              |                                                    | breed or color. The criterion should be applied    |
+|                              |                                                    | only after confirming visual grounding and factual |
+|                              |                                                    | consistency — and should not be used to evaluate   |
+|                              |                                                    | aesthetic, structural, or inferential              |
+|                              |                                                    | plausibility. Workers must first verify that both  |
+|                              |                                                    | answers are factually correct and visually         |
+|                              |                                                    | grounded — then assess whether one directly and    |
+|                              |                                                    | minimally addresses the question’s core intent     |
+|                              |                                                    | without adding non-essential or misleading detail. |
+|                              |                                                    | Relevance is not about being ‘more detailed’ —     |
+|                              |                                                    | only about being focused and aligned with the      |
+|                              |                                                    | question’s scope. If the image is ambiguous,       |
+|                              |                                                    | relevance is assessed based on the most plausible  |
+|                              |                                                    | visual interpretation that matches the question —  |
+|                              |                                                    | but not based on speculative or non-visual         |
+|                              |                                                    | assumptions. Relevance is inapplicable if the      |
+|                              |                                                    | question requires non-visual inference (e.g.,      |
+|                              |                                                    | emotional state, abstract meaning) unless          |
+|                              |                                                    | explicitly supported by visible cues (e.g., facial |
+|                              |                                                    | expression, body language).                        |
++------------------------------+----------------------------------------------------+----------------------------------------------------+
+
+#### Low
+calibrated_uncertainty, factual_consistency_with_the_image, visual_grounding
++-----------------------+------------------------------------------------------------------------------------------------------+
+|       Criterion       | Description                                                                                          |
++-----------------------+------------------------------------------------------------------------------------------------------+
+|  temporal_consistency | Evaluates whether the answer maintains consistent temporal logic with respect to visible events,     |
+|                       | object states, or implied motion — such as whether actions are plausible given the image’s frozen    |
+|                       | moment, or whether object states (e.g., open/closed, standing/sitting) align with the visual         |
+|                       | context. For example, claiming a person is ‘walking’ while their feet are clearly planted on the     |
+|                       | ground is inconsistent. This criterion applies only when the question or image implies motion,       |
+|                       | sequence, or state change — not for static descriptions. It does not penalize uncertainty or lack of |
+|                       | motion cues — only violations of plausibility based on visual evidence. Hallucinations or            |
+|                       | unsupported temporal claims (e.g., ‘the dog is chasing the ball’ when no ball is visible) are        |
+|                       | penalized under ‘factual_consistency_with_the_image’ — but this criterion focuses on internal        |
+|                       | temporal coherence within the visual frame. A well-grounded answer may describe a static scene       |
+|                       | without temporal claims — in which case this criterion is inapplicable. Evaluation: cross-check for  |
+|                       | plausible temporal alignment — e.g., if an object appears to be in motion, does the answer reflect   |
+|                       | that? If an object is described as ‘closed,’ does its visual state support that? If no motion or     |
+|                       | sequence is implied, this criterion is not applicable. Accuracy: 0.72 (hypothetical — based on high  |
+|                       | visual-temporal alignment in QA).                                                                    |
+| multi-modal_coherence | Assesses whether the answer’s language aligns with the image’s visual structure, object              |
+|                       | relationships, and spatial layout — including whether the answer’s focus, object references, and     |
+|                       | spatial terms (e.g., ‘left of,’ ‘above,’ ‘near’) correspond to the visual arrangement. For example,  |
+|                       | if the image shows a dog on the left and a cat on the right, an answer saying ‘the cat is on the     |
+|                       | left’ would violate multi-modal coherence. This criterion applies to spatial, positional, and        |
+|                       | relational claims — not to semantic or interpretive claims. It does not evaluate factual accuracy or |
+|                       | hallucination — those are handled by ‘factual_consistency_with_the_image’. It also does not evaluate |
+|                       | uncertainty calibration — only whether the language is spatially and visually aligned. The criterion |
+|                       | is inapplicable if the question is non-spatial or if the image lacks clear relational structure.     |
+|                       | Evaluation: verify that every spatial or relational claim in the answer matches the visual layout —  |
+|                       | if a spatial term is used, check that the referenced objects are in the described positions. If no   |
+|                       | spatial terms are used, the criterion is not applicable. Accuracy: 0.78 (hypothetical — based on     |
+|                       | high visual-spatial alignment in QA).                                                                |
+|   semantic_precision  | Measures how precisely the answer matches the semantic intent of the question without                |
+|                       | overgeneralizing or under-specifying — focusing on whether the answer targets the core semantic      |
+|                       | concept the question asks for, without introducing irrelevant or overly broad claims. For example,   |
+|                       | for the question ‘What is the color of the car?’ an answer saying ‘It’s a dark vehicle’ is less      |
+|                       | precise than ‘It’s black.’ This criterion applies to questions asking for specific attributes        |
+|                       | (color, count, material, type) — and does not apply to open-ended, interpretive, or subjective       |
+|                       | questions (e.g., ‘What’s your opinion?’). It also does not penalize reasonable ambiguity — only when |
+|                       | the answer is overly vague or overly specific in a misleading way. The criterion is inapplicable if  |
+|                       | the question is ambiguous or if the visual evidence is insufficient to determine semantic precision. |
+|                       | Evaluation: compare the answer’s semantic scope to the question’s core intent — if the answer covers |
+|                       | the exact semantic target (e.g., object color, count, presence) without adding or omitting relevant  |
+|                       | information, it scores high. If the answer adds irrelevant details or fails to address the core      |
+|                       | semantic intent, it scores low. Accuracy: 0.75 (hypothetical — based on high semantic alignment in   |
+|                       | QA).                                                                                                 |
++-----------------------+------------------------------------------------------------------------------------------------------+
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [12:45<00:00,  1.53s/it]
+Accuracy: 0.63
+Correct: [False, True, True, True, True, False, True, False, True, False, True, False, False, True, True, True, False, True, True, True, False, False, True, True, True, True, True, True, True, False, True, True, True, True, False, True, True, False, True, True, False, False, False, False, True, True, False, True, False, False, False, True, True, True, True, False, True, True, True, True, True, False, True, True, False, False, False, False, False, True, False, False, False, False, True, True, True, False, False, True, True, True, True, False, True, True, False, True, True, True, True, False, False, True, True, True, True, True, True, True]
+{
+    "completeness_and_specificity": {
+        "Accuracy": 0.6888888888888889,
+        "Refuse to Respond": "0.1 (10)"
+    },
+    "question_relevance": {
+        "Accuracy": 0.7317073170731707,
+        "Refuse to Respond": "0.18 (18)"
+    },
+    "temporal_consistency": {
+        "Accuracy": 0.6790123456790124,
+        "Refuse to Respond": "0.19 (19)"
+    },
+    "multi-modal_coherence": {
+        "Accuracy": 0.6973684210526315,
+        "Refuse to Respond": "0.24 (24)"
+    },
+    "semantic_precision": {
+        "Accuracy": 0.6494845360824743,
+        "Refuse to Respond": "0.03 (3)"
+    }
+}
+## Iteration 3
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 450/450 [12:11<00:00,  1.62s/it]
+Train: 0.5555555555555556 [True, False, True, False, False, True, True, True, False, True, True, False, False, True, True, True, False, True, False, True, False, False, True, True, True, True, False, True, True, False, True, True, False, True, False, False, False, True, False, True, False, False, True, True, True, True, False, False, True, True, True, True, False, False, False, True, True, False, False, True, False, True, True, True, False, True, False, True, True, False, False, False, False, False, True, True, True, True, False, False, True, False, False, True, True, True, True, False, True, False]
++------------------------------+------+--------------------+
+|          Criterion           | Type |      Accuracy      |
++------------------------------+------+--------------------+
+| completeness_and_specificity | Mid  | 0.6666666666666666 |
+|    multi-modal_coherence     | Low  | 0.5671641791044776 |
+|      question_relevance      | Low  | 0.5774647887323944 |
+|      semantic_precision      | Low  | 0.550561797752809  |
+|     temporal_consistency     | Mid  | 0.6029411764705882 |
++------------------------------+------+--------------------+
+
+
+#### Mid
+Reflection: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 53/53 [14:28<00:00, 16.40s/it]
+Optimization: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2/2 [00:36<00:00, 18.40s/it]
++------------------------------+----------------------------------------------------+----------------------------------------------------+
+|          Criterion           | Old                                                | New                                                |
++------------------------------+----------------------------------------------------+----------------------------------------------------+
+| completeness_and_specificity | This criterion evaluates the degree to which an    | This criterion evaluates the visual fidelity and   |
+|                              | answer fully and precisely addresses the visual    | precision of answers that are factually correct    |
+|                              | content relevant to the question, using only       | and visually grounded — meaning it is only         |
+|                              | verifiable, directly observable details from the   | applicable when both candidate answers are         |
+|                              | image — and ONLY when the answer is factually      | confirmed to be free of hallucination or factual   |
+|                              | consistent with the image. If either candidate     | misrepresentation. If either answer contains a     |
+|                              | contains a hallucination or factual                | hallucination (e.g., asserting non-visible         |
+|                              | misrepresentation, it is automatically             | elements, misidentifying objects, or fabricating   |
+|                              | disqualified from evaluation under this criterion  | motion/state not supported by visual evidence), it |
+|                              | and must be assessed under                         | must be disqualified under                         |
+|                              | 'factual_consistency_with_the_image'. The          | 'factual_consistency_with_the_image' and this      |
+|                              | criterion is inapplicable if either answer is      | criterion must NOT be applied. The criterion does  |
+|                              | hallucinated or factually incorrect — comparison   | not evaluate hallucinated answers — even if they   |
+|                              | under this criterion is only valid between         | appear more complete or specific — and workers     |
+|                              | factually correct answers. Completeness means      | must immediately defer to                          |
+|                              | covering all visually relevant elements necessary  | 'factual_consistency_with_the_image' upon          |
+|                              | to answer the question (e.g., object identity,     | detecting any hallucination. Completeness means    |
+|                              | position, count, spatial relationships) — not      | covering all visually relevant elements necessary  |
+|                              | background details or inferred environmental       | to answer the question (e.g., object identity,     |
+|                              | context. Specificity is rewarded only when it      | position, count, spatial relationships) — not      |
+|                              | enhances precision by referencing verifiable       | background, inferred, or aesthetic context.        |
+|                              | visual attributes (e.g., color, texture, shape,    | Specificity is rewarded only when it enhances      |
+|                              | exact position, count, or spatial hierarchy) — and | precision by referencing verifiable visual         |
+|                              | never for speculative, inferred, or non-visual     | attributes (e.g., color, texture, shape, exact     |
+|                              | claims (e.g., emotions, sounds, internal states,   | position, count, or spatial hierarchy) — not       |
+|                              | or non-visible objects). Visual inferences are     | speculative, inferred, or non-visual claims (e.g., |
+|                              | allowed only if directly implied by visual         | emotions, sounds, internal states). Visual         |
+|                              | structure or context (e.g., posture suggesting     | inferences are allowed only if directly implied by |
+|                              | movement, occlusion implying depth) — but not if   | visual structure or context (e.g., posture         |
+|                              | they assert non-visible elements. Ambiguity in the | suggesting movement, occlusion implying depth) —   |
+|                              | image (e.g., partial occlusion, lighting) does not | but not if they assert non-visible elements.       |
+|                              | justify penalizing completeness or specificity —   | Ambiguity in the image (e.g., partial occlusion,   |
+|                              | only hallucination or omission of visible,         | lighting) does not justify penalizing completeness |
+|                              | relevant elements. The goal is visual fidelity,    | or specificity — only hallucination or omission of |
+|                              | not stylistic richness, aesthetic interpretation,  | visible, relevant elements. The goal is visual     |
+|                              | or inferential depth — and hallucination is        | fidelity — not stylistic richness, aesthetic       |
+|                              | defined as any claim not visually supported,       | interpretation, or inferential depth. Specificity  |
+|                              | regardless of plausibility. Specificity must be    | must be grounded in visible evidence — not         |
+|                              | grounded in visible evidence — not subjective      | subjective interpretation, plausible but           |
+|                              | interpretation, plausible but unsupported          | unsupported inferences, or exaggerated quantifiers |
+|                              | inferences, or exaggerated quantifiers (e.g.,      | (e.g., 'most,' 'largest') unless visually          |
+|                              | 'most,' 'largest') unless visually confirmed.      | confirmed. Completeness does not require           |
+|                              | Completeness does not require exhaustive listing   | exhaustive listing of every visual detail — only   |
+|                              | of every visual detail — only coverage of all      | coverage of all elements relevant to answering the |
+|                              | elements relevant to answering the question.       | question. Workers must first verify factual        |
+|                              | Workers must first verify factual correctness      | correctness under                                  |
+|                              | before applying this criterion — and if one answer | 'factual_consistency_with_the_image' — and if      |
+|                              | is hallucinated, the comparison under this         | either answer is hallucinated, this criterion is   |
+|                              | criterion is invalid — the worker should defer to  | inapplicable. If both answers are factually        |
+|                              | 'factual_consistency_with_the_image'. If both      | correct, the one that is more complete and         |
+|                              | answers are factually correct, the one that is     | specific (without hallucination) is preferred —    |
+|                              | more complete and specific (without hallucination) | but only if both are factually correct. Example:   |
+|                              | is preferred — but if one answer is hallucinated,  | describing a ‘blue couch with patterned fabric’ is |
+|                              | it is automatically disqualified, and the other is | specific and complete if visible; saying ‘the      |
+|                              | preferred — even if less specific or complete.     | couch is comfortable’ is acceptable if texture     |
+|                              | Example: describing a ‘blue couch with patterned   | implies comfort — but saying ‘the cat is purring’  |
+|                              | fabric’ is specific and complete if visible;       | is hallucination and disqualified. Visual motion,  |
+|                              | saying ‘the couch is comfortable’ is acceptable if | trajectory, or spatial relationships (e.g.,        |
+|                              | texture implies comfort — but saying ‘the cat is   | ‘drawing an arc’, ‘landing outside the circle’)    |
+|                              | purring’ is hallucination and disqualified. Visual | are acceptable if directly supported by visual     |
+|                              | motion, trajectory, or spatial relationships       | evidence — not penalized for being metaphorical or |
+|                              | (e.g., ‘drawing an arc’, ‘landing outside the      | dynamic. Aesthetic or compositional                |
+|                              | circle’) are acceptable if directly supported by   | interpretations (e.g., ‘scenic beauty’,            |
+|                              | visual evidence — not penalized for being          | ‘contrast’, ‘composition’) are allowed if grounded |
+|                              | metaphorical or dynamic. Aesthetic or              | in visually verifiable elements (e.g.,             |
+|                              | compositional interpretations (e.g., ‘scenic       | foreground/background, color contrast, spatial     |
+|                              | beauty’, ‘contrast’, ‘composition’) are allowed if | framing) — but not if they fabricate non-visible   |
+|                              | grounded in visually verifiable elements (e.g.,    | content. Workers should not reward ‘more visual    |
+|                              | foreground/background, color contrast, spatial     | elements’ — only those that are verifiable and     |
+|                              | framing) — but not if they fabricate non-visible   | relevant to the question. The criterion does not   |
+|                              | content. Workers should not reward ‘more visual    | penalize cautious or plausible inferences — only   |
+|                              | elements’ — only those that are verifiable and     | hallucinations, misrepresentations, or unsupported |
+|                              | relevant to the question. The criterion does not   | claims. Workers should flag hallucinated answers   |
+|                              | penalize cautious or plausible inferences — only   | and not apply this criterion to them — even if the |
+|                              | hallucinations, misrepresentations, or unsupported | hallucinated answer appears more complete or       |
+|                              | claims. Workers should flag hallucinated answers   | specific. This criterion is not a tie-breaker — if |
+|                              | and not apply this criterion to them — even if the | both answers are hallucinated, the worker must     |
+|                              | hallucinated answer appears more complete or       | evaluate them under                                |
+|                              | specific. This criterion is not a tie-breaker — if | 'factual_consistency_with_the_image' first — and   |
+|                              | both answers are hallucinated, the worker must     | then, if both are factually correct, apply this    |
+|                              | evaluate them under                                | criterion. If one answer is hallucinated and the   |
+|                              | 'factual_consistency_with_the_image' first — and   | other is factually correct, the factually correct  |
+|                              | then, if both are factually correct, apply this    | answer is preferred — regardless of completeness   |
+|                              | criterion. If one answer is hallucinated and the   | or specificity under this criterion. If both       |
+|                              | other is factually correct, the factually correct  | answers are factually correct, preference is given |
+|                              | answer is preferred — regardless of completeness   | to the more complete and specific answer — but     |
+|                              | or specificity under this criterion.               | only if both are factually correct. The criterion  |
+|                              |                                                    | is inapplicable if either answer is hallucinated   |
+|                              |                                                    | or factually incorrect — and workers must not      |
+|                              |                                                    | apply it in such cases. Hallucination is defined   |
+|                              |                                                    | as any claim that is definitively unsupported by   |
+|                              |                                                    | any visual evidence — not just unsupported or      |
+|                              |                                                    | speculative. Ambiguous or partially visible claims |
+|                              |                                                    | are not automatically hallucinations — workers     |
+|                              |                                                    | must verify whether the visual evidence supports   |
+|                              |                                                    | the claim. If one answer is factually correct and  |
+|                              |                                                    | the other is not, the correct answer wins — but    |
+|                              |                                                    | only if the correct answer is verifiable — and not |
+|                              |                                                    | if the incorrect answer is merely ambiguous or     |
+|                              |                                                    | speculative. The criterion must be applied as a    |
+|                              |                                                    | step-by-step workflow: (1) verify factual          |
+|                              |                                                    | correctness for both candidates — if either is     |
+|                              |                                                    | hallucinated, defer to                             |
+|                              |                                                    | 'factual_consistency_with_the_image'; (2) if both  |
+|                              |                                                    | are factually correct, compare completeness and    |
+|                              |                                                    | specificity — and if one is more specific or       |
+|                              |                                                    | complete without hallucination, prefer it — but    |
+|                              |                                                    | only if both are factually correct. The criterion  |
+|                              |                                                    | must not be misused as a tie-breaker or fallback   |
+|                              |                                                    | when factual correctness is violated — it must be  |
+|                              |                                                    | conditional on both answers being factually        |
+|                              |                                                    | correct. Visual approximations (e.g., 'near',      |
+|                              |                                                    | 'about', 'roughly') are not hallucinations if      |
+|                              |                                                    | grounded in visual evidence — and must not         |
+|                              |                                                    | disqualify an answer simply because it is          |
+|                              |                                                    | imprecise, unless it is factually incorrect. The   |
+|                              |                                                    | criterion must explicitly distinguish between      |
+|                              |                                                    | 'plausible inference' (allowed) and 'unsupported   |
+|                              |                                                    | speculation' (hallucination). 'Specificity'        |
+|                              |                                                    | rewards grounded visual details, not speculative   |
+|                              |                                                    | context — and inferences must be directly implied  |
+|                              |                                                    | by visual structure (e.g., posture suggesting      |
+|                              |                                                    | motion), not assumed from abstract narrative. If   |
+|                              |                                                    | both answers contain speculative claims, the one   |
+|                              |                                                    | with the least hallucination (i.e., more visually  |
+|                              |                                                    | grounded inference) is preferred — not the one     |
+|                              |                                                    | with the most unsupported speculation. The         |
+|                              |                                                    | criterion must explicitly restrict 'specificity'   |
+|                              |                                                    | to verifiable visual attributes (e.g., color,      |
+|                              |                                                    | shape, position, count) — not linguistic,          |
+|                              |                                                    | semantic, or conceptual associations. Enhancements |
+|                              |                                                    | must directly support visual grounding, not add    |
+|                              |                                                    | non-visual or inferential detail. Completeness and |
+|                              |                                                    | specificity are only evaluated for answers that    |
+|                              |                                                    | address the question’s core visual intent — not    |
+|                              |                                                    | for linguistic or metaphorical elaboration. The    |
+|                              |                                                    | criterion must explicitly state that it is only    |
+|                              |                                                    | applicable when both answers are factually correct |
+|                              |                                                    | — and that if either is hallucinated, it must be   |
+|                              |                                                    | rejected under                                     |
+|                              |                                                    | 'factual_consistency_with_the_image', not compared |
+|                              |                                                    | under this criterion. The criterion is not a tie-  |
+|                              |                                                    | breaker — and if one answer is hallucinated, the   |
+|                              |                                                    | other is automatically preferred — regardless of   |
+|                              |                                                    | completeness or specificity. The criterion must be |
+|                              |                                                    | written as a conditional evaluation — not a        |
+|                              |                                                    | standalone judgment. Hallucination is defined as   |
+|                              |                                                    | claiming non-visible or misidentified visual       |
+|                              |                                                    | elements — not just any deviation from a word’s    |
+|                              |                                                    | literal form (e.g., ‘cupcake’ vs. ‘cake’). Visual  |
+|                              |                                                    | grounding must be evaluated before applying this   |
+|                              |                                                    | criterion, and workers must verify object identity |
+|                              |                                                    | and spatial relationships with the image — not     |
+|                              |                                                    | just linguistic form. Hallucinations are only      |
+|                              |                                                    | disqualifying if the claim is entirely unsupported |
+|                              |                                                    | by the image — and not penalize correct            |
+|                              |                                                    | interpretations that are less ‘specific’ or        |
+|                              |                                                    | ‘complete’ in wording but visually accurate. The   |
+|                              |                                                    | criterion should explicitly instruct workers to    |
+|                              |                                                    | evaluate both answers for visual grounding first — |
+|                              |                                                    | and only apply this criterion if both are          |
+|                              |                                                    | factually correct — not to defer to the criterion  |
+|                              |                                                    | if one is hallucinated without verifying visual    |
+|                              |                                                    | accuracy first. The criterion must explicitly      |
+|                              |                                                    | state that completeness_and_specificity is         |
+|                              |                                                    | inapplicable if either answer is hallucinated or   |
+|                              |                                                    | factually incorrect — and that preference should   |
+|                              |                                                    | not be derived from this criterion in such cases.  |
+|                              |                                                    | The criterion does not function as a tie-breaker — |
+|                              |                                                    | it only compares factually correct answers.        |
+|                              |                                                    | Hallucinated answers are disqualified from         |
+|                              |                                                    | comparison under this criterion, not automatically |
+|                              |                                                    | preferred — and the worker should not use this     |
+|                              |                                                    | criterion to infer preference when one answer is   |
+|                              |                                                    | hallucinated. The criterion must be applied only   |
+|                              |                                                    | after factual correctness is confirmed — and only  |
+|                              |                                                    | among factually correct answers. The criterion is  |
+|                              |                                                    | not for evaluating factual correctness — only for  |
+|                              |                                                    | comparing precision and coverage among factually   |
+|                              |                                                    | correct answers. The description must emphasize    |
+|                              |                                                    | that the criterion is strictly for factually       |
+|                              |                                                    | correct answers only, and that hallucinated        |
+|                              |                                                    | answers are not evaluated under this criterion —   |
+|                              |                                                    | they are evaluated under                           |
+|                              |                                                    | 'factual_consistency_with_the_image'. The          |
+|                              |                                                    | criterion must be restructured to first validate   |
+|                              |                                                    | factual correctness, then apply completeness and   |
+|                              |                                                    | specificity — with clear separation of             |
+|                              |                                                    | responsibilities. The criterion should not be      |
+|                              |                                                    | misused as a tool for evaluating factual accuracy  |
+|                              |                                                    | — it is purely for comparing precision and         |
+|                              |                                                    | coverage among factually correct answers.          |
+|     temporal_consistency     | Evaluates whether the answer maintains consistent  | This criterion evaluates the plausibility of       |
+|                              | temporal logic with respect to visible events,     | motion, state change, or temporal sequence claims  |
+|                              | object states, or implied motion — such as whether | within the visual frame — only when such claims    |
+|                              | actions are plausible given the image’s frozen     | are explicitly or implicitly implied by the        |
+|                              | moment, or whether object states (e.g.,            | question or image. It does not apply to static     |
+|                              | open/closed, standing/sitting) align with the      | scenes, non-temporal descriptions, or answers that |
+|                              | visual context. For example, claiming a person is  | make no temporal claims. It is strictly            |
+|                              | ‘walking’ while their feet are clearly planted on  | inapplicable if the image is static and no motion  |
+|                              | the ground is inconsistent. This criterion applies | or state transition is implied. The criterion      |
+|                              | only when the question or image implies motion,    | penalizes only when an answer asserts a temporal   |
+|                              | sequence, or state change — not for static         | claim (e.g., ‘walking,’ ‘opening,’ ‘falling’) that |
+|                              | descriptions. It does not penalize uncertainty or  | contradicts visual evidence — e.g., claiming a     |
+|                              | lack of motion cues — only violations of           | person is ‘walking’ while feet are planted or      |
+|                              | plausibility based on visual evidence.             | stating a door is ‘swinging open’ when visibly     |
+|                              | Hallucinations or unsupported temporal claims      | closed. It does not evaluate hallucinations,       |
+|                              | (e.g., ‘the dog is chasing the ball’ when no ball  | factual misrepresentation, or visual grounding —   |
+|                              | is visible) are penalized under                    | those are handled by                               |
+|                              | ‘factual_consistency_with_the_image’ — but this    | ‘factual_consistency_with_the_image’ and           |
+|                              | criterion focuses on internal temporal coherence   | ‘visual_grounding’. It also does not penalize      |
+|                              | within the visual frame. A well-grounded answer    | reasonable, visually-supported inferences (e.g.,   |
+|                              | may describe a static scene without temporal       | ‘the cat is running’ if posture implies motion) or |
+|                              | claims — in which case this criterion is           | cautious, non-committal answers. Evaluation:       |
+|                              | inapplicable. Evaluation: cross-check for          | first, verify that the answer makes a temporal     |
+|                              | plausible temporal alignment — e.g., if an object  | claim (motion, state change, sequence) — if not,   |
+|                              | appears to be in motion, does the answer reflect   | mark the criterion as inapplicable. If it does,    |
+|                              | that? If an object is described as ‘closed,’ does  | check whether the claim is visually plausible — if |
+|                              | its visual state support that? If no motion or     | the visual frame contradicts it, penalize. If the  |
+|                              | sequence is implied, this criterion is not         | claim is visually consistent (even if inferred),   |
+|                              | applicable. Accuracy: 0.72 (hypothetical — based   | it is temporally consistent. Do not use this       |
+|                              | on high visual-temporal alignment in QA).          | criterion to resolve ties — defer to               |
+|                              |                                                    | ‘factual_consistency’ or                           |
+|                              |                                                    | ‘completeness_and_specificity’. Examples: ‘The     |
+|                              |                                                    | person is walking’ — penalized if feet are         |
+|                              |                                                    | planted; ‘The door is closed’ — consistent if      |
+|                              |                                                    | visually closed; ‘The car is moving’ — consistent  |
+|                              |                                                    | if motion is implied by blur or trajectory.        |
+|                              |                                                    | Temporal consistency is not about accuracy or      |
+|                              |                                                    | completeness — only plausibility within the visual |
+|                              |                                                    | moment. It must not override factual correctness — |
+|                              |                                                    | if an answer is hallucinated, it is disqualified   |
+|                              |                                                    | under ‘factual_consistency’, not this criterion.   |
++------------------------------+----------------------------------------------------+----------------------------------------------------+
+
+#### Low
+multi-modal_coherence, question_relevance, semantic_precision
++-------------------------------+------------------------------------------------------------------------------------------------------+
+|           Criterion           | Description                                                                                          |
++-------------------------------+------------------------------------------------------------------------------------------------------+
+|   visual_contextual_accuracy  | This criterion evaluates whether the answer correctly interprets and reflects the visual context of  |
+|                               | the image — including environmental, compositional, or contextual elements (e.g., lighting,          |
+|                               | background, framing, occlusion) that are relevant to answering the question. It goes beyond object-  |
+|                               | level grounding to assess whether the answer accounts for the image’s overall visual narrative or    |
+|                               | setting. For example, if the image shows a dimly lit room with a shadowed object, an answer that     |
+|                               | ignores lighting conditions or misattributes the shadow’s origin would score low. This criterion     |
+|                               | applies when the question or visual context implies environmental or contextual interpretation — but |
+|                               | not for purely object-centric questions. It does not penalize lack of detail if the context is not   |
+|                               | visually evident — only if the answer misrepresents or fabricates contextual elements. Evaluation:   |
+|                               | compare the answer’s contextual claims against visible environmental cues (e.g., lighting,           |
+|                               | background objects, perspective, depth, shadow direction). Accuracy: 0.70 (hypothetical — based on   |
+|                               | high contextual alignment in QA).                                                                    |
+| response_ambiguity_resolution | This criterion evaluates how effectively the answer resolves ambiguity in the image or question — by |
+|                               | either clarifying uncertainty through careful phrasing or avoiding overconfident claims when the     |
+|                               | image is ambiguous. It rewards answers that explicitly acknowledge uncertainty (e.g., ‘It appears to |
+|                               | be...’, ‘Possibly...’, ‘Based on the visible evidence...’) without sacrificing relevance, and        |
+|                               | penalizes overconfident claims that misrepresent the visual evidence. This criterion applies only    |
+|                               | when the image or question is ambiguous (e.g., partial occlusion, low resolution, multiple plausible |
+|                               | interpretations). It does not apply to clear, unambiguous images or questions. Evaluation: assess    |
+|                               | whether the answer acknowledges ambiguity without being vague or misleading — if the answer is       |
+|                               | overconfident and the visual evidence is insufficient, it scores low. If the answer is cautious and  |
+|                               | grounded, it scores high. Accuracy: 0.72 (hypothetical — based on high ambiguity-resolution in QA).  |
+|    cross-modal_consistency    | This criterion evaluates whether the answer’s language is consistent with the image’s visual         |
+|                               | structure in terms of object relationships, spatial layout, and visual salience — including whether  |
+|                               | the answer prioritizes visually dominant or functionally relevant objects over visually minor or     |
+|                               | irrelevant ones. It does not assess semantic precision or spatial terms (which are covered by other  |
+|                               | criteria), but rather whether the answer aligns with the image’s visual hierarchy and focus — e.g.,  |
+|                               | if the image shows a person holding a cup, and the answer focuses on the cup’s material rather than  |
+|                               | the person’s posture, it may score low if the question is about the person. This criterion applies   |
+|                               | to questions where the visual hierarchy or salience matters (e.g., ‘What is the person doing?’ vs.   |
+|                               | ‘What is the object in the foreground?’). Evaluation: compare whether the answer’s focus matches the |
+|                               | image’s most visually salient or contextually relevant elements — if the answer misdirects attention |
+|                               | or ignores salient objects, it scores low. Accuracy: 0.71 (hypothetical — based on high visual-      |
+|                               | hierarchy alignment in QA).                                                                          |
++-------------------------------+------------------------------------------------------------------------------------------------------+
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [10:48<00:00,  1.30s/it]
+Accuracy: 0.59
+Correct: [False, False, True, True, True, False, True, False, True, True, True, False, False, False, True, True, False, True, True, True, False, False, True, True, True, True, True, True, True, False, False, True, True, True, False, True, True, False, False, True, True, False, True, False, True, True, False, True, False, False, True, True, True, True, True, False, False, False, False, True, True, True, False, True, False, False, False, False, False, True, False, False, False, False, True, True, True, False, True, True, True, True, True, False, False, True, False, True, True, True, False, False, False, True, True, True, True, True, True, True]
+{
+    "completeness_and_specificity": {
+        "Accuracy": 0.6986301369863014,
+        "Refuse to Respond": "0.27 (27)"
+    },
+    "temporal_consistency": {
+        "Accuracy": 0.7931034482758621,
+        "Refuse to Respond": "0.71 (71)"
+    },
+    "visual_contextual_accuracy": {
+        "Accuracy": 0.6875,
+        "Refuse to Respond": "0.04 (4)"
+    },
+    "response_ambiguity_resolution": {
+        "Accuracy": 0.6741573033707865,
+        "Refuse to Respond": "0.11 (11)"
+    },
+    "cross-modal_consistency": {
+        "Accuracy": 0.5656565656565656,
+        "Refuse to Respond": "0.01 (1)"
+    }
+}
+## Iteration 4
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 450/450 [11:50<00:00,  1.58s/it]
+Train: 0.5777777777777777 [True, True, True, False, False, True, True, True, False, True, True, False, False, True, True, True, False, False, False, True, False, False, True, True, True, True, False, True, True, False, True, True, False, True, False, False, True, False, False, False, False, False, True, True, True, True, False, False, True, True, True, True, False, True, False, True, True, False, False, True, False, False, True, True, False, True, True, True, True, True, True, False, False, False, True, True, False, True, False, True, True, False, False, True, True, True, True, False, True, False]
++-------------------------------+------+--------------------+
+|           Criterion           | Type |      Accuracy      |
++-------------------------------+------+--------------------+
+|  completeness_and_specificity | Mid  | 0.7258064516129032 |
+|    cross-modal_consistency    | Low  | 0.5057471264367817 |
+| response_ambiguity_resolution | Mid  | 0.6052631578947368 |
+|      temporal_consistency     | Mid  | 0.7857142857142857 |
+|   visual_contextual_accuracy  | Mid  | 0.651685393258427  |
++-------------------------------+------+--------------------+
+
+
+#### Mid
+Reflection: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 84/84 [23:19<00:00, 16.66s/it]
+Optimization: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4/4 [02:21<00:00, 35.49s/it]
++------------------------------+----------------------------------------------------+----------------------------------------------------+
+|          Criterion           | Old                                                | New                                                |
++------------------------------+----------------------------------------------------+----------------------------------------------------+
+| completeness_and_specificity | This criterion evaluates the visual fidelity and   | This criterion evaluates which of two factually    |
+|                              | precision of answers that are factually correct    | correct answers is more complete and specific in   |
+|                              | and visually grounded — meaning it is only         | its visual description — applicable ONLY when both |
+|                              | applicable when both candidate answers are         | candidate answers are confirmed to be factually    |
+|                              | confirmed to be free of hallucination or factual   | correct and free of hallucination. If either       |
+|                              | misrepresentation. If either answer contains a     | answer contains a hallucination (e.g., asserting   |
+|                              | hallucination (e.g., asserting non-visible         | non-visible elements, misidentifying objects, or   |
+|                              | elements, misidentifying objects, or fabricating   | fabricating motion/state not supported by visual   |
+|                              | motion/state not supported by visual evidence), it | evidence), the criterion is NOT applied — and      |
+|                              | must be disqualified under                         | preference must be determined solely by            |
+|                              | 'factual_consistency_with_the_image' and this      | 'factual_consistency_with_the_image'. The          |
+|                              | criterion must NOT be applied. The criterion does  | criterion is not a tie-breaker — it only compares  |
+|                              | not evaluate hallucinated answers — even if they   | answers that are both factually correct.           |
+|                              | appear more complete or specific — and workers     | Completeness means covering all visually relevant  |
+|                              | must immediately defer to                          | elements necessary to answer the question (e.g.,   |
+|                              | 'factual_consistency_with_the_image' upon          | object identity, position, count, spatial          |
+|                              | detecting any hallucination. Completeness means    | relationships) — not background, inferred, or      |
+|                              | covering all visually relevant elements necessary  | aesthetic context. Specificity is rewarded only    |
+|                              | to answer the question (e.g., object identity,     | when it enhances precision by referencing          |
+|                              | position, count, spatial relationships) — not      | verifiable visual attributes (e.g., color,         |
+|                              | background, inferred, or aesthetic context.        | texture, shape, exact position, count, or spatial  |
+|                              | Specificity is rewarded only when it enhances      | hierarchy) — not speculative, inferred, or non-    |
+|                              | precision by referencing verifiable visual         | visual claims (e.g., emotions, sounds, internal    |
+|                              | attributes (e.g., color, texture, shape, exact     | states). Visual inferences are allowed only if     |
+|                              | position, count, or spatial hierarchy) — not       | directly implied by visual structure or context    |
+|                              | speculative, inferred, or non-visual claims (e.g., | (e.g., posture suggesting movement, occlusion      |
+|                              | emotions, sounds, internal states). Visual         | implying depth) — but not if they assert non-      |
+|                              | inferences are allowed only if directly implied by | visible elements. Ambiguity in the image (e.g.,    |
+|                              | visual structure or context (e.g., posture         | partial occlusion, lighting) does not justify      |
+|                              | suggesting movement, occlusion implying depth) —   | penalizing completeness or specificity — only      |
+|                              | but not if they assert non-visible elements.       | hallucination or omission of visible, relevant     |
+|                              | Ambiguity in the image (e.g., partial occlusion,   | elements. The goal is visual fidelity — not        |
+|                              | lighting) does not justify penalizing completeness | stylistic richness, aesthetic interpretation, or   |
+|                              | or specificity — only hallucination or omission of | inferential depth. Specificity must be grounded in |
+|                              | visible, relevant elements. The goal is visual     | visible evidence — not subjective interpretation,  |
+|                              | fidelity — not stylistic richness, aesthetic       | plausible but unsupported inferences, or           |
+|                              | interpretation, or inferential depth. Specificity  | exaggerated quantifiers (e.g., 'most,' 'largest')  |
+|                              | must be grounded in visible evidence — not         | unless visually confirmed. Completeness does not   |
+|                              | subjective interpretation, plausible but           | require exhaustive listing of every visual detail  |
+|                              | unsupported inferences, or exaggerated quantifiers | — only coverage of all elements relevant to        |
+|                              | (e.g., 'most,' 'largest') unless visually          | answering the question. Workers must first verify  |
+|                              | confirmed. Completeness does not require           | factual correctness under                          |
+|                              | exhaustive listing of every visual detail — only   | 'factual_consistency_with_the_image' — and if      |
+|                              | coverage of all elements relevant to answering the | either answer is hallucinated, this criterion is   |
+|                              | question. Workers must first verify factual        | inapplicable. If both answers are factually        |
+|                              | correctness under                                  | correct, the one that is more complete and         |
+|                              | 'factual_consistency_with_the_image' — and if      | specific (without hallucination) is preferred —    |
+|                              | either answer is hallucinated, this criterion is   | but only if both are factually correct. Example:   |
+|                              | inapplicable. If both answers are factually        | describing a ‘blue couch with patterned fabric’ is |
+|                              | correct, the one that is more complete and         | specific and complete if visible; saying ‘the      |
+|                              | specific (without hallucination) is preferred —    | couch is comfortable’ is acceptable if texture     |
+|                              | but only if both are factually correct. Example:   | implies comfort — but saying ‘the cat is purring’  |
+|                              | describing a ‘blue couch with patterned fabric’ is | is hallucination and disqualified. Visual motion,  |
+|                              | specific and complete if visible; saying ‘the      | trajectory, or spatial relationships (e.g.,        |
+|                              | couch is comfortable’ is acceptable if texture     | ‘drawing an arc’, ‘landing outside the circle’)    |
+|                              | implies comfort — but saying ‘the cat is purring’  | are acceptable if directly supported by visual     |
+|                              | is hallucination and disqualified. Visual motion,  | evidence — not penalized for being metaphorical or |
+|                              | trajectory, or spatial relationships (e.g.,        | dynamic. Aesthetic or compositional                |
+|                              | ‘drawing an arc’, ‘landing outside the circle’)    | interpretations (e.g., ‘scenic beauty’,            |
+|                              | are acceptable if directly supported by visual     | ‘contrast’, ‘composition’) are allowed if grounded |
+|                              | evidence — not penalized for being metaphorical or | in visually verifiable elements (e.g.,             |
+|                              | dynamic. Aesthetic or compositional                | foreground/background, color contrast, spatial     |
+|                              | interpretations (e.g., ‘scenic beauty’,            | framing) — but not if they fabricate non-visible   |
+|                              | ‘contrast’, ‘composition’) are allowed if grounded | content. Workers should not reward ‘more visual    |
+|                              | in visually verifiable elements (e.g.,             | elements’ — only those that are verifiable and     |
+|                              | foreground/background, color contrast, spatial     | relevant to the question. The criterion does not   |
+|                              | framing) — but not if they fabricate non-visible   | penalize cautious or plausible inferences — only   |
+|                              | content. Workers should not reward ‘more visual    | hallucinations, misrepresentations, or unsupported |
+|                              | elements’ — only those that are verifiable and     | claims. Workers should flag hallucinated answers   |
+|                              | relevant to the question. The criterion does not   | and not apply this criterion to them — even if the |
+|                              | penalize cautious or plausible inferences — only   | hallucinated answer appears more complete or       |
+|                              | hallucinations, misrepresentations, or unsupported | specific. The criterion is not a tie-breaker — if  |
+|                              | claims. Workers should flag hallucinated answers   | both answers are hallucinated, the worker must     |
+|                              | and not apply this criterion to them — even if the | evaluate them under                                |
+|                              | hallucinated answer appears more complete or       | 'factual_consistency_with_the_image' first — and   |
+|                              | specific. This criterion is not a tie-breaker — if | then, if both are factually correct, apply this    |
+|                              | both answers are hallucinated, the worker must     | criterion. If one answer is hallucinated and the   |
+|                              | evaluate them under                                | other is factually correct, the factually correct  |
+|                              | 'factual_consistency_with_the_image' first — and   | answer is preferred — regardless of completeness   |
+|                              | then, if both are factually correct, apply this    | or specificity under this criterion. If both       |
+|                              | criterion. If one answer is hallucinated and the   | answers are factually correct, preference is given |
+|                              | other is factually correct, the factually correct  | to the more complete and specific answer — but     |
+|                              | answer is preferred — regardless of completeness   | only if both are factually correct. The criterion  |
+|                              | or specificity under this criterion. If both       | is inapplicable if either answer is hallucinated   |
+|                              | answers are factually correct, preference is given | or factually incorrect — and workers must not      |
+|                              | to the more complete and specific answer — but     | apply it in such cases. Hallucination is defined   |
+|                              | only if both are factually correct. The criterion  | as any claim that is definitively unsupported by   |
+|                              | is inapplicable if either answer is hallucinated   | any visual evidence — not just unsupported or      |
+|                              | or factually incorrect — and workers must not      | speculative. Ambiguous or partially visible claims |
+|                              | apply it in such cases. Hallucination is defined   | are not automatically hallucinations — workers     |
+|                              | as any claim that is definitively unsupported by   | must verify whether the visual evidence supports   |
+|                              | any visual evidence — not just unsupported or      | the claim. If one answer is factually correct and  |
+|                              | speculative. Ambiguous or partially visible claims | the other is not, the correct answer wins — but    |
+|                              | are not automatically hallucinations — workers     | only if the correct answer is verifiable — and not |
+|                              | must verify whether the visual evidence supports   | if the incorrect answer is merely ambiguous or     |
+|                              | the claim. If one answer is factually correct and  | speculative. The criterion must be applied as a    |
+|                              | the other is not, the correct answer wins — but    | step-by-step workflow: (1) verify factual          |
+|                              | only if the correct answer is verifiable — and not | correctness for both candidates — if either is     |
+|                              | if the incorrect answer is merely ambiguous or     | hallucinated, defer to                             |
+|                              | speculative. The criterion must be applied as a    | 'factual_consistency_with_the_image'; (2) if both  |
+|                              | step-by-step workflow: (1) verify factual          | are factually correct, compare completeness and    |
+|                              | correctness for both candidates — if either is     | specificity — and if one is more specific or       |
+|                              | hallucinated, defer to                             | complete without hallucination, prefer it — but    |
+|                              | 'factual_consistency_with_the_image'; (2) if both  | only if both are factually correct. The criterion  |
+|                              | are factually correct, compare completeness and    | must not be misused as a tie-breaker or fallback   |
+|                              | specificity — and if one is more specific or       | when factual correctness is violated — it must be  |
+|                              | complete without hallucination, prefer it — but    | conditional on both answers being factually        |
+|                              | only if both are factually correct. The criterion  | correct. Visual approximations (e.g., 'near',      |
+|                              | must not be misused as a tie-breaker or fallback   | 'about', 'roughly') are not hallucinations if      |
+|                              | when factual correctness is violated — it must be  | grounded in visual evidence — and must not         |
+|                              | conditional on both answers being factually        | disqualify an answer simply because it is          |
+|                              | correct. Visual approximations (e.g., 'near',      | imprecise, unless it is factually incorrect. The   |
+|                              | 'about', 'roughly') are not hallucinations if      | criterion must explicitly distinguish between      |
+|                              | grounded in visual evidence — and must not         | 'plausible inference' (allowed) and 'unsupported   |
+|                              | disqualify an answer simply because it is          | speculation' (hallucination). 'Specificity'        |
+|                              | imprecise, unless it is factually incorrect. The   | rewards grounded visual details, not speculative   |
+|                              | criterion must explicitly distinguish between      | context — and inferences must be directly implied  |
+|                              | 'plausible inference' (allowed) and 'unsupported   | by visual structure (e.g., posture suggesting      |
+|                              | speculation' (hallucination). 'Specificity'        | motion), not assumed from abstract narrative. If   |
+|                              | rewards grounded visual details, not speculative   | both answers contain speculative claims, the one   |
+|                              | context — and inferences must be directly implied  | with the least hallucination (i.e., more visually  |
+|                              | by visual structure (e.g., posture suggesting      | grounded inference) is preferred — not the one     |
+|                              | motion), not assumed from abstract narrative. If   | with the most unsupported speculation. The         |
+|                              | both answers contain speculative claims, the one   | criterion must explicitly restrict 'specificity'   |
+|                              | with the least hallucination (i.e., more visually  | to verifiable visual attributes (e.g., color,      |
+|                              | grounded inference) is preferred — not the one     | shape, position, count) — not linguistic,          |
+|                              | with the most unsupported speculation. The         | semantic, or conceptual associations. Enhancements |
+|                              | criterion must explicitly restrict 'specificity'   | must directly support visual grounding, not add    |
+|                              | to verifiable visual attributes (e.g., color,      | non-visual or inferential detail. Completeness and |
+|                              | shape, position, count) — not linguistic,          | specificity are only evaluated for answers that    |
+|                              | semantic, or conceptual associations. Enhancements | address the question’s core visual intent — not    |
+|                              | must directly support visual grounding, not add    | for linguistic or metaphorical elaboration. The    |
+|                              | non-visual or inferential detail. Completeness and | criterion must explicitly state that it is only    |
+|                              | specificity are only evaluated for answers that    | applicable when both answers are factually correct |
+|                              | address the question’s core visual intent — not    | — and that if either is hallucinated, it must be   |
+|                              | for linguistic or metaphorical elaboration. The    | rejected under                                     |
+|                              | criterion must explicitly state that it is only    | 'factual_consistency_with_the_image', not compared |
+|                              | applicable when both answers are factually correct | under this criterion. The criterion is not a tie-  |
+|                              | — and that if either is hallucinated, it must be   | breaker — and if one answer is hallucinated, the   |
+|                              | rejected under                                     | other is automatically preferred — regardless of   |
+|                              | 'factual_consistency_with_the_image', not compared | completeness or specificity. The criterion must be |
+|                              | under this criterion. The criterion is not a tie-  | written as a conditional evaluation — not a        |
+|                              | breaker — and if one answer is hallucinated, the   | standalone judgment. Hallucination is defined as   |
+|                              | other is automatically preferred — regardless of   | claiming non-visible or misidentified visual       |
+|                              | completeness or specificity. The criterion must be | elements — not just any deviation from a word’s    |
+|                              | written as a conditional evaluation — not a        | literal form (e.g., ‘cupcake’ vs. ‘cake’). Visual  |
+|                              | standalone judgment. Hallucination is defined as   | grounding must be evaluated before applying this   |
+|                              | claiming non-visible or misidentified visual       | criterion, and workers must verify object identity |
+|                              | elements — not just any deviation from a word’s    | and spatial relationships with the image — not     |
+|                              | literal form (e.g., ‘cupcake’ vs. ‘cake’). Visual  | just linguistic form. Hallucinations are only      |
+|                              | grounding must be evaluated before applying this   | disqualifying if the claim is entirely unsupported |
+|                              | criterion, and workers must verify object identity | by the image — and not penalize correct            |
+|                              | and spatial relationships with the image — not     | interpretations that are less ‘specific’ or        |
+|                              | just linguistic form. Hallucinations are only      | ‘complete’ in wording but visually accurate. The   |
+|                              | disqualifying if the claim is entirely unsupported | criterion should explicitly instruct workers to    |
+|                              | by the image — and not penalize correct            | evaluate both answers for visual grounding first — |
+|                              | interpretations that are less ‘specific’ or        | and only apply this criterion if both are          |
+|                              | ‘complete’ in wording but visually accurate. The   | factually correct — not to defer to the criterion  |
+|                              | criterion should explicitly instruct workers to    | if one is hallucinated without verifying visual    |
+|                              | evaluate both answers for visual grounding first — | accuracy first. The criterion must explicitly      |
+|                              | and only apply this criterion if both are          | state that completeness_and_specificity is         |
+|                              | factually correct — not to defer to the criterion  | inapplicable if either answer is hallucinated or   |
+|                              | if one is hallucinated without verifying visual    | factually incorrect — and that preference should   |
+|                              | accuracy first. The criterion must explicitly      | not be derived from this criterion in such cases.  |
+|                              | state that completeness_and_specificity is         | The criterion does not function as a tie-breaker — |
+|                              | inapplicable if either answer is hallucinated or   | it only compares factually correct answers.        |
+|                              | factually incorrect — and that preference should   | Hallucinated answers are disqualified from         |
+|                              | not be derived from this criterion in such cases.  | comparison under this criterion, not automatically |
+|                              | The criterion does not function as a tie-breaker — | preferred — and the worker should not use this     |
+|                              | it only compares factually correct answers.        | criterion to infer preference when one answer is   |
+|                              | Hallucinated answers are disqualified from         | hallucinated. The criterion must be applied only   |
+|                              | comparison under this criterion, not automatically | after factual correctness is confirmed — and only  |
+|                              | preferred — and the worker should not use this     | among factually correct answers. The criterion is  |
+|                              | criterion to infer preference when one answer is   | not for evaluating factual correctness — only for  |
+|                              | hallucinated. The criterion must be applied only   | comparing precision and coverage among factually   |
+|                              | after factual correctness is confirmed — and only  | correct answers. The description must emphasize    |
+|                              | among factually correct answers. The criterion is  | that the criterion is strictly for factually       |
+|                              | not for evaluating factual correctness — only for  | correct answers only, and that hallucinated        |
+|                              | comparing precision and coverage among factually   | answers are not evaluated under this criterion —   |
+|                              | correct answers. The description must emphasize    | they are evaluated under                           |
+|                              | that the criterion is strictly for factually       | 'factual_consistency_with_the_image'. The          |
+|                              | correct answers only, and that hallucinated        | criterion must be restructured to first validate   |
+|                              | answers are not evaluated under this criterion —   | factual correctness, then apply completeness and   |
+|                              | they are evaluated under                           | specificity — with clear separation of             |
+|                              | 'factual_consistency_with_the_image'. The          | responsibilities. The criterion should not be      |
+|                              | criterion must be restructured to first validate   | misused as a tool for evaluating factual accuracy  |
+|                              | factual correctness, then apply completeness and   | — it is purely for comparing precision and         |
+|                              | specificity — with clear separation of             | coverage among factually correct answers.          |
+|                              | responsibilities. The criterion should not be      |                                                    |
+|                              | misused as a tool for evaluating factual accuracy  |                                                    |
+|                              | — it is purely for comparing precision and         |                                                    |
+|                              | coverage among factually correct answers.          |                                                    |
+|     temporal_consistency     | This criterion evaluates the plausibility of       | This criterion evaluates whether an answer’s claim |
+|                              | motion, state change, or temporal sequence claims  | about motion, state change, or sequence is         |
+|                              | within the visual frame — only when such claims    | visually plausible or inferable from the image —   |
+|                              | are explicitly or implicitly implied by the        | only when such a claim is explicitly or implicitly |
+|                              | question or image. It does not apply to static     | implied by the question or visual context. It does |
+|                              | scenes, non-temporal descriptions, or answers that | NOT apply to static scenes (where no motion or     |
+|                              | make no temporal claims. It is strictly            | state change is implied) or to answers that make   |
+|                              | inapplicable if the image is static and no motion  | no temporal claims (e.g., ‘a red cup’). It also    |
+|                              | or state transition is implied. The criterion      | does NOT evaluate factual correctness,             |
+|                              | penalizes only when an answer asserts a temporal   | hallucinations, or visual grounding — those are    |
+|                              | claim (e.g., ‘walking,’ ‘opening,’ ‘falling’) that | handled by ‘factual_consistency_with_the_image’    |
+|                              | contradicts visual evidence — e.g., claiming a     | and ‘visual_grounding’. The criterion is strictly  |
+|                              | person is ‘walking’ while feet are planted or      | inapplicable if neither candidate answer contains  |
+|                              | stating a door is ‘swinging open’ when visibly     | a temporal claim. When both answers are factually  |
+|                              | closed. It does not evaluate hallucinations,       | correct and make temporal claims, preference is    |
+|                              | factual misrepresentation, or visual grounding —   | given to the one with the most visually plausible  |
+|                              | those are handled by                               | or inferable temporal claim — but only if both are |
+|                              | ‘factual_consistency_with_the_image’ and           | factually correct. A temporal claim is defined as  |
+|                              | ‘visual_grounding’. It also does not penalize      | any assertion of motion (e.g., ‘walking’,          |
+|                              | reasonable, visually-supported inferences (e.g.,   | ‘running’, ‘falling’), state change (e.g.,         |
+|                              | ‘the cat is running’ if posture implies motion) or | ‘opening’, ‘closing’, ‘swinging’), or sequence     |
+|                              | cautious, non-committal answers. Evaluation:       | (e.g., ‘drawing an arc’, ‘landing outside the      |
+|                              | first, verify that the answer makes a temporal     | circle’) — not activity or state descriptions      |
+|                              | claim (motion, state change, sequence) — if not,   | (e.g., ‘driving a carriage’, ‘standing near a      |
+|                              | mark the criterion as inapplicable. If it does,    | fence’), which are allowed if visually supported.  |
+|                              | check whether the claim is visually plausible — if | Visual plausibility includes reasonable inferences |
+|                              | the visual frame contradicts it, penalize. If the  | from posture, trajectory, occlusion, motion blur,  |
+|                              | claim is visually consistent (even if inferred),   | or contextual cues — e.g., ‘the cat is running’ if |
+|                              | it is temporally consistent. Do not use this       | posture implies motion, or ‘the door is swinging   |
+|                              | criterion to resolve ties — defer to               | open’ if trajectory suggests movement. The         |
+|                              | ‘factual_consistency’ or                           | criterion does NOT penalize plausible motion       |
+|                              | ‘completeness_and_specificity’. Examples: ‘The     | inferences — only explicit contradictions (e.g.,   |
+|                              | person is walking’ — penalized if feet are         | ‘walking’ with planted feet, ‘falling’ with no     |
+|                              | planted; ‘The door is closed’ — consistent if      | downward trajectory). Temporal claims that infer   |
+|                              | visually closed; ‘The car is moving’ — consistent  | time (e.g., ‘recently’, ‘just’, ‘before’) are      |
+|                              | if motion is implied by blur or trajectory.        | explicitly excluded — evaluation is limited to     |
+|                              | Temporal consistency is not about accuracy or      | motion, state change, or sequence. The criterion   |
+|                              | completeness — only plausibility within the visual | is NOT a tie-breaker — if one answer is factually  |
+|                              | moment. It must not override factual correctness — | incorrect, it is disqualified under                |
+|                              | if an answer is hallucinated, it is disqualified   | ‘factual_consistency’, and the criterion is        |
+|                              | under ‘factual_consistency’, not this criterion.   | inapplicable. If both answers are factually        |
+|                              |                                                    | correct, preference is given to the answer with    |
+|                              |                                                    | the most visually supported temporal claim — but   |
+|                              |                                                    | only if both make temporal claims. If neither      |
+|                              |                                                    | answer makes a temporal claim, the criterion is    |
+|                              |                                                    | inapplicable — preference must be resolved by      |
+|                              |                                                    | other criteria (e.g.,                              |
+|                              |                                                    | ‘completeness_and_specificity’ or                  |
+|                              |                                                    | ‘visual_grounding’). Workers must first verify     |
+|                              |                                                    | factual correctness under ‘factual_consistency’ —  |
+|                              |                                                    | then, if both answers are factually correct and    |
+|                              |                                                    | contain temporal claims, apply this criterion. If  |
+|                              |                                                    | one answer is hallucinated or factually incorrect, |
+|                              |                                                    | it is disqualified — and the criterion is          |
+|                              |                                                    | inapplicable. Visual evidence must support the     |
+|                              |                                                    | temporal claim — not speculative or inferred       |
+|                              |                                                    | claims without visual grounding. A claim is        |
+|                              |                                                    | ‘visually supported’ if it is either directly      |
+|                              |                                                    | visible (e.g., motion blur, trajectory) or         |
+|                              |                                                    | inferable from visual structure (e.g., posture     |
+|                              |                                                    | suggesting motion, occlusion implying depth        |
+|                              |                                                    | change). Claims that are not temporally related    |
+|                              |                                                    | (e.g., color, shape, count) are outside the scope  |
+|                              |                                                    | of this criterion. Example: ‘The person is         |
+|                              |                                                    | walking’ — penalized if feet are planted; ‘The     |
+|                              |                                                    | door is closing’ — consistent if visually moving;  |
+|                              |                                                    | ‘The cat is running’ — consistent if posture       |
+|                              |                                                    | implies motion; ‘The car is parked’ — not          |
+|                              |                                                    | penalized unless motion is claimed and             |
+|                              |                                                    | contradicted. This criterion must not be used to   |
+|                              |                                                    | evaluate factual accuracy — only to compare        |
+|                              |                                                    | temporal plausibility among factually correct      |
+|                              |                                                    | temporal claims. Workers must not apply this       |
+|                              |                                                    | criterion if either answer is hallucinated — and   |
+|                              |                                                    | must defer to ‘factual_consistency’ first. The     |
+|                              |                                                    | criterion must not be misused as a tie-breaker —   |
+|                              |                                                    | preference must be resolved by other criteria when |
+|                              |                                                    | temporal_consistency is inapplicable or when both  |
+|                              |                                                    | answers are factually correct and lack temporal    |
+|                              |                                                    | claims. Temporal_consistency is not about accuracy |
+|                              |                                                    | or completeness — only about whether a temporal    |
+|                              |                                                    | claim is visually plausible or inferable — and     |
+|                              |                                                    | only when both answers are factually correct and   |
+|                              |                                                    | contain temporal claims. If the visual evidence    |
+|                              |                                                    | permits the claim (even if motion is not captured  |
+|                              |                                                    | in a single frame), it is considered consistent —  |
+|                              |                                                    | e.g., ‘drawing an arc’ or ‘motion implied by       |
+|                              |                                                    | trajectory’ is allowed if grounded in visual       |
+|                              |                                                    | structure. Workers must be instructed to evaluate  |
+|                              |                                                    | whether the visual evidence permits the claim —    |
+|                              |                                                    | not whether it directly contradicts it — and must  |
+|                              |                                                    | distinguish between hallucinated motion            |
+|                              |                                                    | (unsupported) and inferred motion (supported by    |
+|                              |                                                    | visual cues).                                      |
+|  visual_contextual_accuracy  | This criterion evaluates whether the answer        | This criterion evaluates whether the answer        |
+|                              | correctly interprets and reflects the visual       | accurately reflects visible environmental,         |
+|                              | context of the image — including environmental,    | compositional, or spatial context in the image —   |
+|                              | compositional, or contextual elements (e.g.,       | such as lighting, background elements, occlusion,  |
+|                              | lighting, background, framing, occlusion) that are | framing, depth, shadow direction, or spatial       |
+|                              | relevant to answering the question. It goes beyond | hierarchy — that is directly relevant to answering |
+|                              | object-level grounding to assess whether the       | the question. It does NOT evaluate object          |
+|                              | answer accounts for the image’s overall visual     | identity, material, count, or factual enumeration  |
+|                              | narrative or setting. For example, if the image    | — those are covered by                             |
+|                              | shows a dimly lit room with a shadowed object, an  | 'factual_consistency_with_the_image'. It also does |
+|                              | answer that ignores lighting conditions or         | NOT evaluate linguistic accuracy, inferred         |
+|                              | misattributes the shadow’s origin would score low. | emotional states, or speculative narrative         |
+|                              | This criterion applies when the question or visual | interpretations — those are outside its scope. The |
+|                              | context implies environmental or contextual        | criterion is ONLY applicable when the question or  |
+|                              | interpretation — but not for purely object-centric | image explicitly requires interpretation of visual |
+|                              | questions. It does not penalize lack of detail if  | context beyond object-level facts (e.g., 'What is  |
+|                              | the context is not visually evident — only if the  | the mood of the scene?', 'How is the object        |
+|                              | answer misrepresents or fabricates contextual      | positioned relative to the background?', 'Is the   |
+|                              | elements. Evaluation: compare the answer’s         | lighting dramatic?'). If the question is purely    |
+|                              | contextual claims against visible environmental    | object-centric (e.g., 'What is in the image?'),    |
+|                              | cues (e.g., lighting, background objects,          | this criterion is inapplicable. Evaluation:        |
+|                              | perspective, depth, shadow direction). Accuracy:   | compare the answer’s claims about visual context   |
+|                              | 0.70 (hypothetical — based on high contextual      | against what is visibly present — penalize only if |
+|                              | alignment in QA).                                  | the answer fabricates, misrepresents, or omits     |
+|                              |                                                    | visually evident contextual elements (e.g.,        |
+|                              |                                                    | claiming a shadow is cast from a non-visible       |
+|                              |                                                    | source, ignoring occlusion that blocks part of an  |
+|                              |                                                    | object, misattributing lighting direction). Do NOT |
+|                              |                                                    | penalize for cautious or non-committal language    |
+|                              |                                                    | (e.g., 'possibly', 'appears to be') if the context |
+|                              |                                                    | is ambiguous — but DO penalize if the answer       |
+|                              |                                                    | asserts a contextual claim not supported by the    |
+|                              |                                                    | image. DO NOT penalize for omission of non-        |
+|                              |                                                    | essential context — only for misrepresentation or  |
+|                              |                                                    | fabrication. DO NOT reward ‘richer’ or ‘more       |
+|                              |                                                    | detailed’ context — only correct, visually         |
+|                              |                                                    | verifiable interpretation. Hallucinated context    |
+|                              |                                                    | (e.g., ‘a castle in the background’) is            |
+|                              |                                                    | disqualified under                                 |
+|                              |                                                    | 'factual_consistency_with_the_image' — not this    |
+|                              |                                                    | criterion. This criterion is inapplicable if the   |
+|                              |                                                    | image lacks sufficient visual context to evaluate  |
+|                              |                                                    | (e.g., overly blurred, low resolution, or no       |
+|                              |                                                    | contextual cues). Workers must first verify        |
+|                              |                                                    | factual correctness under                          |
+|                              |                                                    | 'factual_consistency_with_the_image' — and only    |
+|                              |                                                    | apply this criterion if the answer is factually    |
+|                              |                                                    | correct. Examples: 'The object is in shadow' —     |
+|                              |                                                    | correct if visually evident; 'The scene is lit     |
+|                              |                                                    | from above' — correct if shadows point downward;   |
+|                              |                                                    | 'The person is behind a pillar' — correct if       |
+|                              |                                                    | occlusion is visible; 'The background is blurry' — |
+|                              |                                                    | correct if visually confirmed — not penalized for  |
+|                              |                                                    | being vague. Do NOT evaluate whether the answer is |
+|                              |                                                    | 'more creative' or 'more narrative' — only whether |
+|                              |                                                    | it correctly describes what is visually present.   |
+|                              |                                                    | Do NOT confuse this with 'completeness' — this     |
+|                              |                                                    | criterion focuses on accuracy of visual context,   |
+|                              |                                                    | not detail volume. Workers must reject any answer  |
+|                              |                                                    | that fabricates visual context — even if it seems  |
+|                              |                                                    | plausible — and defer to                           |
+|                              |                                                    | 'factual_consistency_with_the_image'.              |
++------------------------------+----------------------------------------------------+----------------------------------------------------+
+
+#### Low
+cross-modal_consistency
+D:\3-Work\02-DD-LLM\CritiQ\critiq\workflow.py:679: UserWarning: Num of low_criteria(1) != n_criteria - #new_criteria (2)
+  warnings.warn(
++---------------------------+------------------------------------------------------------------------------------------------------+
+|         Criterion         | Description                                                                                          |
++---------------------------+------------------------------------------------------------------------------------------------------+
+| visual_salience_alignment | This criterion evaluates whether the answer’s focus and emphasis align with the most visually        |
+|                           | salient elements in the image — such as foreground objects, high-contrast regions, or objects with   |
+|                           | unique textures or motion — while avoiding distraction by background or minor visual details. It     |
+|                           | applies when the image contains competing visual elements (e.g., a small object in the foreground    |
+|                           | versus a large, less relevant background object) and the question requires prioritization of visual  |
+|                           | importance. The criterion does not evaluate object identification, factual accuracy, or contextual   |
+|                           | interpretation — those are covered by other criteria. Instead, it assesses whether the answer        |
+|                           | directs attention to the part of the image that is most visually or semantically central to          |
+|                           | answering the question. Evaluation: compare whether the answer prioritizes the most visually salient |
+|                           | object or region — if the answer focuses on a visually minor or irrelevant element while ignoring    |
+|                           | the salient one, it scores low. If the answer correctly prioritizes the salient visual element       |
+|                           | without overemphasizing irrelevant details, it scores high. Accuracy: 0.75 (hypothetical — based on  |
+|                           | high visual-salience alignment in QA).                                                               |
++---------------------------+------------------------------------------------------------------------------------------------------+
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 400/400 [11:58<00:00,  1.80s/it]
+Accuracy: 0.62
+Correct: [False, True, True, True, True, False, True, True, True, False, True, True, False, True, False, True, False, False, True, True, False, False, True, True, True, True, True, True, True, False, False, True, True, True, False, True, False, False, False, True, True, False, True, False, True, True, False, True, False, False, True, True, True, True, True, False, False, True, False, True, True, False, True, True, False, False, False, True, False, True, False, True, False, False, True, True, True, False, True, True, True, True, True, False, False, True, False, True, True, True, True, False, True, False, False, True, True, True, True, True]
+{
+    "completeness_and_specificity": {
+        "Accuracy": 0.7088607594936709,
+        "Refuse to Respond": "0.21 (21)"
+    },
+    "temporal_consistency": {
+        "Accuracy": 0.7777777777777778,
+        "Refuse to Respond": "0.91 (91)"
+    },
+    "visual_contextual_accuracy": {
+        "Accuracy": 0.6962025316455697,
+        "Refuse to Respond": "0.21 (21)"
+    },
+    "visual_salience_alignment": {
+        "Accuracy": 0.5714285714285714,
+        "Refuse to Respond": "0.09 (9)"
+    }
+}
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 360/360 [07:28<00:00,  1.25s/it]
+Final Train Acc: 0.6111111111111112 [True, True, True, False, False, True, True, True, False, True, False, False, False, True, False, True, False, True, True, False, False, False, False, True, False, True, True, True, True, False, True, True, False, True, False, True, True, False, False, True, False, False, True, True, True, True, False, False, True, True, True, True, True, True, False, True, True, True, False, True, False, False, True, True, False, True, True, True, True, False, False, True, False, False, True, True, False, True, False, True, True, True, True, True, True, True, True, False, True, False]
++------------------------------------------+-----------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+
+|                Criterion                 | epoch_init.json |    epoch_0.json    |    epoch_1.json    |    epoch_2.json    |    epoch_3.json    |    epoch_4.json    |  epoch_final.json  |
++------------------------------------------+-----------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+
+|             visual_grounding             |       0.0       |       0.6625       |       0.6625       |       0.6625       |       0.6625       |       0.6625       |       0.6625       |
+|            question_relevance            |       0.0       | 0.5432098765432098 | 0.5432098765432098 |       0.7125       |       0.7125       |       0.7125       |       0.7125       |
+|    factual_consistency_with_the_image    |       0.0       | 0.6533333333333333 | 0.6533333333333333 | 0.6533333333333333 | 0.6533333333333333 | 0.6533333333333333 | 0.6533333333333333 |
+| avoidance_of_hallucinated_visual_details |       0.0       | 0.547945205479452  | 0.547945205479452  | 0.547945205479452  | 0.547945205479452  | 0.547945205479452  | 0.547945205479452  |
+|       completeness_and_specificity       |       0.0       | 0.6436781609195402 | 0.6436781609195402 | 0.6753246753246753 | 0.6753246753246753 | 0.7258064516129032 |       0.7625       |
+|          calibrated_uncertainty          |        0        |         0          | 0.6486486486486487 | 0.6486486486486487 | 0.6486486486486487 | 0.6486486486486487 | 0.6486486486486487 |
+|      language_clarity_and_coherence      |        0        |         0          | 0.4772727272727273 | 0.4772727272727273 | 0.4772727272727273 | 0.4772727272727273 | 0.4772727272727273 |
+|           temporal_consistency           |        0        |         0          |         0          |         0          | 0.6029411764705882 | 0.7857142857142857 | 0.7857142857142857 |
+|          multi-modal_coherence           |        0        |         0          |         0          |         0          | 0.5671641791044776 | 0.5671641791044776 | 0.5671641791044776 |
+|            semantic_precision            |        0        |         0          |         0          |         0          | 0.550561797752809  | 0.550561797752809  | 0.550561797752809  |
+|        visual_contextual_accuracy        |        0        |         0          |         0          |         0          |         0          | 0.651685393258427  | 0.651685393258427  |
+|      response_ambiguity_resolution       |        0        |         0          |         0          |         0          |         0          | 0.6052631578947368 | 0.6052631578947368 |
+|         cross-modal_consistency          |        0        |         0          |         0          |         0          |         0          | 0.5057471264367817 | 0.5057471264367817 |
+|        visual_salience_alignment         |        0        |         0          |         0          |         0          |         0          |         0          | 0.5180722891566265 |
++------------------------------------------+-----------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+
+### Final eval criteria: ['visual_grounding', 'question_relevance', 'factual_consistency_with_the_image', 'completeness_and_specificity', 'calibrated_uncertainty', 'temporal_consistency', 'visual_contextual_accuracy', 'response_ambiguity_resolution']
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4000/4000 [1:03:49<00:00,  1.04it/s]
+### Final 500-heldout evaluation: 0.672 [False, True, True, True, True, False, True, True, False, False, False, False, True, True, False, True, True, True, True, True, False, True, True, False, True, True, True, True, True, True, False, True, False, True, True, True, False, False, False, True, False, True, True, False, True, True, True, True, True, True, True, False, True, True, False, False, False, False, False, True, True, True, True, False, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, False, True, True, True, True, False, True, False, False, False, False, True, True, True, True, True, True, False, False, True, True, True, True, False, True, True, True, False, True, True, True, True, False, True, True, True, True, True, True, False, False, False, False, False, True, True, False, False, False, True, True, True, True, True, True, False, False, True, True, True, True, True, True, True, False, False, True, False, True, True, True, False, False, True, False, False, True, True, False, True, False, True, True, True, True, True, False, False, True, False, False, False, False, False, True, True, False, True, True, True, True, True, False, True, True, False, False, False, True, True, False, False, False, True, False, True, False, True, False, True, True, True, False, True, False, True, False, True, False, True, True, True, False, True, True, True, True, False, True, True, True, True, True, True, True, False, False, True, True, False, True, True, False, True, True, True, False, True, True, False, False, True, False, True, True, True, True, True, False, True, True, True, False, True, True, True, False, False, True, True, False, False, True, True, True, True, True, True, True, False, False, False, True, True, True, True, True, False, True, True, True, True, True, False, True, True, True, False, True, True, False, True, True, False, False, False, False, False, True, True, True, True, False, True, True, True, True, True, False, True, True, True, False, True, True, True, True, True, True, False, True, True, True, True, True, False, False, True, False, True, False, True, True, True, True, True, True, True, False, False, True, False, False, True, True, True, True, False, False, True, True, False, False, False, True, True, False, True, True, True, False, True, False, True, False, True, True, True, True, False, False, False, True, True, True, False, False, True, True, True, True, False, True, True, True, True, True, True, True, True, True, False, False, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, False, False, True, True, True, False, True, True, True, True, True, True, False, False, True, False, True, False, True, True, False, True, True, True, True, True, True, True, True, True, True, False, False, False, False, True, False, True, False, True, False, True, True, True, True, True, True, False, True, True, True, True, True, True, False, True, False, False, False, True, True, False, False, True, True, False, True, True, False, True, False, True, False, False, False, False, True, True, True]
+### Final 500-heldout per-criterion accuracy: {
+    "visual_grounding": 0.7136563876651982,
+    "question_relevance": 0.6762114537444934,
+    "factual_consistency_with_the_image": 0.7048054919908466,
+    "completeness_and_specificity": 0.7153465346534653,
+    "calibrated_uncertainty": 0.6674311926605505,
+    "temporal_consistency": 0.7815126050420168,
+    "visual_contextual_accuracy": 0.6865979381443299,
+    "response_ambiguity_resolution": 0.6390243902439025
+}

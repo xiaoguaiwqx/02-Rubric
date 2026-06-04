@@ -19,13 +19,15 @@ python data/RLHF-V/convert_to_pair.py data/RLHF-V/discovery_train_90.jsonl `
   --shuffle-ab `
   --seed 42
 
-python data/RLHF-V/convert_to_pair.py data/RLHF-V/discovery_train_90.jsonl `
+
+python data/RLHF-V/convert_to_pair.py data\RLHF-V\heldout_validation_500.jsonl `
   --output-dir data/RLHF-V/ `
   --shuffle-ab `
   --seed 1008 `
   --overwrite `
   --image-root D:\3-Work\02-DD-LLM\drea_multicrit_agent\datasets\RLHF-V-Dataset\processed\images
 
+  
 """
 
 from __future__ import annotations
