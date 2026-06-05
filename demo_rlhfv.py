@@ -531,6 +531,44 @@ def print_final_eval_diagnostics(
         )
 
 
+def save_final_eval_raw_prediction(
+    output_dir: Path,
+    dataset: list[dict[str, Any]],
+    criteria: list[Criterion],
+    eval_output: Any,
+) -> None:
+    """保存 final heldout eval 的原始投票矩阵，方便后续离线分析。
+
+    `final_heldout_diagnostics.json` 更偏向人读的诊断摘要，会把每个样本压缩成
+    A/B/None 的总票数；但做 ablation、重算 voting 或排查单条 criterion 行为时，
+    需要保留 `eval_output.prediction` 中每个 sample-criterion 的原始 A/B/U 票。
+
+    这个文件不保存 worker 的完整 thought，避免 final eval 后额外产生一个很大的
+    JSON。需要看模型解释时仍然可以去 workflow/agent log 里追。
+    """
+    raw_prediction_path = output_dir / "final_heldout_raw_prediction.json"
+    raw_prediction = {
+        "criteria": [criterion.to_dict() for criterion in criteria],
+        "samples": [
+            {
+                "index": index,
+                "sample_id": data.get("sample_id"),
+                "gold": data["answer"],
+            }
+            for index, data in enumerate(dataset)
+        ],
+        "prediction": eval_output.prediction,
+        "is_correct": eval_output.is_correct,
+        "accuracy": eval_output.accuracy,
+        "per_criterion_acc": eval_output.per_criterion_acc,
+    }
+    raw_prediction_path.write_text(
+        json.dumps(raw_prediction, indent=4, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    print(f"### Final heldout raw prediction JSON: {raw_prediction_path}")
+
+
 def ask_agent(criterion: Criterion) -> bool:
     """用 worker 过滤可选知识库里的 criterion。
 
@@ -691,6 +729,7 @@ def main() -> None:
         "### Final 500-heldout per-criterion accuracy:",
         json.dumps(eval_output.per_criterion_acc, indent=4, ensure_ascii=False),
     )
+    save_final_eval_raw_prediction(OUTPUT_DIR, heldout_set, best_criteria, eval_output)
     final_diagnostics = build_final_eval_diagnostics(
         heldout_set, best_criteria, eval_output
     )

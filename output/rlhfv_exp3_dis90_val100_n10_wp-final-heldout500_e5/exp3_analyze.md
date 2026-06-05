@@ -64,3 +64,36 @@ warmup 到 final：318/500 -> 338/500，净提升 +20 条，**+4.0%**。
 - **单独分析 strong wrong majority 的样本，找出哪些 criteria 经常一起把答案带偏。**
 - **Key Findings 5** 的问题解决方案
 
+---
+
+**ablation 分组固定为：**
+
+- best11：all_criteria 中 score >= 0.6 的 11 条，复现 final eval 口径
+- top3_by_train：specificity, visual_coherence_of_composition, factual_consistency
+- top5_by_train：top3 + calibrated_uncertainty, visual_grounding
+- top7_by_train：top5 + completeness, temporal_consistency_in_motion
+- no_sensitivity_to_implied_meaning：best11 去掉 sensitivity_to_implied_meaning
+- broad_only：visual_grounding, factual_consistency, specificity, completeness, contextual_sensitivity, adaptation_to_visual_quality, interpretive_accuracy_under_ambiguous_context。7条
+
+**gain/loss** 是和 baseline，也就是 best11 逐样本对比：
+
+- gain：某个 ablation 判对了，但 best11 判错了的样本数。
+- loss：某个 ablation 判错了，但 best11 判对了的样本数。
+- gain - loss 就等于它比 best11 多对或少对多少个样本。
+
+avg None votes 是**每个样本平均有多少条 criterion 投了 None/U/不适用**。
+
+exact p 是用 **paired exact binomial test** 算的
+
+| group                             | n    | acc   | correct | Δ vs best11 | gain/loss | exact p | tie/None | avg None |
+| --------------------------------- | ---- | ----- | ------- | ----------- | --------- | ------- | -------- | -------- |
+| top7_by_train                     | 7    | 0.676 | 338/500 | +2          | 23/21     | 0.880   | 32       | 1.78     |
+| broad_only                        | 7    | 0.674 | 337/500 | +1          | 9/8       | 1.000   | 17       | 0.49     |
+| best11                            | 11   | 0.672 | 336/500 | 0           | -         | -       | 23       | 2.43     |
+| no_sensitivity_to_implied_meaning | 10   | 0.668 | 334/500 | -2          | 3/5       | 0.727   | 18       | 1.95     |
+| top5_by_train                     | 5    | 0.658 | 329/500 | -7          | 16/23     | 0.337   | 43       | 1.15     |
+| top3_by_train                     | 3    | 0.622 | 311/500 | -25         | 19/44     | 0.002   | 71       | 0.77     |
+
+- 使用七条和使用best11条最后的结果是差不多的。
+- top5_by_train和top3_by_train 的tie/None 都很高，其中top3_by_train有71条。从avg none 可以推测出每次推理可能会有一个criterion投none，剩下两个criterion一个选择a一个选b。如果最后**加权vote的话可以防止出现最终投票出现None的情况。**
+
