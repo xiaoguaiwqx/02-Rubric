@@ -33,10 +33,10 @@ from critiq import (
 
 
 # 任务名会用在输出目录里，例如 ./output/rlhfv。
-TASK_NAME = "rlhfv_exp2_dis90_val100_wp-final-heldout500_e5"
+TASK_NAME = "rlhfv_exp3_dis90_val100_n10_wp-final-heldout500_e5"
 
-# manager 最终要维护多少条评价标准。这里先按需求设成 5，方便快速试跑。
-N_CRITERIA = 5
+# manager 最终要维护多少条评价标准。exp3 使用 10 条来测试更细粒度 criteria 是否有帮助。
+N_CRITERIA = 10
 
 # workflow.optimize 的迭代轮数。每一轮都会在 train_set 上评估并改写 criteria。
 NUM_EPOCHS = 5
@@ -55,7 +55,7 @@ DATA_DIR = Path("./data/RLHF-V")
 TRAIN_PAIR_DATA_PATH = DATA_DIR / "discovery_train_90_pair.jsonl"
 
 # heldout 500 条用于观察验证和最终评估：
-# - 优化过程中只随机抽 50 条作为 valid_set，降低每轮 API 成本；
+# - 优化过程中只随机抽 VALID_SIZE 条作为 valid_set，降低每轮 API 成本；
 # - 最后再用完整 500 条做一次 final evaluation。
 HELDOUT_PAIR_DATA_PATH = DATA_DIR / "heldout_validation_500_pair.jsonl"
 
@@ -66,7 +66,7 @@ VALID_SIZE = 100
 OUTPUT_DIR = Path("./output") / TASK_NAME
 
 # worker 并发数。默认 20，可以通过环境变量 CRITIQ_MAX_CONCURRENT 调低，避免 API 限流。
-MAX_CONCURRENT = int(os.getenv("CRITIQ_MAX_CONCURRENT", "20"))
+MAX_CONCURRENT = int(os.getenv("CRITIQ_MAX_CONCURRENT", "40"))
 
 
 def load_local_env(path: str = ".env") -> None:
@@ -273,6 +273,264 @@ Human annotators prefer B over A. Explain why B is better in this RLHF-V visual 
 )
 
 
+def _criterion_vote(vote_counts: dict[str, int]) -> str | None:
+    """把单条 criterion 的原始计数转换成 A/B/None 判定。
+
+    evaluator 为了兼容投票聚合，保存的是 {"A": n, "B": n, "U": n}
+    这种计数结构。当前 RLHF-V 设置里，每个 sample-criterion pair 通常只会
+    调用一次 worker，所以这些计数大多是 0/1。
+
+    `U` 表示 worker 返回 None / unsure / not applicable。它代表这条
+    criterion 对当前样本弃权，因此不能算作 A 或 B 的有效票。
+    """
+    if vote_counts.get("U", 0) > 0:
+        return None
+    if vote_counts.get("A", 0) > vote_counts.get("B", 0):
+        return "A"
+    if vote_counts.get("B", 0) > vote_counts.get("A", 0):
+        return "B"
+    return None
+
+
+def _ensemble_vote(vote_counts: dict[str, int]) -> str | None:
+    """复现 PairEvaluator 默认的最终 A/B 聚合规则。
+
+    默认规则会忽略 None/U 票，只比较 A 和 B 的票数：
+    - A 票更多，最终预测 A；
+    - B 票更多，最终预测 B；
+    - A/B 平票，最终预测 None。
+
+    在 evaluator.eval() 里，最终预测 None 会被计为该样本预测错误。
+    """
+    if vote_counts["A"] > vote_counts["B"]:
+        return "A"
+    if vote_counts["B"] > vote_counts["A"]:
+        return "B"
+    return None
+
+
+def build_final_eval_diagnostics(
+    dataset: list[dict[str, Any]],
+    criteria: list[Criterion],
+    eval_output: Any,
+) -> dict[str, Any]:
+    """基于已有 heldout 评估结果构造诊断信息，不额外调用模型。
+
+    这里完全复用 `eval_output.prediction` 里的原始投票结果，只做本地统计。
+    目标是解释一个常见现象：为什么某些单条 criterion 的准确率很高，但多
+    criterion ensemble 后的最终准确率反而更低。
+
+    返回值包含三类信息：
+    - criterion_stats：每条 criterion 在 heldout500 上的拒答数、覆盖率、
+      correct/applicable 计数和 accuracy。
+    - sample_vote_counts：每个样本有多少条 criterion 投 A、投 B、投 None，
+      以及默认投票规则得到的最终答案。
+    - ensemble_wrong_with_correct_criteria：最终 ensemble 判错，但至少有
+      一条单独 criterion 判对的样本。这类样本最适合用来分析投票冲突、
+      低质量 criterion 抢票、或者 tie-breaker 使用不当的问题。
+    """
+    criterion_names = [criterion.name for criterion in criteria]
+    total = len(dataset)
+
+    # 每条 criterion 的统计容器。
+    # `applicable` 不包含 U/None，因为 evaluator 计算 per_criterion_acc 时
+    # 也只在该 criterion 实际给出 A/B 判断的样本上统计正确率。
+    criterion_stats = {
+        name: {
+            "total": total,
+            "refuse": 0,
+            "applicable": 0,
+            "correct": 0,
+            "incorrect": 0,
+            "coverage": 0.0,
+            "accuracy": 0.0,
+        }
+        for name in criterion_names
+    }
+    sample_votes = []
+    ensemble_wrong_with_correct_criteria = []
+
+    for index, (data, prediction, final_correct) in enumerate(
+        zip(dataset, eval_output.prediction, eval_output.is_correct)
+    ):
+        gold = data["answer"]
+
+        # 当前样本的投票形态。
+        # `None` 记录 criterion 拒答/不适用的次数；默认 A/B majority vote
+        # 不会把 None 计入 A 或 B 的票数。
+        vote_counts = {"A": 0, "B": 0, "None": 0}
+
+        # 保留 criterion 名称，而不是只保留数量。
+        # 这样后续分析可以直接看到：哪些标准在某个样本上救回了正确答案，
+        # 哪些标准把最终 ensemble 带偏了。
+        correct_criteria = []
+        incorrect_criteria = []
+        refused_criteria = []
+
+        for name in criterion_names:
+            criterion_prediction = prediction[name]
+            vote = _criterion_vote(criterion_prediction)
+            if vote is None:
+                # U/None 表示该 criterion 对这个样本弃权。
+                # 它会增加 refuse，并降低 coverage；但不会进入该 criterion
+                # 的 correct/incorrect 统计。
+                vote_counts["None"] += 1
+                criterion_stats[name]["refuse"] += 1
+                refused_criteria.append(name)
+                continue
+
+            vote_counts[vote] += 1
+            criterion_stats[name]["applicable"] += 1
+            if vote == gold:
+                # 单条 criterion 的 A/B 投票与人工偏好标签一致时，记为该
+                # criterion 在这个 applicable 样本上判断正确。
+                criterion_stats[name]["correct"] += 1
+                correct_criteria.append(name)
+            else:
+                criterion_stats[name]["incorrect"] += 1
+                incorrect_criteria.append(name)
+
+        final_vote = _ensemble_vote(vote_counts)
+
+        # 保存紧凑的样本级投票摘要。
+        # 这些信息足够定位平票、低覆盖、以及多条 criterion 一起投错的样本。
+        sample_summary = {
+            "index": index,
+            "sample_id": data.get("sample_id"),
+            "gold": gold,
+            "final_vote": final_vote,
+            "final_correct": bool(final_correct),
+            "votes": vote_counts,
+        }
+        sample_votes.append(sample_summary)
+
+        if not final_correct and correct_criteria:
+            # 这类失败样本对改进 aggregation 最有价值：
+            # 至少有一条 criterion 判对，但最终 ensemble 仍然错了。
+            # 这通常说明其他 criterion 抢票、投票平局、或当前等权投票策略
+            # 没有正确利用高质量 criterion。
+            ensemble_wrong_with_correct_criteria.append(
+                {
+                    **sample_summary,
+                    "correct_criteria": correct_criteria,
+                    "incorrect_criteria": incorrect_criteria,
+                    "refused_criteria": refused_criteria,
+                }
+            )
+
+    for stats in criterion_stats.values():
+        applicable = stats["applicable"]
+        # coverage 回答的问题是：这条 criterion 在 heldout500 上有多大比例
+        # 的样本真正给出了 A/B 判断？
+        # accuracy 只在 applicable 样本上计算，与 EvaluationOutput 里的
+        # per_criterion_acc 口径保持一致。
+        stats["coverage"] = applicable / total if total else 0.0
+        stats["accuracy"] = stats["correct"] / applicable if applicable else 0.0
+
+    return {
+        "criterion_stats": criterion_stats,
+        "sample_vote_counts": sample_votes,
+        "ensemble_wrong_with_correct_criteria": (
+            ensemble_wrong_with_correct_criteria
+        ),
+    }
+
+
+def print_final_eval_diagnostics(
+    output_dir: Path,
+    diagnostics: dict[str, Any],
+    max_error_examples: int = 50,
+) -> None:
+    """打印可读的 heldout 诊断摘要，并把完整明细保存为 JSON。
+
+    实验日志需要能快速扫读，所以这里只打印摘要表格和少量典型错误样本。
+    完整的 500 条样本级诊断会写入 JSON 文件，后续可以用脚本继续分析。
+    """
+    diagnostics_path = output_dir / "final_heldout_diagnostics.json"
+    diagnostics_path.write_text(
+        json.dumps(diagnostics, indent=4, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    criterion_stats = diagnostics["criterion_stats"]
+    sample_vote_counts = diagnostics["sample_vote_counts"]
+    ensemble_errors = diagnostics["ensemble_wrong_with_correct_criteria"]
+
+    # 先打印完整 JSON 文件路径和总体失败样本数量。
+    # 这样 log.txt 不会被 500 条样本明细撑爆，但需要追样本时仍然有入口。
+    print("### Final 500-heldout diagnostics summary")
+    print(f"Full diagnostics JSON: {diagnostics_path}")
+    print(f"Samples with ensemble error but at least one correct criterion: {len(ensemble_errors)}")
+
+    # criterion 诊断表：
+    # - acc = correct / applicable；
+    # - correct/app 展示原始分子和分母；
+    # - refuse 是 U/None 的数量；
+    # - coverage = applicable / total。
+    # 这个表可以快速发现“高准确率但低覆盖率”的 criterion。
+    print("\n### Criterion diagnostics")
+    print(
+        f"{'criterion':45} {'acc':>8} {'correct/app':>13} "
+        f"{'refuse':>8} {'coverage':>9}"
+    )
+    print("-" * 90)
+    for name, stats in sorted(
+        criterion_stats.items(),
+        key=lambda item: item[1]["accuracy"],
+        reverse=True,
+    ):
+        correct_applicable = f"{stats['correct']}/{stats['applicable']}"
+        print(
+            f"{name[:45]:45} "
+            f"{stats['accuracy']:8.3f} "
+            f"{correct_applicable:>13} "
+            f"{stats['refuse']:8d} "
+            f"{stats['coverage']:9.3f}"
+        )
+
+    vote_distribution: dict[tuple[int, int, int, str | None, bool], int] = {}
+    for sample in sample_vote_counts:
+        votes = sample["votes"]
+        # 按投票形态聚合样本。例如 N_CRITERIA=10 时：
+        # - A=5, B=5, None=0 表示最终平票；
+        # - A=4, B=3, None=3 表示虽然 A 赢，但有 3 条 criterion 弃权，
+        #   覆盖率可能正在影响最终决策。
+        key = (
+            votes["A"],
+            votes["B"],
+            votes["None"],
+            sample["final_vote"],
+            sample["final_correct"],
+        )
+        vote_distribution[key] = vote_distribution.get(key, 0) + 1
+
+    # 这个分布用来判断错误主要来自平票、接近票数，还是明显错误多数。
+    print("\n### Sample vote-count distribution")
+    print(f"{'A':>3} {'B':>3} {'None':>5} {'final':>7} {'correct':>8} {'count':>7}")
+    print("-" * 45)
+    for (a_votes, b_votes, none_votes, final_vote, final_correct), count in sorted(
+        vote_distribution.items(),
+        key=lambda item: item[1],
+        reverse=True,
+    ):
+        print(
+            f"{a_votes:3d} {b_votes:3d} {none_votes:5d} "
+            f"{str(final_vote):>7} {str(final_correct):>8} {count:7d}"
+        )
+
+    # 展示有限数量的可行动错误样本。
+    # 完整列表已经写入 JSON；日志里的预览主要用于跑完后快速定性检查。
+    print("\n### Ensemble errors with at least one correct criterion")
+    print(f"Showing first {min(max_error_examples, len(ensemble_errors))} / {len(ensemble_errors)}")
+    for error in ensemble_errors[:max_error_examples]:
+        sample_label = error["sample_id"] if error["sample_id"] is not None else error["index"]
+        print(
+            f"- sample={sample_label} gold={error['gold']} final={error['final_vote']} "
+            f"votes={error['votes']} correct_criteria={error['correct_criteria']} "
+            f"incorrect_criteria={error['incorrect_criteria']} refused={error['refused_criteria']}"
+        )
+
+
 def ask_agent(criterion: Criterion) -> bool:
     """用 worker 过滤可选知识库里的 criterion。
 
@@ -433,6 +691,10 @@ def main() -> None:
         "### Final 500-heldout per-criterion accuracy:",
         json.dumps(eval_output.per_criterion_acc, indent=4, ensure_ascii=False),
     )
+    final_diagnostics = build_final_eval_diagnostics(
+        heldout_set, best_criteria, eval_output
+    )
+    print_final_eval_diagnostics(OUTPUT_DIR, final_diagnostics)
 
 
 if __name__ == "__main__":
