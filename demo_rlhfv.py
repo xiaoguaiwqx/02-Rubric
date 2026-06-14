@@ -33,13 +33,13 @@ from critiq import (
 
 
 # 任务名会用在输出目录里，例如 ./output/rlhfv。
-TASK_NAME = "rlhfv_exp3_dis90_val100_n10_wp-final-heldout500_e5"
+TASK_NAME = "rlhfv_exp4_dis90_val100_n10_wp-final-heldout500_e10"
 
 # manager 最终要维护多少条评价标准。exp3 使用 10 条来测试更细粒度 criteria 是否有帮助。
 N_CRITERIA = 10
 
 # workflow.optimize 的迭代轮数。每一轮都会在 train_set 上评估并改写 criteria。
-NUM_EPOCHS = 5
+NUM_EPOCHS = 10
 
 # Agent 调用失败或输出 JSON 解析失败时，Evaluator 会最多重试这么多次。
 MAX_RETRIES = 10

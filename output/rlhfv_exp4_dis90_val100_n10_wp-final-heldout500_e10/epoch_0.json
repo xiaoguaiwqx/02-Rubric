@@ -1,0 +1,140 @@
+{
+    "manager_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "api_keys": "EMPTY",
+        "base_url": "http://localhost:8000/v1",
+        "request_kwargs": {
+            "temperature": 1.0
+        }
+    },
+    "worker_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "base_url": "http://localhost:8000/v1",
+        "api_keys": "EMPTY",
+        "request_kwargs": {
+            "temperature": 0.5
+        }
+    },
+    "worker_max_concurrent": 40,
+    "current_criteria": [
+        {
+            "name": "biological_or_realistic_plausibility",
+            "description": "This criterion evaluates whether descriptions of animals or humans are anatomically accurate or behaviorally reasonable given known biological facts and the visual context. It does not apply to inanimate objects, furniture, logos, technical devices, or abstract concepts. Apply only when the answer describes a living being’s anatomy, species-specific behavior, or plausible social/physical interaction. For example: a zebra with wings is implausible; a zebra standing still in a field is plausible. Do not penalize contextually reasonable emotional states (e.g., ‘curious’, ‘serious’) if visually supported. Do not confuse with visual grounding or factual consistency — plausibility assesses realism, not visual accuracy. If the question does not involve living beings, this criterion is inapplicable. Always defer to visual evidence when in doubt — a plausible but hallucinated description (e.g., ‘a dog wearing a hat’) is less preferred than a visually accurate one, even if plausible.",
+            "score": 0
+        },
+        {
+            "name": "calibrated_uncertainty",
+            "description": "Calibrated uncertainty applies only when visual evidence is genuinely ambiguous, incomplete, or insufficient to support a definitive claim — such as when an object is partially obscured, its identity is unclear, or a count is uncertain due to overlapping elements. The answer should use qualifiers like ‘possibly’, ‘likely’, or ‘not clearly visible’ to signal this ambiguity, but only when visually supported. It does NOT apply when: (1) the visual evidence is clear and unambiguous (e.g., a visible Apple logo), (2) the answer is factually incorrect or hallucinated (e.g., claiming a cat is a dog), or (3) the answer is confidently correct even if not fully specific (e.g., ‘three chairs’ is acceptable if three are clearly visible). Overcautious hedging that obscures clearly visible content or masks factual errors is penalized. Uncertainty must reflect actual visual ambiguity — not speculative reasoning, contextual assumptions, or vague phrasing for its own sake. Accuracy and visual grounding take precedence: a confidently correct answer is preferred over a hedged one if the image supports it. This criterion is inapplicable if the visual evidence is complete and unambiguous.",
+            "score": 0
+        },
+        {
+            "name": "completeness",
+            "description": "Completeness means covering all visually verifiable and semantically relevant elements necessary to answer the question, without adding hallucinated, speculative, or irrelevant details. An answer is preferred if it includes all major visual components directly tied to the question’s intent — e.g., if the question asks about a person’s action, the answer should include posture, direction, or object interaction, if visible. It is NOT rewarded for verbosity, inferred structure, or background details unless explicitly relevant. Completeness is evaluated only within the bounds of visual grounding and factual consistency — an answer that is factually incorrect or hallucinates details cannot be considered complete, even if it seems more detailed. It is inapplicable when the question does not require visual description (e.g., meta-questions, artist/title, or abstract concepts). Omitting a key visible element is a failure of completeness, but adding unsupported details invalidates completeness. Workers should prioritize accuracy over coverage, and flag cases where visual evidence is ambiguous or missing by acknowledging uncertainty rather than fabricating.",
+            "score": 0
+        },
+        {
+            "name": "specificity",
+            "description": "Specificity rewards precise, verifiable visual details that directly correspond to observable elements in the image — e.g., 'left eye', 'red shirt on the right side', or 'text reading 'STOP' in bold letters'. It is only applicable when the detail is factually accurate and visually grounded; hallucinated, speculative, or unsupported precision (e.g., 'curved track', 'most of the space', or invented object attributes) is penalized regardless of detail quantity. Specificity does not override factual consistency — if an answer is factually incorrect, it is disqualified even if it is more specific. In cases of visual ambiguity, vagueness or calibrated uncertainty (e.g., 'possibly a green key', 'text not clearly legible') is acceptable and not penalized. Specificity is measured by the accuracy and verifiability of descriptors, not their quantity or stylistic flair. Workers should avoid rewarding interpretive or decorative language as 'specific' — only observable, contextually relevant details enhance quality.",
+            "score": 0
+        },
+        {
+            "name": "visual_grounding",
+            "description": "Visual grounding requires the answer to describe only what is directly, unambiguously visible in the image — including object identity, position, color, texture, motion, and spatial relationships — and to explicitly avoid inventing, denying, or mislabeling elements not supported by the visual evidence. Acceptable inferences are those that are visually plausible and explicitly grounded in observable cues (e.g., ‘a person appears to be sitting’ based on posture), but hallucinations — such as adding objects, actions, or attributes not present — are strictly prohibited. When visual evidence is ambiguous, partial, or low-resolution, the answer must either omit the element or explicitly qualify it with uncertainty (e.g., ‘possibly’, ‘unclear’, ‘not visible’), rather than assume or fabricate. General terms (e.g., ‘ham’, ‘cutting tool’) are acceptable if they accurately reflect visible content, and metaphorical or contextual descriptions (e.g., ‘icy needles’) are allowed if visually supported. Spatial claims must be verifiable from the image; speculative positioning or inferred orientation disqualifies grounding. The criterion applies when the image provides sufficient visual information to evaluate grounding, and is inapplicable if the image is too ambiguous to determine what is visible. Workers should prioritize faithful reporting over lexical richness or speculative detail, and when comparing two answers, the one that strictly matches observable content — without introducing unsupported visual elements — is preferred.",
+            "score": 0
+        },
+        {
+            "name": "logical_consistency",
+            "description": "The answer must not contain internal contradictions — e.g., stating an object is both present and absent, or describing an action that contradicts the visual context. Evaluated by checking for semantic or temporal inconsistencies within the answer itself.",
+            "score": 0
+        },
+        {
+            "name": "multimodal_alignment",
+            "description": "The answer must align with the visual modality — for example, describing objects that are clearly visible, not relying on auditory or textual context that isn’t supported by the image. Evaluated by cross-checking visual evidence with textual claims.",
+            "score": 0
+        },
+        {
+            "name": "action_or_state_accuracy",
+            "description": "For questions involving dynamic scenes or states (e.g., ‘Is the person walking?’ or ‘Is the door open?’), the answer must correctly infer or state whether the action/state is occurring, based on visual cues. Evaluated by checking temporal or spatial indicators in the image.",
+            "score": 0
+        },
+        {
+            "name": "contextual_sensitivity",
+            "description": "The answer should respect the contextual setting of the image — e.g., recognizing indoor vs. outdoor, formal vs. casual, or cultural cues — and tailor its response accordingly. Evaluated by assessing whether the answer ignores or misinterprets contextual clues.",
+            "score": 0
+        },
+        {
+            "name": "temporal_coherence",
+            "description": "For sequences or implied motion, the answer must be consistent with the temporal progression shown — e.g., if the image captures a person mid-jump, the answer should not describe them as having landed. Evaluated by analyzing motion cues or implied time states.",
+            "score": 0
+        }
+    ],
+    "banned_criteria": [
+        "avoidance_of_hallucination",
+        "clear_language",
+        "factual_consistency",
+        "coherence_and_structure",
+        "question_relevance"
+    ],
+    "all_criteria": [
+        {
+            "name": "visual_grounding",
+            "description": "The answer must accurately reflect what is visible in the image — describing elements, positions, colors, textures, or actions that can be directly observed. An answer is preferred if it avoids speculation or assumes unseen elements.",
+            "score": 0.6153846153846154
+        },
+        {
+            "name": "question_relevance",
+            "description": "The answer must directly address the question without drifting into irrelevant topics. It should match the question’s intent — e.g., if the question asks about arrangement, the answer should focus on spatial or compositional details, not background stories or unrelated facts.",
+            "score": 0.5802469135802469
+        },
+        {
+            "name": "factual_consistency",
+            "description": "The answer must be factually consistent with the visual evidence. If the image shows a cat, it should not be described as a dog. If an object is partially visible, it should not be claimed to be fully present or absent.",
+            "score": 0.6
+        },
+        {
+            "name": "avoidance_of_hallucination",
+            "description": "The answer must not introduce visual details that are not present in the image — such as colors, objects, or actions that contradict or are not supported by the visual evidence. Hallucinated details undermine trustworthiness.",
+            "score": 0.5584415584415584
+        },
+        {
+            "name": "completeness",
+            "description": "The answer should cover all major visual elements relevant to the question. Omitting key components (e.g., not mentioning a person’s facial expression when asked about it) reduces the answer’s value and may lead to preference for a more complete alternative.",
+            "score": 0.627906976744186
+        },
+        {
+            "name": "specificity",
+            "description": "The answer should provide precise, detailed, and concrete descriptions — e.g., specifying ‘left eye’ rather than ‘eye’, or ‘blood near mouth’ rather than ‘blood on face’. Vague or general statements are less preferred.",
+            "score": 0.7
+        },
+        {
+            "name": "calibrated_uncertainty",
+            "description": "When the visual evidence is ambiguous or incomplete, the answer should acknowledge uncertainty — e.g., ‘possibly’, ‘likely’, or ‘not clearly visible’ — rather than asserting certainty. Overconfidence in unsupported claims reduces quality.",
+            "score": 0.647887323943662
+        },
+        {
+            "name": "clear_language",
+            "description": "The answer should be grammatically correct, easy to understand, and free of unnecessary jargon or ambiguity. Clarity enhances accessibility and ensures the human evaluator can quickly assess the quality without confusion.",
+            "score": 0.5280898876404494
+        },
+        {
+            "name": "coherence_and_structure",
+            "description": "The answer should be logically organized — with clear transitions, consistent terminology, and a logical flow — so the viewer can follow the description without mental effort. Disorganized or contradictory phrasing reduces credibility.",
+            "score": 0.45454545454545453
+        },
+        {
+            "name": "biological_or_realistic_plausibility",
+            "description": "For questions involving animals or humans, the answer should align with known behaviors or anatomy — e.g., a zebra should not be described as “curious” if the context suggests it’s a prey animal. Plausibility enhances trust and realism.",
+            "score": 0.6708860759493671
+        }
+    ],
+    "n_criteria": 10,
+    "manager_prompt": "List and describe 10 criteria for how human annotators compare the quality of two answers to the same visual question.\n\nThe task is RLHF-V style preference comparison for visual question answering and image-text responses. The worker model will receive:\n- the image,\n- the source question,\n- candidate answer A,\n- candidate answer B.\n\nFocus on human preference factors such as visual grounding, question relevance, factual consistency with the image, avoidance of hallucinated visual details, completeness, specificity, calibrated uncertainty, and clear language.",
+    "manager_prompt_postfix": "\n\nYour response should be in the following **json** format:\n```json\n{\n    \"name_of_the_criterion\": \"Detailed description for the criterion such as what it is, how it can be evaluated, when it is applicable, or other relevant information... Be specific and detailed while keep concise.\",\n    ...\n}\n```",
+    "worker_prompt": "## Instruction\nYou are judging an RLHF-V visual QA / image-text preference pair under one criterion. You are given the image, the source question, and two candidate answers.\n\nUse the image when the criterion depends on visual evidence. If the criterion is not applicable to this pair, answer None.\n\n## Question\n{question}\n\n## Criterion\n**{criterion}**: {description}\n\n## Candidate A\n{A}\n\n## Candidate B\n{B}\n\nWhich candidate better matches the criterion and is more likely to align with human preference?",
+    "evaluator_type": "multimodal_pair",
+    "evaluator_kwargs": {
+        "image_field": "image_path",
+        "question_field": "question",
+        "encode_local_image": true
+    }
+}
