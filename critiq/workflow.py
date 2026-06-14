@@ -33,6 +33,7 @@ from tqdm import tqdm
 from .agent import Agent
 from .evaluator import (
     MultiModalPairEvaluator,
+    MoEPairEvaluator,
     PairEvaluator,
     ZeroOneEvaluator,
     get_evaluator_cls_from_dataset,
@@ -58,6 +59,7 @@ EVALUATOR_REGISTRY = {
     "pair": PairEvaluator,
     "zero_one": ZeroOneEvaluator,
     "multimodal_pair": MultiModalPairEvaluator,
+    "moe_multimodal_pair": MoEPairEvaluator,
 }
 
 
@@ -207,7 +209,7 @@ class Workflow:
                 f"Expected one of: {valid_types}"
             )
 
-        if evaluator_type in ("pair", "multimodal_pair"):
+        if evaluator_type in ("pair", "multimodal_pair", "moe_multimodal_pair"):
             if not is_pair_dataset(dataset):
                 raise ValueError(
                     f"evaluator_type={evaluator_type!r} requires pair data"
