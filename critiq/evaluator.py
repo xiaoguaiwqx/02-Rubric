@@ -26,12 +26,13 @@ from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Sequence
+from typing import Any, Literal, Mapping, Sequence
 
 from tqdm import tqdm
 
 from .agent import Agent
 from .i18n import local_prompts
+from .router import RouterManager, RoutingDecision
 from .utils import (
     USE_TQDM,
     Criterion,
@@ -45,8 +46,10 @@ from .utils import (
 )
 
 PredictionOutput = list[
-    dict[str, dict[Literal["A", "B"] | Literal[0, 1], int]]
+    dict[str, dict[Literal["A", "B", "U"] | Literal[0, 1], int]]
 ]
+PairAnswer = Literal["A", "B", "Tie", None]
+ZeroOneAnswer = Literal[0, 1, None]
 # PredictionOutput 的结构是：
 # prediction[data_idx][criterion_name] = {"A": 1, "B": 0, "U": 0}
 #
@@ -65,9 +68,10 @@ class PredictionOutputWithAnswer:
     """
 
     prediction: PredictionOutput
-    answer: list[Literal["A", "B", None] | Literal[0, 1, None]]
+    answer: list[PairAnswer | ZeroOneAnswer]
     thoughts: list[dict[str, str]] | None = None
- 
+    routing: list[dict[str, Any]] | None = None
+
 
 @dataclass
 class EvaluationOutput:
@@ -85,6 +89,7 @@ class EvaluationOutput:
     per_criterion_acc: dict[str, float]  # accuracy for each criterion
     accuracy: float
     thoughts: list[dict[str, str]] | None = None
+    routing: list[dict[str, Any]] | None = None
 
     def __str__(self):
         """以便于命令行查看的格式打印评估细节。"""
@@ -97,6 +102,107 @@ class EvaluationOutput:
                 "Refuse to Respond": f"{n_refuse / len(self.prediction)} ({n_refuse})",
             }
         return f"Accuracy: {self.accuracy}\nCorrect: {self.is_correct}\n{json.dumps(output_json, ensure_ascii=False, indent=4)}"
+
+
+@dataclass(frozen=True)
+class CriterionPerformance:
+    """Historical performance statistics used for static criterion weighting."""
+
+    train_acc: float = 1.0
+    coverage: float = 1.0
+
+
+def _unit_float(value: object, default: float = 1.0) -> float:
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return default
+    return min(1.0, max(0.0, result))
+
+
+def static_weight(
+    stat: CriterionPerformance, alpha: float = 0.7, beta: float = 0.3
+) -> float:
+    """Combine historical accuracy and coverage into one static prior weight."""
+    return alpha * stat.train_acc + beta * stat.coverage
+
+
+def _performance_from_mapping(data: Mapping[str, Any]) -> CriterionPerformance:
+    train_acc = data.get(
+        "train_acc",
+        data.get("accuracy", data.get("acc", data.get("score", 1.0))),
+    )
+    return CriterionPerformance(
+        train_acc=_unit_float(train_acc, 1.0),
+        coverage=_unit_float(data.get("coverage", 1.0), 1.0),
+    )
+
+
+def _performance_from_value(value: object) -> CriterionPerformance:
+    if isinstance(value, CriterionPerformance):
+        return value
+    if isinstance(value, Mapping):
+        return _performance_from_mapping(value)
+    return CriterionPerformance(train_acc=_unit_float(value, 1.0), coverage=1.0)
+
+
+def _load_json_if_path(value: object) -> object:
+    if isinstance(value, (str, Path)):
+        with Path(value).open("r", encoding="utf-8") as f:
+            return json.load(f)
+    return value
+
+
+def load_criterion_performance(
+    criterion_stats: Mapping[str, Any] | str | Path | None,
+) -> dict[str, CriterionPerformance]:
+    """Load criterion stats from explicit maps, diagnostics, caches, or checkpoints."""
+    loaded = _load_json_if_path(criterion_stats)
+    if loaded is None:
+        return {}
+    if not isinstance(loaded, Mapping):
+        raise ValueError("criterion_stats must be a mapping or a JSON path")
+
+    for stats_key in ("criterion_stats", "per_criterion_stats"):
+        nested_stats = loaded.get(stats_key)
+        if isinstance(nested_stats, Mapping):
+            return {
+                str(name): _performance_from_value(value)
+                for name, value in nested_stats.items()
+            }
+
+    per_criterion_acc = loaded.get("per_criterion_acc")
+    if isinstance(per_criterion_acc, Mapping):
+        return {
+            str(name): CriterionPerformance(
+                train_acc=_unit_float(value, 1.0), coverage=1.0
+            )
+            for name, value in per_criterion_acc.items()
+        }
+
+    checkpoint_stats: dict[str, CriterionPerformance] = {}
+    for criteria_key in ("all_criteria", "current_criteria"):
+        raw_criteria = loaded.get(criteria_key)
+        if not isinstance(raw_criteria, (list, tuple)):
+            continue
+        for raw_criterion in raw_criteria:
+            if not isinstance(raw_criterion, Mapping):
+                continue
+            name = raw_criterion.get("name")
+            if not name:
+                continue
+            checkpoint_stats[str(name)] = CriterionPerformance(
+                train_acc=_unit_float(raw_criterion.get("score", 1.0), 1.0),
+                coverage=_unit_float(raw_criterion.get("coverage", 1.0), 1.0),
+            )
+    if checkpoint_stats:
+        return checkpoint_stats
+
+    return {
+        str(name): _performance_from_value(value)
+        for name, value in loaded.items()
+        if isinstance(name, str)
+    }
 
 
 class Evaluator:
@@ -734,6 +840,264 @@ class MultiModalPairEvaluator(PairEvaluator):
         if answer not in ("A", "B", "U"):
             answer = None
         return answer, thought
+
+
+class MoEPairEvaluator(MultiModalPairEvaluator):
+    """Multimodal pair evaluator with static priors and dynamic soft routing."""
+
+    def __init__(
+        self,
+        worker_args: dict,
+        dataset: Sequence[PairData],
+        max_concurrent: int = 1,
+        max_retries: int = 3,
+        worker_prompt: str | None = None,
+        max_data_chars: int | None = None,
+        image_field: str = "image_path",
+        question_field: str = "question",
+        encode_local_image: bool = True,
+        router_args: dict | None = None,
+        criterion_stats: Mapping[str, Any] | str | Path | None = None,
+        static_alpha: float = 0.7,
+        static_beta: float = 0.3,
+        routing_threshold: float = 0.2,
+        fallback_criteria: Sequence[str] = (
+            "visual_grounding",
+            "factual_consistency",
+        ),
+        fallback_weight: float = 0.5,
+        tie_epsilon: float = 0.05,
+    ) -> None:
+        super().__init__(
+            worker_args=worker_args,
+            dataset=dataset,
+            max_concurrent=max_concurrent,
+            max_retries=max_retries,
+            worker_prompt=worker_prompt,
+            max_data_chars=max_data_chars,
+            image_field=image_field,
+            question_field=question_field,
+            encode_local_image=encode_local_image,
+        )
+        self.router_args = router_args or worker_args
+        self.criterion_performance = load_criterion_performance(criterion_stats)
+        self.static_alpha = static_alpha
+        self.static_beta = static_beta
+        self.routing_threshold = routing_threshold
+        self.fallback_criteria = tuple(fallback_criteria)
+        self.fallback_weight = fallback_weight
+        self.tie_epsilon = tie_epsilon
+        self.router = RouterManager(
+            router_args=self.router_args,
+            image_field=self.image_field,
+            question_field=self.question_field,
+            encode_local_image=self.encode_local_image,
+            routing_threshold=self.routing_threshold,
+            fallback_criteria=self.fallback_criteria,
+            fallback_weight=self.fallback_weight,
+            max_retries=self.max_retries,
+        )
+        self.routing: list[dict[str, Any]] = []
+        self._last_dynamic_weights: list[dict[str, float]] = []
+
+    def _static_weight_for(self, criterion_name: str) -> float:
+        stat = self.criterion_performance.get(criterion_name)
+        if stat is None:
+            return 1.0
+        return static_weight(stat, self.static_alpha, self.static_beta)
+
+    def _active_criteria(
+        self, decision: RoutingDecision, criteria: Sequence[Criterion]
+    ) -> list[Criterion]:
+        return [
+            criterion
+            for criterion in criteria
+            if decision.routing_weights.get(criterion.name, 0.0)
+            >= self.routing_threshold
+        ]
+
+    def _route_dataset(self, criteria: Sequence[Criterion]) -> list[RoutingDecision]:
+        with ThreadPoolExecutor(max_workers=self.max_concurrent) as t:
+            futures = [
+                t.submit(self.router.route, data, criteria) for data in self.dataset
+            ]
+            for _ in tqdm(
+                as_completed(futures),
+                total=len(futures),
+                dynamic_ncols=True,
+                disable=not USE_TQDM,
+            ):
+                pass
+            return [future.result() for future in futures]
+
+    def pred_openai(self, criteria: Sequence[Criterion]):
+        """Route each sample first, then evaluate only active criteria."""
+        routing_decisions = self._route_dataset(criteria)
+        self._last_dynamic_weights = [
+            decision.routing_weights for decision in routing_decisions
+        ]
+        self.routing = []
+
+        prediction = [
+            {criterion.name: {"A": 0, "B": 0, "U": 0} for criterion in criteria}
+            for _ in self.dataset
+        ]
+        thoughts = [
+            {criterion.name: None for criterion in criteria} for _ in self.dataset
+        ]
+
+        tasks: list[tuple[int, Criterion]] = []
+        for data_idx, decision in enumerate(routing_decisions):
+            active = self._active_criteria(decision, criteria)
+            self.routing.append(
+                {
+                    "scene_analysis": decision.scene_analysis,
+                    "routing_weights": decision.routing_weights,
+                    "active_criteria": [criterion.name for criterion in active],
+                    "source": decision.source,
+                }
+            )
+            for criterion in active:
+                tasks.append((data_idx, criterion))
+
+        if not tasks:
+            return prediction, thoughts
+
+        with ThreadPoolExecutor(max_workers=self.max_concurrent) as t:
+            futures = [
+                t.submit(
+                    self._pred_one_openai,
+                    self.dataset[data_idx],
+                    criterion,
+                    self.max_retries,
+                )
+                for data_idx, criterion in tasks
+            ]
+            for _ in tqdm(
+                as_completed(futures),
+                total=len(futures),
+                dynamic_ncols=True,
+                disable=not USE_TQDM,
+            ):
+                pass
+
+            for (data_idx, criterion), future in zip(tasks, futures):
+                one_pred, thought = future.result()
+                if one_pred in ("A", "B", "U"):
+                    prediction[data_idx][criterion.name][one_pred] += 1
+                    thoughts[data_idx][criterion.name] = thought
+
+        return prediction, thoughts
+
+    def voting_fn(self, prediction: PredictionOutput, **_: Any) -> list[PairAnswer]:
+        """Aggregate A/B votes with static and dynamic MoE weights."""
+        result: list[PairAnswer] = []
+        for data_idx, row in enumerate(prediction):
+            score = {"A": 0.0, "B": 0.0}
+            active_weight_sum = 0.0
+            dynamic_weights = (
+                self._last_dynamic_weights[data_idx]
+                if data_idx < len(self._last_dynamic_weights)
+                else {}
+            )
+            for criterion_name, vote_counts in row.items():
+                dynamic_weight = dynamic_weights.get(criterion_name, 1.0)
+                combined_weight = (
+                    self._static_weight_for(criterion_name) * dynamic_weight
+                )
+                if combined_weight <= 0:
+                    continue
+                if vote_counts.get("A", 0) > vote_counts.get("B", 0):
+                    score["A"] += combined_weight
+                    active_weight_sum += combined_weight
+                elif vote_counts.get("B", 0) > vote_counts.get("A", 0):
+                    score["B"] += combined_weight
+                    active_weight_sum += combined_weight
+
+            if active_weight_sum <= 0:
+                result.append("Tie")
+                continue
+
+            score_a = score["A"] / active_weight_sum
+            score_b = score["B"] / active_weight_sum
+            if abs(score_a - score_b) < self.tie_epsilon:
+                result.append("Tie")
+            elif score_a > score_b:
+                result.append("A")
+            else:
+                result.append("B")
+        return result
+
+    def pred(
+        self,
+        criteria: Sequence[Criterion | dict[Literal["name", "description"], str]],
+        **voting_fn_kwargs,
+    ) -> PredictionOutputWithAnswer:
+        """Run routed multimodal prediction and weighted aggregation."""
+        normalized_criteria = [
+            c if isinstance(c, Criterion) else Criterion.from_dict(c) for c in criteria
+        ]
+        prediction, thoughts = self.pred_openai(normalized_criteria)
+        return PredictionOutputWithAnswer(
+            prediction=prediction,
+            answer=self.voting_fn(prediction, **voting_fn_kwargs),
+            thoughts=thoughts,
+            routing=self.routing,
+        )
+
+    def eval(
+        self,
+        criteria: Sequence[Criterion | dict[Literal["name", "description"], str]],
+        update_score=False,
+        **voting_fn_kwargs,
+    ) -> EvaluationOutput:
+        """Evaluate MoE predictions while excluding skipped criteria from stats."""
+        normalized_criteria = [
+            c if isinstance(c, Criterion) else Criterion.from_dict(c) for c in criteria
+        ]
+        prediction_with_answer = self.pred(
+            normalized_criteria, **voting_fn_kwargs
+        )
+        prediction = prediction_with_answer.prediction
+        answer = prediction_with_answer.answer
+
+        is_correct = []
+        for data, predicted_answer in zip(self.dataset, answer):
+            is_correct.append(
+                predicted_answer in ("A", "B")
+                and predicted_answer == data["answer"]
+            )
+
+        per_criterion_acc = {criterion.name: 0.0 for criterion in normalized_criteria}
+        for criterion in normalized_criteria:
+            n_correct = 0
+            n_total = 0
+            for data, row in zip(self.dataset, prediction):
+                vote_counts = row[criterion.name]
+                if vote_counts.get("U", 0) > 0:
+                    continue
+                if vote_counts.get("A", 0) == 0 and vote_counts.get("B", 0) == 0:
+                    continue
+                n_total += 1
+                if (
+                    vote_counts[data["answer"]]
+                    > vote_counts[reverse_ab(data["answer"])]
+                ):
+                    n_correct += 1
+            per_criterion_acc[criterion.name] = (
+                n_correct / n_total if n_total else 0.0
+            )
+            if update_score:
+                criterion.score = per_criterion_acc[criterion.name]
+
+        return EvaluationOutput(
+            prediction=prediction,
+            is_correct=is_correct,
+            per_criterion_acc=per_criterion_acc,
+            accuracy=len(list(filter(None, is_correct))) / len(is_correct),
+            thoughts=prediction_with_answer.thoughts,
+            routing=prediction_with_answer.routing,
+        )
 
 
 class ZeroOneEvaluator(Evaluator):
