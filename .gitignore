@@ -5,7 +5,7 @@ __pycache__
 build/
 
 # Ignore output and log directories
-# output/
+output/qwen3vl_bt_reward/*
 # logs/
 
 # Environment files
