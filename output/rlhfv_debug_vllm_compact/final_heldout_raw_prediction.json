@@ -1,0 +1,215 @@
+{
+    "criteria": [
+        {
+            "name": "visual_grounding",
+            "description": "The answer must accurately reflect what is visible in the image — including objects, positions, colors, text, and spatial relationships. It should avoid fabricating, misrepresenting, or omitting key visual evidence. Evaluation: Check if descriptions match observable elements; hallucinated or invented details reduce quality.",
+            "score": 0.7142857142857143
+        },
+        {
+            "name": "specificity_and_completeness",
+            "description": "The answer should provide detailed, specific, and comprehensive information relevant to the question, avoiding vagueness, generalizations, or omission of key visual elements. Evaluation: Assess whether the answer covers all aspects requested (e.g., text, colors, composition) with precision; overly vague or incomplete responses are downgraded.",
+            "score": 0.8571428571428571
+        },
+        {
+            "name": "question_relevance",
+            "description": "The answer must directly address the core intent of the visual question without straying into tangential or unrelated topics. Evaluation: Assess whether the response focuses on the exact elements or concepts asked for — for example, if the question asks about object count, the answer should not describe background scenery. Irrelevant or off-topic details, even if visually accurate, reduce relevance score. Applicable to all visual question answering tasks.",
+            "score": 0.75
+        }
+    ],
+    "samples": [
+        {
+            "index": 0,
+            "sample_id": "rlhfv-000778",
+            "gold": "A"
+        },
+        {
+            "index": 1,
+            "sample_id": "rlhfv-000612",
+            "gold": "A"
+        },
+        {
+            "index": 2,
+            "sample_id": "rlhfv-004787",
+            "gold": "B"
+        },
+        {
+            "index": 3,
+            "sample_id": "rlhfv-001216",
+            "gold": "B"
+        },
+        {
+            "index": 4,
+            "sample_id": "rlhfv-000561",
+            "gold": "B"
+        },
+        {
+            "index": 5,
+            "sample_id": "rlhfv-002024",
+            "gold": "B"
+        },
+        {
+            "index": 6,
+            "sample_id": "rlhfv-000214",
+            "gold": "B"
+        },
+        {
+            "index": 7,
+            "sample_id": "rlhfv-001595",
+            "gold": "A"
+        }
+    ],
+    "prediction": [
+        {
+            "visual_grounding": {
+                "A": 0,
+                "B": 1,
+                "U": 0
+            },
+            "specificity_and_completeness": {
+                "A": 0,
+                "B": 1,
+                "U": 0
+            },
+            "question_relevance": {
+                "A": 1,
+                "B": 0,
+                "U": 0
+            }
+        },
+        {
+            "visual_grounding": {
+                "A": 0,
+                "B": 0,
+                "U": 1
+            },
+            "specificity_and_completeness": {
+                "A": 1,
+                "B": 0,
+                "U": 0
+            },
+            "question_relevance": {
+                "A": 1,
+                "B": 0,
+                "U": 0
+            }
+        },
+        {
+            "visual_grounding": {
+                "A": 0,
+                "B": 1,
+                "U": 0
+            },
+            "specificity_and_completeness": {
+                "A": 0,
+                "B": 1,
+                "U": 0
+            },
+            "question_relevance": {
+                "A": 0,
+                "B": 0,
+                "U": 1
+            }
+        },
+        {
+            "visual_grounding": {
+                "A": 1,
+                "B": 0,
+                "U": 0
+            },
+            "specificity_and_completeness": {
+                "A": 0,
+                "B": 1,
+                "U": 0
+            },
+            "question_relevance": {
+                "A": 1,
+                "B": 0,
+                "U": 0
+            }
+        },
+        {
+            "visual_grounding": {
+                "A": 0,
+                "B": 1,
+                "U": 0
+            },
+            "specificity_and_completeness": {
+                "A": 0,
+                "B": 1,
+                "U": 0
+            },
+            "question_relevance": {
+                "A": 0,
+                "B": 1,
+                "U": 0
+            }
+        },
+        {
+            "visual_grounding": {
+                "A": 1,
+                "B": 0,
+                "U": 0
+            },
+            "specificity_and_completeness": {
+                "A": 1,
+                "B": 0,
+                "U": 0
+            },
+            "question_relevance": {
+                "A": 1,
+                "B": 0,
+                "U": 0
+            }
+        },
+        {
+            "visual_grounding": {
+                "A": 0,
+                "B": 1,
+                "U": 0
+            },
+            "specificity_and_completeness": {
+                "A": 0,
+                "B": 1,
+                "U": 0
+            },
+            "question_relevance": {
+                "A": 0,
+                "B": 1,
+                "U": 0
+            }
+        },
+        {
+            "visual_grounding": {
+                "A": 1,
+                "B": 0,
+                "U": 0
+            },
+            "specificity_and_completeness": {
+                "A": 1,
+                "B": 0,
+                "U": 0
+            },
+            "question_relevance": {
+                "A": 1,
+                "B": 0,
+                "U": 0
+            }
+        }
+    ],
+    "is_correct": [
+        false,
+        true,
+        true,
+        false,
+        true,
+        false,
+        true,
+        true
+    ],
+    "accuracy": 0.625,
+    "per_criterion_acc": {
+        "visual_grounding": 0.5714285714285714,
+        "specificity_and_completeness": 0.75,
+        "question_relevance": 0.7142857142857143
+    }
+}

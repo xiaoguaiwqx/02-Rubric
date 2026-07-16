@@ -147,6 +147,21 @@ class Agent:
         """为未来接入不同后端保留的兼容分发层。"""
         return self.chat_completion_openai(messages, stream=stream, ttl=ttl)
 
+    @staticmethod
+    def _sanitize_for_log(value):
+        """复制日志数据，并移除内嵌图片的 base64 内容。"""
+        if isinstance(value, str):
+            if value.startswith("data:image/"):
+                return "<image omitted>"
+            return value
+        if isinstance(value, dict):
+            return {key: Agent._sanitize_for_log(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [Agent._sanitize_for_log(item) for item in value]
+        if isinstance(value, tuple):
+            return tuple(Agent._sanitize_for_log(item) for item in value)
+        return value
+
     def __call__(self, prompt, stream: bool = True) -> str | None:
         """追加一轮用户输入，调用模型，并保存 assistant 回复。"""
         self.history.append({"role": "user", "content": prompt})
@@ -160,15 +175,21 @@ class Agent:
         self.history.append({"role": "assistant", "content": response})
         if WORKFLOW_AGENT_LOGFILE:
             # 可选的原始日志有助于排查 prompt 质量和运行过程。
-            with open(WORKFLOW_AGENT_LOGFILE, "a") as f:
+            # 多模态请求中的 base64 图片只在发送给模型时使用；写日志时替换为
+            # 占位符，避免 prompt 和 history 重复记录图片导致日志文件过大。
+            log_prompt = self._sanitize_for_log(prompt)
+            log_history = self._sanitize_for_log(self.history)
+            # Windows 的默认编码通常是 GBK，而模型回复可能包含 emoji 或其他
+            # Unicode 字符，因此日志文件必须显式使用 UTF-8 编码。
+            with open(WORKFLOW_AGENT_LOGFILE, "a", encoding="utf-8") as f:
                 f.write(
                     json.dumps(
                         {
                             "time": time.time(),
                             "model": self.model,
-                            "prompt": prompt,
+                            "prompt": log_prompt,
                             "response": response,
-                            "history": self.history,
+                            "history": log_history,
                         },
                         ensure_ascii=False,
                     )

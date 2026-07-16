@@ -312,8 +312,7 @@ p_i ∝ exp(s_i / τ)
 > 2. **标准演化层**：manager 负责生成、反思和修改 criterion，worker 负责单 criterion 比较；
 > 3. **扩展打分层**：用演化后的 criteria 生成大规模 pair 标签，再训练轻量 scorer 做全量数据选择。
 
-![alt text](CritiQ.png)
-![CritiQ pipeline](assets/CritiQ.png)
+![alt text](CritiQ_pipeline.png)
 
 ---
 

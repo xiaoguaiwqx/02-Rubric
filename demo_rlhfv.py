@@ -33,16 +33,18 @@ from critiq import (
 
 
 # 任务名会用在输出目录里，例如 ./output/rlhfv。
-TASK_NAME = "rlhfv_exp4_dis90_val100_n10_wp-final-heldout500_e10"
+TASK_NAME = os.getenv(
+    "CRITIQ_TASK_NAME", "rlhfv_exp4_dis90_val100_n10_wp-final-heldout500_e10"
+)
 
 # manager 最终要维护多少条评价标准。exp3 使用 10 条来测试更细粒度 criteria 是否有帮助。
-N_CRITERIA = 10
+N_CRITERIA = int(os.getenv("CRITIQ_N_CRITERIA", "10"))
 
 # workflow.optimize 的迭代轮数。每一轮都会在 train_set 上评估并改写 criteria。
-NUM_EPOCHS = 10
+NUM_EPOCHS = int(os.getenv("CRITIQ_NUM_EPOCHS", "10"))
 
 # Agent 调用失败或输出 JSON 解析失败时，Evaluator 会最多重试这么多次。
-MAX_RETRIES = 10
+MAX_RETRIES = int(os.getenv("CRITIQ_MAX_RETRIES", "10"))
 
 # 固定随机种子，让 train/valid 切分、warmup 抽样等步骤可复现。
 SEED = 42
@@ -60,10 +62,15 @@ TRAIN_PAIR_DATA_PATH = DATA_DIR / "discovery_train_90_pair.jsonl"
 HELDOUT_PAIR_DATA_PATH = DATA_DIR / "heldout_validation_500_pair.jsonl"
 
 # 从 heldout validation 中固定随机抽取多少条作为优化过程中的观察集。
-VALID_SIZE = 100
+VALID_SIZE = int(os.getenv("CRITIQ_VALID_SIZE", "100"))
+
+# 可选的数据量限制，便于在调试器中单步跟踪完整流程，避免发送数千次请求。
+# 设置为 0 时不限制数据量，仍然使用对应数据集中的全部样本。
+TRAIN_LIMIT = int(os.getenv("CRITIQ_TRAIN_LIMIT", "0"))
+HELDOUT_LIMIT = int(os.getenv("CRITIQ_HELDOUT_LIMIT", "0"))
 
 # 当前任务的所有日志、checkpoint、criteria 都会写到这个目录。
-OUTPUT_DIR = Path("./output") / TASK_NAME
+OUTPUT_DIR = Path(os.getenv("CRITIQ_OUTPUT_DIR", str(Path("./output") / TASK_NAME)))
 
 # worker 并发数。默认 20，可以通过环境变量 CRITIQ_MAX_CONCURRENT 调低，避免 API 限流。
 MAX_CONCURRENT = int(os.getenv("CRITIQ_MAX_CONCURRENT", "40"))
@@ -593,13 +600,27 @@ def main() -> None:
     """串起 RLHF-V 版 CritiQ Flow 的完整流程。"""
     # Agent 会把原始请求/响应记录到这个日志文件，方便之后追踪某个 criterion
     # 为什么生成、为什么被改写、某条样本为什么判断错。
-    os.environ["WORKFLOW_AGENT_LOGFILE"] = str(OUTPUT_DIR / "workflow_agent.log")
+    agent_logfile = os.getenv(
+        "WORKFLOW_AGENT_LOGFILE", str(OUTPUT_DIR / "workflow_agent.log")
+    )
+    os.environ["WORKFLOW_AGENT_LOGFILE"] = agent_logfile
+
+    # critiq.agent 会在模块导入时读取日志路径。
+    # 这里同步更新已经导入模块中的变量，确保直接运行和调试运行的日志行为一致。
+    import critiq.agent as agent_module
+
+    agent_module.WORKFLOW_AGENT_LOGFILE = agent_logfile
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # 读取 pair 数据，并把 question/image_path 保留下来。最后每条样本仍然符合 CritiQ 的格式：
     # {"A": "...", "B": "...", "answer": "A" 或 "B"}
     train_set = load_rlhfv_pair_data(TRAIN_PAIR_DATA_PATH)
     heldout_set = load_rlhfv_pair_data(HELDOUT_PAIR_DATA_PATH)
+
+    if TRAIN_LIMIT > 0:
+        train_set = train_set[:TRAIN_LIMIT]
+    if HELDOUT_LIMIT > 0:
+        heldout_set = heldout_set[:HELDOUT_LIMIT]
 
     if len(heldout_set) < VALID_SIZE:
         raise ValueError(

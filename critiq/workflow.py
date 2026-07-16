@@ -571,7 +571,7 @@ class Workflow:
                         wrong_answer = reverse_ab(data["answer"])
                         # 只对错误案例做 reflection。正确案例说明该 criterion 至少在这个样本上可用，
                         # 对改写的帮助通常不如失败案例直接。
-                        if stat[wrong_answer] > stat[answer]:
+                        if stat[wrong_answer] > stat[answer]: # 如果stat[wrong_answer]=1，stat[answer]=0，则这是一个错误样本，不考虑None的情况
                             # 每个失败案例都在 manager 的独立 fork 分支里分析，
                             # 避免多个错误案例相互污染上下文。
                             f_c.append(
