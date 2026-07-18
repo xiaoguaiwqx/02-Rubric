@@ -34,7 +34,7 @@ from critiq import (
 
 # 任务名会用在输出目录里，例如 ./output/rlhfv。
 TASK_NAME = os.getenv(
-    "CRITIQ_TASK_NAME", "rlhfv_exp4_dis90_val100_n10_wp-final-heldout500_e10"
+    "CRITIQ_TASK_NAME", "rlhfv_exp5_mmmanager-wr_dis90_val100_n10_wp-final-heldout500_e10_2"
 )
 
 # manager 最终要维护多少条评价标准。exp3 使用 10 条来测试更细粒度 criteria 是否有帮助。
@@ -198,8 +198,9 @@ MANAGER_ARGS = {
 
 # manager prompt 的目标：让 manager 生成“人类如何比较两个视觉问答回答质量”的标准。
 #
-# manager 自己仍然只看文本样本和偏好解释，但它生成的 criteria 会交给多模态
-# worker 使用，所以可以包含需要结合图片、问题和候选回答判断的标准。
+# Exp5 开启 manager_multimodal：warm-up 和逐错误样例 reflection 阶段，manager
+# 会同时接收图片、Question、候选回答及偏好信息；汇总 suggestions 的 revise 阶段
+# 仍使用文本上下文。生成的 criteria 随后交给多模态 worker 执行判断。
 MANAGER_PROMPT = f"""List and describe {N_CRITERIA} criteria for how human annotators compare the quality of two answers to the same visual question.
 
 The task is RLHF-V style preference comparison for visual question answering and image-text responses. The worker model will receive:
@@ -666,6 +667,7 @@ def main() -> None:
             "manager_prompt": MANAGER_PROMPT,
             "worker_prompt": WORKER_PROMPT,
             "evaluator_type": "multimodal_pair",
+            "manager_multimodal": True,
             "evaluator_kwargs": {
                 "image_field": "image_path",
                 "question_field": "question",

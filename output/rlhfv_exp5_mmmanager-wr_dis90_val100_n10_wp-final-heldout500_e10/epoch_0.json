@@ -1,0 +1,141 @@
+{
+    "manager_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "api_keys": "EMPTY",
+        "base_url": "http://localhost:8000/v1",
+        "request_kwargs": {
+            "temperature": 1.0
+        }
+    },
+    "worker_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "base_url": "http://localhost:8000/v1",
+        "api_keys": "EMPTY",
+        "request_kwargs": {
+            "temperature": 0.5
+        }
+    },
+    "worker_max_concurrent": 40,
+    "current_criteria": [
+        {
+            "name": "completeness",
+            "description": "Completeness means covering all visually verifiable and semantically relevant aspects of the question without omission, while strictly avoiding hallucinated or unsupported details. It is evaluated by whether the answer addresses every explicit or implied component of the question that can be confirmed through direct visual evidence — not by the quantity of detail, but by the absence of critical omissions. A response is incomplete if it omits a key visual element directly relevant to answering the question, even if it includes extra context. However, completeness does not override factual accuracy: if an answer includes hallucinated or misidentified details, it is penalized under ‘factual consistency’ or ‘avoidance of hallucinated visual details’, regardless of its apparent thoroughness. Completeness is only applicable when the question is factually grounded and requires visual interpretation; it does not apply to subjective, opinion-based, or ambiguous questions where visual evidence is insufficient. Examples: If the question asks ‘What is on the table?’, a complete answer must include all visible items on the table — not every background object. If the question asks ‘Describe the person’s posture’, the answer must cover posture, not clothing or room decor unless directly relevant. Omission of visible, relevant elements is a failure; inclusion of non-existent or misidentified elements is not ‘more complete’ — it is factually incorrect. Completeness is assessed relative to visual evidence, not inference or logic — even if an inference is plausible, it must be grounded in the image to be considered part of completeness. A response that is factually correct but misses a key visual cue is incomplete; a response that is factually wrong but verbose is not considered complete — it is penalized under other criteria.",
+            "score": 0
+        },
+        {
+            "name": "consistency_with_common_sense_or_domain_knowledge",
+            "description": "This criterion evaluates whether the answer’s claims align with real-world knowledge, physical plausibility, or domain-specific facts — but only when the visual evidence is clear and unambiguous. It does NOT override visual grounding or factual consistency with the image. If the answer misrepresents what is visually present (e.g., calling a can a box, or claiming a giraffe has wings), it is penalized under visual grounding or factual consistency — not this criterion. This criterion applies ONLY to inferences or descriptions that are logically or factually coherent with real-world knowledge, such as object behavior, anatomical correctness, material plausibility, or contextual logic (e.g., a skateboarder on a ramp, a hydrant being silver). It does NOT apply to: (1) visual interpretations (e.g., color, position, or object count), (2) vague or imprecise phrasing, (3) speculative but plausible assumptions without visual support (e.g., 'holding a frisbee' without visual evidence), or (4) questions that ask for literal visual description. If an answer is factually correct based on the image, even if metaphorical, it is not penalized. If two answers are equally plausible under domain knowledge, preference should be deferred to other criteria. This criterion is inapplicable when visual evidence is ambiguous or when the question is purely descriptive without requiring domain knowledge validation. Workers must prioritize visual evidence over common sense when conflicts arise.",
+            "score": 0
+        },
+        {
+            "name": "factual_consistency_with_the_image",
+            "description": "The answer must strictly align with visually verifiable content in the image — including object identities, locations, states, counts, and spatial relationships — without misrepresenting, inventing, or omitting critical visual evidence. It applies only when the question references a visual element; if no such element exists, the criterion is inapplicable. Workers must evaluate each claim against the image’s visual evidence, not external knowledge or plausible inference. Hallucinations (e.g., inventing objects, misplacing items, misidentifying attributes) are disqualifying errors. Omitting non-critical details is acceptable; only false or unsupported claims are penalized. Ambiguous or inferential claims must be explicitly qualified with uncertainty (e.g., 'likely', 'appears to be') — but not used to justify factual errors. If visual evidence is insufficient to confirm or deny a claim, the answer must reflect uncertainty, not make speculative assertions. The criterion does not evaluate stylistic, grammatical, or contextual plausibility — only whether claims match what is visually present or absent. In cases of conflict, prioritize the answer with fewer or less severe factual errors, but only if they are clearly distinguishable and verifiable. If both answers are factually inconsistent, mark both as incorrect or select the one with the least visual contradiction.",
+            "score": 0
+        },
+        {
+            "name": "specificity",
+            "description": "Specificity refers to the degree to which an answer provides precise, measurable, and verifiable visual details (e.g., exact object locations, relative sizes, orientations, or spatial relationships) that are clearly supported by the image. It is only applicable when the question demands or benefits from such detail (e.g., positional, compositional, or quantitative visual descriptions). Specificity is not rewarded if it introduces hallucinated details, misidentifies objects, or contradicts factual consistency with the image. An answer is penalized if it is more specific but factually incorrect or visually unsupported. Specificity must be grounded in visual evidence — any claim of precision (e.g., 'the red car is to the left of the tree') must be visually verifiable. If the image is ambiguous or lacks sufficient detail, specificity should not override visual grounding or factual accuracy. Inapplicable cases include questions about abstract qualities, emotions, or purpose — where specificity is not the relevant evaluation metric. Workers should prioritize correct, grounded specificity over verbose or speculative detail.",
+            "score": 0
+        },
+        {
+            "name": "visual_grounding",
+            "description": "Visual grounding requires that the answer strictly and faithfully reflects only what is directly, verifiably present in the image — including objects, their locations, spatial relationships, colors, textures, actions, and states — without inventing, misattributing, omitting, or misinterpreting visual elements. Workers must verify every claim against the image itself, not external knowledge or assumptions. A correct denial (e.g., ‘no dog is visible’) is acceptable; a false positive (e.g., claiming a dog is there when none exists) is a grounding failure. The criterion does not penalize reasonable inferences grounded in visible cues (e.g., inferring motion from posture) but strictly rejects hallucinations — even plausible ones — such as invented objects, actions, or attributes. It does not require perfect technical labeling (e.g., ‘Iberian ham’ vs ‘beef’) if the object’s presence/absence or visual state is correctly stated. It also does not reward specificity or completeness if they come at the cost of visual accuracy. The answer must not omit visible elements, and descriptions must be precise (e.g., ‘centered’, ‘occupies 30% of frame’) when visually supported. Visual grounding is not about literalism but comprehensive fidelity to the image’s observable content — including ambiguous or occluded elements, which should be described as accurately as possible or explicitly acknowledged with uncertainty. It excludes stylistic, artistic, or metaphorical interpretations — those are evaluated under ‘accuracy of visual interpretation’. This criterion applies only to claims about visual content and does not evaluate linguistic correctness, plausibility, or domain knowledge. Workers must reject any answer that misrepresents the image, even if it appears ‘more aligned’ or ‘plausible’. If both answers misrepresent, the one with fewer hallucinations or most conservative interpretation is preferred — but neither is acceptable if both are hallucinated.",
+            "score": 0
+        },
+        {
+            "name": "coherence_of_logical_flow",
+            "description": "The answer should present information in a logical, step-by-step manner that connects ideas naturally — especially when multiple visual elements or inferences are involved. Evaluated by whether the reasoning path is smooth and avoids abrupt or disjointed statements.",
+            "score": 0
+        },
+        {
+            "name": "robustness_to_visual_noise",
+            "description": "The answer should remain accurate and reliable even if parts of the image are ambiguous, occluded, or low-resolution — it should not overfit to noisy or incomplete visual cues. Evaluated by whether the answer holds under visual uncertainty or partial visibility.",
+            "score": 0
+        },
+        {
+            "name": "conciseness_without_loss_of_meaning",
+            "description": "The answer should be as brief as possible while retaining all necessary information — avoiding redundancy or verbose explanations without sacrificing clarity or completeness. Evaluated by whether the response is succinct yet fully informative.",
+            "score": 0
+        },
+        {
+            "name": "appropriateness_of_verbosity_level",
+            "description": "The answer should match the complexity and expectations of the question — neither overly simplistic for complex questions nor overly verbose for simple ones. Evaluated by whether the response’s length and detail are proportionate to the question’s demands.",
+            "score": 0
+        },
+        {
+            "name": "multi-element_consistency",
+            "description": "When the question involves multiple objects or relationships, the answer should consistently treat all elements without contradicting or ignoring any — ensuring holistic visual understanding. Evaluated by whether all visual components are addressed and logically unified in the response.",
+            "score": 0
+        }
+    ],
+    "banned_criteria": [
+        "avoidance_of_hallucinated_visual_details",
+        "calibrated_uncertainty",
+        "accuracy_of_visual_interpretation",
+        "clear_language",
+        "question_relevance"
+    ],
+    "all_criteria": [
+        {
+            "name": "visual_grounding",
+            "description": "The answer must accurately reflect what is visible in the image — describing objects, positions, colors, textures, and actions as they appear. It should not invent or misrepresent visual elements. Evaluated by direct comparison to the image content.",
+            "score": 0.6049382716049383
+        },
+        {
+            "name": "question_relevance",
+            "description": "The answer must directly address the question asked, without drifting into irrelevant topics or tangential information. Evaluated by whether the answer’s core focus aligns with the question’s intent.",
+            "score": 0.5882352941176471
+        },
+        {
+            "name": "factual_consistency_with_the_image",
+            "description": "The answer must not contain factual errors — such as misidentifying objects, their locations, or their states — that contradict the visual evidence. Evaluated by checking whether claims are visually verifiable.",
+            "score": 0.6296296296296297
+        },
+        {
+            "name": "avoidance_of_hallucinated_visual_details",
+            "description": "The answer should not include details not present in the image — such as objects, actions, or attributes that are not visible or inferable with high confidence. Evaluated by flagging unsupported or invented visual claims.",
+            "score": 0.581081081081081
+        },
+        {
+            "name": "completeness",
+            "description": "The answer should cover all relevant aspects of the question without omitting key visual information. Evaluated by whether the response addresses all implied or explicit components of the question.",
+            "score": 0.6470588235294118
+        },
+        {
+            "name": "specificity",
+            "description": "The answer should provide precise, detailed descriptions (e.g., exact locations, orientations, relative sizes) rather than vague or generalized statements. Evaluated by the level of detail and specificity in spatial or descriptive claims.",
+            "score": 0.7236842105263158
+        },
+        {
+            "name": "calibrated_uncertainty",
+            "description": "The answer should use appropriate qualifiers (e.g., “possibly,” “likely,” “appears to be”) when describing uncertain or inferential content, and avoid overconfidence in unverifiable claims. Evaluated by whether the answer appropriately balances certainty and uncertainty.",
+            "score": 0.5802469135802469
+        },
+        {
+            "name": "clear_language",
+            "description": "The answer should be grammatically correct, free of ambiguity, and use straightforward, natural language. Evaluated by readability, clarity, and absence of confusing or convoluted phrasing.",
+            "score": 0.4666666666666667
+        },
+        {
+            "name": "accuracy_of_visual_interpretation",
+            "description": "The answer should correctly interpret visual cues — such as facial expressions, body posture, or object arrangement — without misattributing intent or emotion. Evaluated by whether visual inferences align with plausible real-world interpretations.",
+            "score": 0.5977011494252874
+        },
+        {
+            "name": "consistency_with_common_sense_or_domain_knowledge",
+            "description": "The answer should not contradict basic knowledge about the world or the subject matter — e.g., biological plausibility, object behavior, or physical constraints. Evaluated by whether the answer aligns with known facts about the visual elements or context.",
+            "score": 0.6395348837209303
+        }
+    ],
+    "n_criteria": 10,
+    "manager_prompt": "List and describe 10 criteria for how human annotators compare the quality of two answers to the same visual question.\n\nThe task is RLHF-V style preference comparison for visual question answering and image-text responses. The worker model will receive:\n- the image,\n- the source question,\n- candidate answer A,\n- candidate answer B.\n\nFocus on human preference factors such as visual grounding, question relevance, factual consistency with the image, avoidance of hallucinated visual details, completeness, specificity, calibrated uncertainty, and clear language.",
+    "manager_prompt_postfix": "\n\nYour response should be in the following **json** format:\n```json\n{\n    \"name_of_the_criterion\": \"Detailed description for the criterion such as what it is, how it can be evaluated, when it is applicable, or other relevant information... Be specific and detailed while keep concise.\",\n    ...\n}\n```",
+    "worker_prompt": "## Instruction\nYou are judging an RLHF-V visual QA / image-text preference pair under one criterion. You are given the image, the source question, and two candidate answers.\n\nUse the image when the criterion depends on visual evidence. If the criterion is not applicable to this pair, answer None.\n\n## Question\n{question}\n\n## Criterion\n**{criterion}**: {description}\n\n## Candidate A\n{A}\n\n## Candidate B\n{B}\n\nWhich candidate better matches the criterion and is more likely to align with human preference?",
+    "evaluator_type": "multimodal_pair",
+    "evaluator_kwargs": {
+        "image_field": "image_path",
+        "question_field": "question",
+        "encode_local_image": true
+    },
+    "manager_multimodal": true
+}

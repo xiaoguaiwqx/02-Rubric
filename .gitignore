@@ -6,7 +6,11 @@ build/
 
 # Ignore output and log directories
 output/qwen3vl_bt_reward/*
-# logs/
+output/*.json*
+output/*.log*
+output/*.txt*
+output/**/workflow_agent*.log
+output/**/workflow_agent*.jsonl
 
 # Environment files
 .env

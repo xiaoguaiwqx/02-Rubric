@@ -1,0 +1,135 @@
+{
+    "manager_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "api_keys": "EMPTY",
+        "base_url": "http://localhost:8000/v1",
+        "request_kwargs": {
+            "temperature": 1.0
+        }
+    },
+    "worker_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "base_url": "http://localhost:8000/v1",
+        "api_keys": "EMPTY",
+        "request_kwargs": {
+            "temperature": 0.5
+        }
+    },
+    "worker_max_concurrent": 40,
+    "current_criteria": [
+        {
+            "name": "visual_grounding",
+            "description": "The answer must accurately reflect what is visible in the image — describing objects, positions, colors, textures, and actions as they appear. It should not invent or misrepresent visual elements. Evaluated by direct comparison to the image content.",
+            "score": 0.0
+        },
+        {
+            "name": "question_relevance",
+            "description": "The answer must directly address the question asked, without drifting into irrelevant topics or tangential information. Evaluated by whether the answer’s core focus aligns with the question’s intent.",
+            "score": 0.0
+        },
+        {
+            "name": "factual_consistency_with_the_image",
+            "description": "The answer must not contain factual errors — such as misidentifying objects, their locations, or their states — that contradict the visual evidence. Evaluated by checking whether claims are visually verifiable.",
+            "score": 0.0
+        },
+        {
+            "name": "avoidance_of_hallucinated_visual_details",
+            "description": "The answer should not include details not present in the image — such as objects, actions, or attributes that are not visible or inferable with high confidence. Evaluated by flagging unsupported or invented visual claims.",
+            "score": 0.0
+        },
+        {
+            "name": "completeness",
+            "description": "The answer should cover all relevant aspects of the question without omitting key visual information. Evaluated by whether the response addresses all implied or explicit components of the question.",
+            "score": 0.0
+        },
+        {
+            "name": "specificity",
+            "description": "The answer should provide precise, detailed descriptions (e.g., exact locations, orientations, relative sizes) rather than vague or generalized statements. Evaluated by the level of detail and specificity in spatial or descriptive claims.",
+            "score": 0.0
+        },
+        {
+            "name": "calibrated_uncertainty",
+            "description": "The answer should use appropriate qualifiers (e.g., “possibly,” “likely,” “appears to be”) when describing uncertain or inferential content, and avoid overconfidence in unverifiable claims. Evaluated by whether the answer appropriately balances certainty and uncertainty.",
+            "score": 0.0
+        },
+        {
+            "name": "clear_language",
+            "description": "The answer should be grammatically correct, free of ambiguity, and use straightforward, natural language. Evaluated by readability, clarity, and absence of confusing or convoluted phrasing.",
+            "score": 0.0
+        },
+        {
+            "name": "accuracy_of_visual_interpretation",
+            "description": "The answer should correctly interpret visual cues — such as facial expressions, body posture, or object arrangement — without misattributing intent or emotion. Evaluated by whether visual inferences align with plausible real-world interpretations.",
+            "score": 0.0
+        },
+        {
+            "name": "consistency_with_common_sense_or_domain_knowledge",
+            "description": "The answer should not contradict basic knowledge about the world or the subject matter — e.g., biological plausibility, object behavior, or physical constraints. Evaluated by whether the answer aligns with known facts about the visual elements or context.",
+            "score": 0.0
+        }
+    ],
+    "banned_criteria": [],
+    "all_criteria": [
+        {
+            "name": "visual_grounding",
+            "description": "The answer must accurately reflect what is visible in the image — describing objects, positions, colors, textures, and actions as they appear. It should not invent or misrepresent visual elements. Evaluated by direct comparison to the image content.",
+            "score": 0.0
+        },
+        {
+            "name": "question_relevance",
+            "description": "The answer must directly address the question asked, without drifting into irrelevant topics or tangential information. Evaluated by whether the answer’s core focus aligns with the question’s intent.",
+            "score": 0.0
+        },
+        {
+            "name": "factual_consistency_with_the_image",
+            "description": "The answer must not contain factual errors — such as misidentifying objects, their locations, or their states — that contradict the visual evidence. Evaluated by checking whether claims are visually verifiable.",
+            "score": 0.0
+        },
+        {
+            "name": "avoidance_of_hallucinated_visual_details",
+            "description": "The answer should not include details not present in the image — such as objects, actions, or attributes that are not visible or inferable with high confidence. Evaluated by flagging unsupported or invented visual claims.",
+            "score": 0.0
+        },
+        {
+            "name": "completeness",
+            "description": "The answer should cover all relevant aspects of the question without omitting key visual information. Evaluated by whether the response addresses all implied or explicit components of the question.",
+            "score": 0.0
+        },
+        {
+            "name": "specificity",
+            "description": "The answer should provide precise, detailed descriptions (e.g., exact locations, orientations, relative sizes) rather than vague or generalized statements. Evaluated by the level of detail and specificity in spatial or descriptive claims.",
+            "score": 0.0
+        },
+        {
+            "name": "calibrated_uncertainty",
+            "description": "The answer should use appropriate qualifiers (e.g., “possibly,” “likely,” “appears to be”) when describing uncertain or inferential content, and avoid overconfidence in unverifiable claims. Evaluated by whether the answer appropriately balances certainty and uncertainty.",
+            "score": 0.0
+        },
+        {
+            "name": "clear_language",
+            "description": "The answer should be grammatically correct, free of ambiguity, and use straightforward, natural language. Evaluated by readability, clarity, and absence of confusing or convoluted phrasing.",
+            "score": 0.0
+        },
+        {
+            "name": "accuracy_of_visual_interpretation",
+            "description": "The answer should correctly interpret visual cues — such as facial expressions, body posture, or object arrangement — without misattributing intent or emotion. Evaluated by whether visual inferences align with plausible real-world interpretations.",
+            "score": 0.0
+        },
+        {
+            "name": "consistency_with_common_sense_or_domain_knowledge",
+            "description": "The answer should not contradict basic knowledge about the world or the subject matter — e.g., biological plausibility, object behavior, or physical constraints. Evaluated by whether the answer aligns with known facts about the visual elements or context.",
+            "score": 0.0
+        }
+    ],
+    "n_criteria": 10,
+    "manager_prompt": "List and describe 10 criteria for how human annotators compare the quality of two answers to the same visual question.\n\nThe task is RLHF-V style preference comparison for visual question answering and image-text responses. The worker model will receive:\n- the image,\n- the source question,\n- candidate answer A,\n- candidate answer B.\n\nFocus on human preference factors such as visual grounding, question relevance, factual consistency with the image, avoidance of hallucinated visual details, completeness, specificity, calibrated uncertainty, and clear language.",
+    "manager_prompt_postfix": "\n\nYour response should be in the following **json** format:\n```json\n{\n    \"name_of_the_criterion\": \"Detailed description for the criterion such as what it is, how it can be evaluated, when it is applicable, or other relevant information... Be specific and detailed while keep concise.\",\n    ...\n}\n```",
+    "worker_prompt": "## Instruction\nYou are judging an RLHF-V visual QA / image-text preference pair under one criterion. You are given the image, the source question, and two candidate answers.\n\nUse the image when the criterion depends on visual evidence. If the criterion is not applicable to this pair, answer None.\n\n## Question\n{question}\n\n## Criterion\n**{criterion}**: {description}\n\n## Candidate A\n{A}\n\n## Candidate B\n{B}\n\nWhich candidate better matches the criterion and is more likely to align with human preference?",
+    "evaluator_type": "multimodal_pair",
+    "evaluator_kwargs": {
+        "image_field": "image_path",
+        "question_field": "question",
+        "encode_local_image": true
+    },
+    "manager_multimodal": true
+}

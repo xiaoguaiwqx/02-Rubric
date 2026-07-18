@@ -92,6 +92,7 @@ class Workflow:
         worker_prompt: str | None = None,
         evaluator_type: str | None = None,
         evaluator_kwargs: dict[str, Any] | None = None,
+        manager_multimodal: bool = False,
     ) -> None:
         """初始化一个 criterion 演化 workflow。
 
@@ -156,6 +157,9 @@ class Workflow:
         self.worker_prompt = worker_prompt
         self.evaluator_type = (evaluator_type or "auto").lower()
         self.evaluator_kwargs = evaluator_kwargs or {}
+        # 默认保持原始 CritiQ 的纯文本 manager 行为。多模态任务可显式开启，
+        # 让 warm-up 和错误案例 reflection 同时接收当前样本的图片。
+        self.manager_multimodal = manager_multimodal
         # 预留的思维轨迹缓存。当前保存逻辑主要通过 `save(..., thought=...)` 传入，
         # 这个字段保留给未来需要在对象级别累积中间反思的场景。
         self.thoughts = []
@@ -232,6 +236,88 @@ class Workflow:
             **self.evaluator_kwargs,
         )
 
+    def _make_manager_content(
+        self, prompt: str, data: dict[str, Any]
+    ) -> str | list[dict[str, Any]]:
+        """为 manager 构造纯文本或单样例多模态 user content。
+
+        多模态模式复用 evaluator_kwargs 中的图片、问题字段和本地图片编码配置。
+        这里只负责附加当前样本的一张图片；Question 由调用阶段写入文本 prompt。
+        """
+        if not self.manager_multimodal:
+            return prompt
+
+        image_field = self.evaluator_kwargs.get("image_field", "image_path")
+        question_field = self.evaluator_kwargs.get("question_field", "question")
+        encode_local_image = self.evaluator_kwargs.get("encode_local_image", True)
+
+        image_value = data.get(image_field)
+        question_value = data.get(question_field)
+        if not isinstance(image_value, str) or not image_value.strip():
+            raise ValueError(
+                f"multimodal manager requires a non-empty {image_field!r}"
+            )
+        if not isinstance(question_value, str) or not question_value.strip():
+            raise ValueError(
+                f"multimodal manager requires a non-empty {question_field!r}"
+            )
+
+        image_url = (
+            MultiModalPairEvaluator._image_path_to_data_url(image_value)
+            if encode_local_image
+            else image_value
+        )
+        return [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": image_url}},
+        ]
+
+    @staticmethod
+    def _revise_mid_criterion(
+        manager: Agent,
+        criterion_name: str,
+        prompt: str,
+        max_retries: int,
+    ) -> str | None:
+        """生成并校验一个 Mid Criterion，解析失败时重新生成。
+
+        每次尝试都从原 manager 创建独立分支，避免失败响应进入下一次尝试的
+        上下文。只有返回 JSON 中包含当前准则名，且描述为非空字符串时才成功。
+        """
+        max_retries = max(0, max_retries)
+        for attempt in range(max_retries + 1):
+            # Agent 自身负责网络/API 异常重试；这里仅针对已经返回的响应做
+            # JSON 解析和字段校验重试，与 worker 的结构化输出重试保持一致。
+            response = manager.fork()(prompt, stream=False)
+            try:
+                parsed = parse_json(response)
+                revised_description = parsed[criterion_name]
+                if (
+                    not isinstance(revised_description, str)
+                    or not revised_description.strip()
+                ):
+                    raise ValueError(
+                        f"Revised description for {criterion_name!r} "
+                        "must be a non-empty string"
+                    )
+                return revised_description.strip()
+            except Exception as e:  # pylint: disable=W0718:broad-exception-caught
+                if attempt < max_retries:
+                    print_debug(
+                        f"Failed to parse revised criterion {criterion_name}; "
+                        f"retrying ({attempt + 1}/{max_retries})",
+                        response,
+                        e,
+                    )
+                else:
+                    print_debug(
+                        f"Failed to parse revised criterion {criterion_name} after "
+                        f"{max_retries} retries; keeping the old criterion",
+                        response,
+                        e,
+                    )
+        return None
+
     @staticmethod
     def _warmup_zero_one(
         manager: Agent,
@@ -264,8 +350,8 @@ class Workflow:
         ):
             manager(prompt, stream=False)
 
-    @staticmethod
     def _warmup_pair(
+        self,
         manager: Agent,
         dataset: Sequence[PairData],
         prompt_template: tuple[str, str] | None = None,
@@ -284,23 +370,33 @@ class Workflow:
 
         prompts = []
         for data in dataset:
+            question_field = (
+                self.evaluator_kwargs.get("question_field", "question")
+                if self.manager_multimodal
+                else "question"
+            )
             prompt = (
                 prompt_template[0 if data["answer"] == "A" else 1]
                 .replace("{A}", data["A"])
                 .replace("{B}", data["B"])
             )
-            prompt = prompt.replace("{question}", str(data.get("question", "")))
-            # image_path 只用于 evaluator 构造图片请求，不作为文本 prompt 暴露给 manager。
+            prompt = prompt.replace(
+                "{question}", str(data.get(question_field, ""))
+            )
+            # image_path 不作为文本暴露；多模态模式会把图片作为 image_url content
+            # 单独发送给 manager。
             prompt = prompt.replace("{image_path}", "")
-            prompts.append(prompt)
+            # 保留 prompt 与原始样本的对应关系，多模态模式下需要从当前样本
+            # 读取 image_path；文本模式下仍然只发送原始 prompt。
+            prompts.append((prompt, data))
         random.shuffle(prompts)
 
-        for prompt in tqdm(
+        for prompt, data in tqdm(
             prompts,
             desc="Warming up",
             disable=not USE_TQDM,
         ):
-            manager(prompt, stream=False)
+            manager(self._make_manager_content(prompt, data), stream=False)
 
     def get_init_criteria(
         self,
@@ -526,18 +622,28 @@ class Workflow:
                 这一步不是直接重写 criterion，而是先收集失败模式。
                 """
                 # Var `prompt`, `mid_criteria` and `local_prompts` are captured from context
-                prompt_for_critique = "\n\n".join(
+                prompt_parts = [
+                    prompt,
+                    local_prompts.MID_CRITERIA_PROMPT_TEMPLATE.format(
+                        criterion_name=criterion_name,
+                        threshold_0=threshold[0],
+                        threshold_1=threshold[1],
+                    ),
+                    local_prompts.CRITERION_NAME_DESC_FORMAT_TEMPLAT.format(
+                        name=criterion_name, desc=mid_criteria[criterion_name]
+                    ),
+                    local_prompts.MID_CRITIQUE_PROMPT,
+                ]
+                if self.manager_multimodal:
+                    question_field = self.evaluator_kwargs.get(
+                        "question_field", "question"
+                    )
+                    question = data.get(question_field, "")
+                    prompt_parts.append(
+                        f"[BEGIN_OF_QUESTION]\n{question}\n[/END_OF_QUESTION]"
+                    )
+                prompt_parts.extend(
                     (
-                        prompt,
-                        local_prompts.MID_CRITERIA_PROMPT_TEMPLATE.format(
-                            criterion_name=criterion_name,
-                            threshold_0=threshold[0],
-                            threshold_1=threshold[1],
-                        ),
-                        local_prompts.CRITERION_NAME_DESC_FORMAT_TEMPLAT.format(
-                            name=criterion_name, desc=mid_criteria[criterion_name]
-                        ),
-                        local_prompts.MID_CRITIQUE_PROMPT,
                         local_prompts.MID_A_PROMPT_TEMPLATE.format(data["A"]),
                         local_prompts.MID_B_PROMPT_TEMPLATE.format(data["B"]),
                         local_prompts.MID_HOWEVER_PROMPT_TEMPLATE.format(
@@ -548,8 +654,12 @@ class Workflow:
                         local_prompts.MID_REFLECTION_PROMPT,
                     )
                 )
+                prompt_for_critique = "\n\n".join(prompt_parts)
                 try:
-                    response = manager_for_critique(prompt_for_critique, stream=False)
+                    response = manager_for_critique(
+                        self._make_manager_content(prompt_for_critique, data),
+                        stream=False,
+                    )
                     return parse_json(response)["critique"]
                 except Exception as e:
                     print_debug("Failed to parse critique", e)
@@ -604,7 +714,7 @@ class Workflow:
 
                 # 第二段并发负责“改标准”：每个 mid criterion 汇总自己的全部 critique，
                 # 让 manager 生成一个更清晰、更能区分偏好的新描述。
-                futures = []
+                revision_futures = {}
                 for criterion_name in mid_criteria:
                     # 将多个具体错误案例的 critique 汇总，生成同一 criterion 的
                     # 一个统一改写版本。
@@ -630,40 +740,49 @@ class Workflow:
                             ),
                         )
                     )
-                    # 再 fork 一次是为了让“汇总改写”与“单案例反思”分离，
-                    # 防止上下文过长或前面某个案例把后面改写带偏。
-                    futures.append(
-                        executor.submit(manager.fork(), _prompt, stream=False)
+                    # future 与 criterion_name 显式绑定，不能依赖并发任务的完成顺序。
+                    # 单个任务内部会为每次生成创建独立 fork，并在解析失败时重试。
+                    future = executor.submit(
+                        self._revise_mid_criterion,
+                        manager,
+                        criterion_name,
+                        _prompt,
+                        max_retries,
                     )
+                    revision_futures[future] = criterion_name
 
-                responses = [
-                    future.result()
-                    for future in tqdm(
-                        as_completed(futures),
-                        desc="Optimization",
-                        total=len(futures),
-                        disable=not USE_TQDM,
+                # 按实际完成顺序收集任务，但通过映射找回各自的 criterion_name。
+                revision_results: dict[str, str | None] = {}
+                for future in tqdm(
+                    as_completed(revision_futures),
+                    desc="Optimization",
+                    total=len(revision_futures),
+                    disable=not USE_TQDM,
+                ):
+                    criterion_name = revision_futures[future]
+                    old_description = mid_criteria[criterion_name]
+                    try:
+                        revised_description = future.result()
+                    except Exception as e:  # 防御 future 中未预期的异常
+                        print_debug(
+                            f"Failed to revise criterion {criterion_name}; "
+                            "keeping the old criterion",
+                            e,
+                        )
+                        revised_description = None
+
+                    revision_results[criterion_name] = revised_description
+
+                # 按原始 Mid Criterion 顺序写回，避免并发完成顺序改变准则排列。
+                # 重试仍失败时保留旧描述，保证 Mid Criterion 不会凭空消失。
+                for criterion_name, old_description in mid_criteria.items():
+                    revised_description = revision_results[criterion_name]
+                    if revised_description is None:
+                        revised_description = old_description
+                    new_criteria[criterion_name] = revised_description
+                    mid_table.add_row(
+                        [criterion_name, old_description, revised_description]
                     )
-                ]
-
-                # 将 manager 返回的 JSON 写回新 criterion 池。
-                # 解析失败不会中断整个 workflow，只打印 debug 信息并跳过该条改写。
-                for criterion_name, response in zip(mid_criteria, responses):
-                    if response is not None:
-                        try:
-                            _new = parse_json(response)
-                            new_criteria.update(_new)
-                            mid_table.add_row(
-                                [
-                                    criterion_name,
-                                    criteria[criterion_name].description,
-                                    _new[criterion_name],
-                                ]
-                            )
-                        except Exception as e:
-                            print_debug(
-                                f"Failed to parse new criteria {criterion_name}", e
-                            )
 
             print(mid_table)
 
@@ -974,6 +1093,7 @@ class Workflow:
             "worker_prompt": self.worker_prompt,
             "evaluator_type": self.evaluator_type,
             "evaluator_kwargs": self.evaluator_kwargs,
+            "manager_multimodal": self.manager_multimodal,
         }
 
     def load_state_dict(self, state: dict[str, Any]):
@@ -1005,6 +1125,7 @@ class Workflow:
         self.worker_prompt = current_state["worker_prompt"]
         self.evaluator_type = (current_state["evaluator_type"] or "auto").lower()
         self.evaluator_kwargs = current_state["evaluator_kwargs"] or {}
+        self.manager_multimodal = current_state["manager_multimodal"]
 
     def save(self, path, epoch, thought) -> None:
         """保存 workflow 状态，以及可选的思维轨迹。
