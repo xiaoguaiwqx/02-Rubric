@@ -93,6 +93,7 @@ class Workflow:
         evaluator_type: str | None = None,
         evaluator_kwargs: dict[str, Any] | None = None,
         manager_multimodal: bool = False,
+        manager_reflection_include_question: bool = True,
     ) -> None:
         """初始化一个 criterion 演化 workflow。
 
@@ -160,6 +161,11 @@ class Workflow:
         # 默认保持原始 CritiQ 的纯文本 manager 行为。多模态任务可显式开启，
         # 让 warm-up 和错误案例 reflection 同时接收当前样本的图片。
         self.manager_multimodal = manager_multimodal
+        # 默认在逐错误样例 reflection 中显式提供 Question。消融实验可以关闭
+        # 这一项，同时保留 warm-up 的 Question 和 reflection 的图片输入。
+        self.manager_reflection_include_question = (
+            manager_reflection_include_question
+        )
         # 预留的思维轨迹缓存。当前保存逻辑主要通过 `save(..., thought=...)` 传入，
         # 这个字段保留给未来需要在对象级别累积中间反思的场景。
         self.thoughts = []
@@ -634,7 +640,10 @@ class Workflow:
                     ),
                     local_prompts.MID_CRITIQUE_PROMPT,
                 ]
-                if self.manager_multimodal:
+                if (
+                    self.manager_multimodal
+                    and self.manager_reflection_include_question
+                ):
                     question_field = self.evaluator_kwargs.get(
                         "question_field", "question"
                     )
@@ -1094,6 +1103,9 @@ class Workflow:
             "evaluator_type": self.evaluator_type,
             "evaluator_kwargs": self.evaluator_kwargs,
             "manager_multimodal": self.manager_multimodal,
+            "manager_reflection_include_question": (
+                self.manager_reflection_include_question
+            ),
         }
 
     def load_state_dict(self, state: dict[str, Any]):
@@ -1126,6 +1138,9 @@ class Workflow:
         self.evaluator_type = (current_state["evaluator_type"] or "auto").lower()
         self.evaluator_kwargs = current_state["evaluator_kwargs"] or {}
         self.manager_multimodal = current_state["manager_multimodal"]
+        self.manager_reflection_include_question = current_state[
+            "manager_reflection_include_question"
+        ]
 
     def save(self, path, epoch, thought) -> None:
         """保存 workflow 状态，以及可选的思维轨迹。
