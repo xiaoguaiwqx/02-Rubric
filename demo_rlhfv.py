@@ -10,7 +10,7 @@
 4. 用 90 条 discovery pair 数据优化 criteria；从 heldout validation pair 数据中随机抽 100 条做过程观察。
 5. 最后用完整 heldout validation 500 条样本做最终评估。
 
-注意：manager 仍然只处理文本 prompt；真正需要看图的是 worker evaluator。
+注意：manager 已经具备多模态能力；
 图片本体由 MultiModalPairEvaluator 读取 `image_path` 并编码成 VLM 可接收的
 `image_url` content。
 """
@@ -35,14 +35,14 @@ from critiq import (
 # 任务名会用在输出目录里，例如 ./output/rlhfv。
 TASK_NAME = os.getenv(
     "CRITIQ_TASK_NAME",
-    "rlhfv_exp6_mmmanager-reflection-noquestion_dis90_val100_n10_wp-final-heldout500_e10",
+    "rlhfv_exp7_mmmanager-reflection-noquestion_dis90_val100_n20_wp-final-heldout500_e5",
 )
 
-# manager 最终要维护多少条评价标准。exp3 使用 10 条来测试更细粒度 criteria 是否有帮助。
-N_CRITERIA = int(os.getenv("CRITIQ_N_CRITERIA", "10"))
+# manager 最终要维护多少条评价标准。exp7 使用 20 条来测试更细粒度 criteria 是否有帮助。
+N_CRITERIA = int(os.getenv("CRITIQ_N_CRITERIA", "20"))
 
 # workflow.optimize 的迭代轮数。每一轮都会在 train_set 上评估并改写 criteria。
-NUM_EPOCHS = int(os.getenv("CRITIQ_NUM_EPOCHS", "10"))
+NUM_EPOCHS = int(os.getenv("CRITIQ_NUM_EPOCHS", "5"))
 
 # Agent 调用失败或输出 JSON 解析失败时，Evaluator 会最多重试这么多次。
 MAX_RETRIES = int(os.getenv("CRITIQ_MAX_RETRIES", "10"))
@@ -199,7 +199,7 @@ MANAGER_ARGS = {
 
 # manager prompt 的目标：让 manager 生成“人类如何比较两个视觉问答回答质量”的标准。
 #
-# Exp6 保持 manager_multimodal：warm-up 阶段接收图片、Question 和候选回答；
+# Exp7 保持 manager_multimodal：warm-up 阶段接收图片、Question 和候选回答；
 # 逐错误样例 reflection 接收图片但不显式输入 Question；汇总 suggestions 的
 # revise 阶段仍使用文本上下文。生成的 criteria 随后交给多模态 worker 执行判断。
 MANAGER_PROMPT = f"""List and describe {N_CRITERIA} criteria for how human annotators compare the quality of two answers to the same visual question.

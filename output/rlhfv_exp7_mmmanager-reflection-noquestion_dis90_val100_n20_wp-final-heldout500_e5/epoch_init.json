@@ -1,0 +1,236 @@
+{
+    "manager_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "api_keys": "EMPTY",
+        "base_url": "http://localhost:8000/v1",
+        "request_kwargs": {
+            "temperature": 1.0
+        }
+    },
+    "worker_args": {
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "base_url": "http://localhost:8000/v1",
+        "api_keys": "EMPTY",
+        "request_kwargs": {
+            "temperature": 0.5
+        }
+    },
+    "worker_max_concurrent": 20,
+    "current_criteria": [
+        {
+            "name": "visual_grounding",
+            "description": "Does the answer directly reference and accurately describe elements visible in the image? Annotators prefer answers that explicitly match objects, positions, colors, textures, or actions shown in the image, without adding or omitting key visual details.",
+            "score": 0.0
+        },
+        {
+            "name": "factual_consistency",
+            "description": "Is the answer factually correct based on what is visible in the image? Annotators penalize answers that contradict the visual evidence, such as misidentifying objects, their locations, or their states (e.g., claiming a sandwich is cut when it isn’t).",
+            "score": 0.0
+        },
+        {
+            "name": "avoidance_of_hallucinations",
+            "description": "Does the answer avoid inventing details not present in the image? Annotators prefer answers that do not add fictional or unverified elements (e.g., claiming a person is holding a phone when none is visible).",
+            "score": 0.0
+        },
+        {
+            "name": "question_relevance",
+            "description": "Does the answer directly address the question asked? Annotators prefer answers that are tailored to the specific query, without irrelevant tangents or overly broad generalizations.",
+            "score": 0.0
+        },
+        {
+            "name": "completeness",
+            "description": "Does the answer cover all aspects of the question? Annotators prefer answers that are comprehensive, especially when the question asks for multiple elements (e.g., positioning, clothing, facial expression), and leave out nothing that is visually relevant and asked for.",
+            "score": 0.0
+        },
+        {
+            "name": "specificity",
+            "description": "Is the answer precise and detailed? Annotators prefer answers that use specific descriptors (e.g., 'blood near the nose' vs. 'injured') rather than vague or general terms (e.g., 'some injury').",
+            "score": 0.0
+        },
+        {
+            "name": "calibrated_uncertainty",
+            "description": "Does the answer appropriately acknowledge when it is uncertain or when details cannot be confirmed? Annotators prefer answers that are cautious when the image is ambiguous, rather than confidently asserting facts that are not visually verifiable.",
+            "score": 0.0
+        },
+        {
+            "name": "clarity_and_coherence",
+            "description": "Is the answer clear, grammatically correct, and logically structured? Annotators prefer answers that are easy to understand and flow smoothly, without confusing or contradictory statements.",
+            "score": 0.0
+        },
+        {
+            "name": "accuracy_of_positioning",
+            "description": "Does the answer correctly describe the spatial relationship between objects? Annotators prefer answers that accurately describe relative positions (e.g., 'left side', 'in front of', 'next to'), especially when the question asks about composition or arrangement.",
+            "score": 0.0
+        },
+        {
+            "name": "accuracy_of_attributes",
+            "description": "Does the answer correctly describe object attributes like color, texture, shape, or size? Annotators prefer answers that match the visual attributes exactly (e.g., 'blue shirt' vs. 'dark shirt'), avoiding misinterpretations.",
+            "score": 0.0
+        },
+        {
+            "name": "biological_or_contextual_plausibility",
+            "description": "Does the answer align with known real-world facts or behaviors? Annotators prefer answers that are plausible in context (e.g., a zebra might have peripheral vision) rather than those that contradict common knowledge or animal behavior.",
+            "score": 0.0
+        },
+        {
+            "name": "consistency_within_answer",
+            "description": "Is the answer internally consistent? Annotators prefer answers that do not contradict themselves (e.g., describing a person as both holding glasses and holding their head, when only one action is visible).",
+            "score": 0.0
+        },
+        {
+            "name": "appropriateness_of_tone",
+            "description": "Is the answer’s tone appropriate for the context? Annotators prefer answers that are neutral, factual, and professional, avoiding overly dramatic or subjective language unless it’s clearly justified by the image.",
+            "score": 0.0
+        },
+        {
+            "name": "visual_detail_preservation",
+            "description": "Does the answer preserve fine-grained visual details that are important to the question? Annotators prefer answers that include small but significant details (e.g., 'a small amount of peanut butter on the plate') rather than generalizations.",
+            "score": 0.0
+        },
+        {
+            "name": "avoidance_of_overinterpretation",
+            "description": "Does the answer avoid inferring a narrative or structure not supported by the image? Annotators prefer answers that stick to what is visually evident rather than assuming (e.g., 'a sandwich' when the ingredients are separate).",
+            "score": 0.0
+        },
+        {
+            "name": "relevance_of_additional_context",
+            "description": "Does the answer include only contextually relevant information? Annotators prefer answers that avoid adding irrelevant details (e.g., 'presence of humans' when the question is about a zebra and a lion) unless they directly support the answer.",
+            "score": 0.0
+        },
+        {
+            "name": "object_boundary_accuracy",
+            "description": "Does the answer correctly describe the boundaries of objects? Annotators prefer answers that accurately identify whether objects are whole, broken, or partially obscured, without misrepresenting their form.",
+            "score": 0.0
+        },
+        {
+            "name": "multi-object_relationship_accuracy",
+            "description": "Does the answer correctly describe relationships between multiple objects? Annotators prefer answers that accurately capture how objects interact spatially or functionally (e.g., 'the cat is next to the dog' rather than 'the cat is under the dog').",
+            "score": 0.0
+        },
+        {
+            "name": "language_precision",
+            "description": "Is the language precise and avoids ambiguity? Annotators prefer answers that use unambiguous words (e.g., 'on the plate' vs. 'near the plate') and avoid vague terms like 'some' or 'a little' without context.",
+            "score": 0.0
+        },
+        {
+            "name": "visual_cue_alignment",
+            "description": "Does the answer align with visual cues (e.g., posture, gaze, object placement) that indicate emotion, action, or intent? Annotators prefer answers that use visual cues to justify interpretations (e.g., 'the zebra is holding its head' to infer pain).",
+            "score": 0.0
+        }
+    ],
+    "banned_criteria": [],
+    "all_criteria": [
+        {
+            "name": "visual_grounding",
+            "description": "Does the answer directly reference and accurately describe elements visible in the image? Annotators prefer answers that explicitly match objects, positions, colors, textures, or actions shown in the image, without adding or omitting key visual details.",
+            "score": 0.0
+        },
+        {
+            "name": "factual_consistency",
+            "description": "Is the answer factually correct based on what is visible in the image? Annotators penalize answers that contradict the visual evidence, such as misidentifying objects, their locations, or their states (e.g., claiming a sandwich is cut when it isn’t).",
+            "score": 0.0
+        },
+        {
+            "name": "avoidance_of_hallucinations",
+            "description": "Does the answer avoid inventing details not present in the image? Annotators prefer answers that do not add fictional or unverified elements (e.g., claiming a person is holding a phone when none is visible).",
+            "score": 0.0
+        },
+        {
+            "name": "question_relevance",
+            "description": "Does the answer directly address the question asked? Annotators prefer answers that are tailored to the specific query, without irrelevant tangents or overly broad generalizations.",
+            "score": 0.0
+        },
+        {
+            "name": "completeness",
+            "description": "Does the answer cover all aspects of the question? Annotators prefer answers that are comprehensive, especially when the question asks for multiple elements (e.g., positioning, clothing, facial expression), and leave out nothing that is visually relevant and asked for.",
+            "score": 0.0
+        },
+        {
+            "name": "specificity",
+            "description": "Is the answer precise and detailed? Annotators prefer answers that use specific descriptors (e.g., 'blood near the nose' vs. 'injured') rather than vague or general terms (e.g., 'some injury').",
+            "score": 0.0
+        },
+        {
+            "name": "calibrated_uncertainty",
+            "description": "Does the answer appropriately acknowledge when it is uncertain or when details cannot be confirmed? Annotators prefer answers that are cautious when the image is ambiguous, rather than confidently asserting facts that are not visually verifiable.",
+            "score": 0.0
+        },
+        {
+            "name": "clarity_and_coherence",
+            "description": "Is the answer clear, grammatically correct, and logically structured? Annotators prefer answers that are easy to understand and flow smoothly, without confusing or contradictory statements.",
+            "score": 0.0
+        },
+        {
+            "name": "accuracy_of_positioning",
+            "description": "Does the answer correctly describe the spatial relationship between objects? Annotators prefer answers that accurately describe relative positions (e.g., 'left side', 'in front of', 'next to'), especially when the question asks about composition or arrangement.",
+            "score": 0.0
+        },
+        {
+            "name": "accuracy_of_attributes",
+            "description": "Does the answer correctly describe object attributes like color, texture, shape, or size? Annotators prefer answers that match the visual attributes exactly (e.g., 'blue shirt' vs. 'dark shirt'), avoiding misinterpretations.",
+            "score": 0.0
+        },
+        {
+            "name": "biological_or_contextual_plausibility",
+            "description": "Does the answer align with known real-world facts or behaviors? Annotators prefer answers that are plausible in context (e.g., a zebra might have peripheral vision) rather than those that contradict common knowledge or animal behavior.",
+            "score": 0.0
+        },
+        {
+            "name": "consistency_within_answer",
+            "description": "Is the answer internally consistent? Annotators prefer answers that do not contradict themselves (e.g., describing a person as both holding glasses and holding their head, when only one action is visible).",
+            "score": 0.0
+        },
+        {
+            "name": "appropriateness_of_tone",
+            "description": "Is the answer’s tone appropriate for the context? Annotators prefer answers that are neutral, factual, and professional, avoiding overly dramatic or subjective language unless it’s clearly justified by the image.",
+            "score": 0.0
+        },
+        {
+            "name": "visual_detail_preservation",
+            "description": "Does the answer preserve fine-grained visual details that are important to the question? Annotators prefer answers that include small but significant details (e.g., 'a small amount of peanut butter on the plate') rather than generalizations.",
+            "score": 0.0
+        },
+        {
+            "name": "avoidance_of_overinterpretation",
+            "description": "Does the answer avoid inferring a narrative or structure not supported by the image? Annotators prefer answers that stick to what is visually evident rather than assuming (e.g., 'a sandwich' when the ingredients are separate).",
+            "score": 0.0
+        },
+        {
+            "name": "relevance_of_additional_context",
+            "description": "Does the answer include only contextually relevant information? Annotators prefer answers that avoid adding irrelevant details (e.g., 'presence of humans' when the question is about a zebra and a lion) unless they directly support the answer.",
+            "score": 0.0
+        },
+        {
+            "name": "object_boundary_accuracy",
+            "description": "Does the answer correctly describe the boundaries of objects? Annotators prefer answers that accurately identify whether objects are whole, broken, or partially obscured, without misrepresenting their form.",
+            "score": 0.0
+        },
+        {
+            "name": "multi-object_relationship_accuracy",
+            "description": "Does the answer correctly describe relationships between multiple objects? Annotators prefer answers that accurately capture how objects interact spatially or functionally (e.g., 'the cat is next to the dog' rather than 'the cat is under the dog').",
+            "score": 0.0
+        },
+        {
+            "name": "language_precision",
+            "description": "Is the language precise and avoids ambiguity? Annotators prefer answers that use unambiguous words (e.g., 'on the plate' vs. 'near the plate') and avoid vague terms like 'some' or 'a little' without context.",
+            "score": 0.0
+        },
+        {
+            "name": "visual_cue_alignment",
+            "description": "Does the answer align with visual cues (e.g., posture, gaze, object placement) that indicate emotion, action, or intent? Annotators prefer answers that use visual cues to justify interpretations (e.g., 'the zebra is holding its head' to infer pain).",
+            "score": 0.0
+        }
+    ],
+    "n_criteria": 20,
+    "manager_prompt": "List and describe 20 criteria for how human annotators compare the quality of two answers to the same visual question.\n\nThe task is RLHF-V style preference comparison for visual question answering and image-text responses. The worker model will receive:\n- the image,\n- the source question,\n- candidate answer A,\n- candidate answer B.\n\nFocus on human preference factors such as visual grounding, question relevance, factual consistency with the image, avoidance of hallucinated visual details, completeness, specificity, calibrated uncertainty, and clear language.",
+    "manager_prompt_postfix": "\n\nYour response should be in the following **json** format:\n```json\n{\n    \"name_of_the_criterion\": \"Detailed description for the criterion such as what it is, how it can be evaluated, when it is applicable, or other relevant information... Be specific and detailed while keep concise.\",\n    ...\n}\n```",
+    "worker_prompt": "## Instruction\nYou are judging an RLHF-V visual QA / image-text preference pair under one criterion. You are given the image, the source question, and two candidate answers.\n\nUse the image when the criterion depends on visual evidence. If the criterion is not applicable to this pair, answer None.\n\n## Question\n{question}\n\n## Criterion\n**{criterion}**: {description}\n\n## Candidate A\n{A}\n\n## Candidate B\n{B}\n\nWhich candidate better matches the criterion and is more likely to align with human preference?",
+    "evaluator_type": "multimodal_pair",
+    "evaluator_kwargs": {
+        "image_field": "image_path",
+        "question_field": "question",
+        "encode_local_image": true
+    },
+    "manager_multimodal": true,
+    "manager_reflection_include_question": false
+}
