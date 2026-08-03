@@ -1,0 +1,40 @@
+{
+  "experiment_id": "shared_output_pool_v1",
+  "model": "Qwen/Qwen3-VL-8B-Instruct",
+  "vllm_version": "0.11.0",
+  "max_model_len": 25800,
+  "criteria_source": "output/rlhfv_exp4_dis90_val100_n10_wp-final-heldout500_e10/final_heldout_raw_prediction.json",
+  "criteria_source_sha256": "20fa11ab4516cbc510e2ae65d5605137d086676f7821d6a65ec20c1355c7f0ed",
+  "heldout_dataset": "data/RLHF-V/heldout_validation_500_pair.jsonl",
+  "heldout_dataset_sha256": "fa57ca429469d3c2c014e7aef42801de43befad3fc600738da7c9fb12fd312c7",
+  "discovery_dataset": "data/RLHF-V/discovery_train_90_pair.jsonl",
+  "reserve_pool": "data/RLHF-V/reserve_pool.jsonl",
+  "reserve_pool_sha256": "9a31ae279a81eebd29edc3f33951d725a5faeb291d6825fb18909424a86e51f9",
+  "image_root": "<ABSOLUTE_IMAGE_ROOT>",
+  "backend_pool": {
+    "pool_id": "qwen3vl8b-vllm-pool-v1",
+    "common_checkpoint_id": "Qwen/Qwen3-VL-8B-Instruct",
+    "global_request_concurrency": 40,
+    "endpoints": [
+      {
+        "endpoint_id": "vllm-a",
+        "base_url": "http://<HOST_A>:8000/v1",
+        "checkpoint_root": "<CHECKPOINT_ROOT_A>",
+        "max_concurrency": 20
+      },
+      {
+        "endpoint_id": "vllm-b",
+        "base_url": "http://<HOST_B>:8000/v1",
+        "checkpoint_root": "<CHECKPOINT_ROOT_B>",
+        "max_concurrency": 20
+      }
+    ]
+  },
+  "worker_request_kwargs": {},
+  "router_request_kwargs": {
+    "temperature": 0
+  },
+  "structured_max_retries": 1,
+  "api_retry_attempts": 3,
+  "reserve_seed": 42
+}

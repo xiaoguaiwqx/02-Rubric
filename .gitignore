@@ -11,6 +11,7 @@ output/*.log*
 output/*.txt*
 output/**/workflow_agent*.log
 output/**/workflow_agent*.jsonl
+output/**/cache_*/
 
 # Environment files
 .env
@@ -24,3 +25,17 @@ data/**/*.json*
 data/**/*.csv*
 data/**/*.xlsx*
 data/**/*.arrow
+
+# Phase 4 runtime artifacts (keep frozen manifest, rubrics, and compact reports)
+output/evolving_structured_rubrics/**/cache/
+output/evolving_structured_rubrics/**/traces/
+output/evolving_structured_rubrics/**/predictions/
+output/evolving_structured_rubrics/**/router/
+output/evolving_structured_rubrics/**/logs/
+output/evolving_structured_rubrics/**/provenance/
+output/evolving_structured_rubrics/**/quarantine/
+output/evolving_structured_rubrics/**/repairs/
+output/evolving_structured_rubrics/**/progress.json
+output/evolving_structured_rubrics/**/run.log
+output/evolving_structured_rubrics/**/heldout_started.lock
+experiments/evolving_structured_rubrics/configs/local/
