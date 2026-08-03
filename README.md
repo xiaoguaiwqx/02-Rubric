@@ -1,153 +1,82 @@
-# CritiQ: Mining Data Quality Criteria from Human Preferences
+# Evolving Structured Rubrics from Multimodal Preferences
 
-[![GitHub KYLN24/CritiQ](https://img.shields.io/badge/GitHub-CritiQ-blue?logo=github)](https://github.com/KYLN24/CritiQ) [![arXiv.2502.19279](https://img.shields.io/badge/arXiv-2502.19279-red?logo=arxiv)](https://arxiv.org/abs/2502.19279) [![Hugging Face Paper Page](https://img.shields.io/badge/Paper%20Page-2502.19279-yellow?logo=huggingface)](https://huggingface.co/papers/2502.19279) [![Anthology Paper Page](https://img.shields.io/badge/Anthology-ACL_2025-red)](https://aclanthology.org/2025.acl-long.792)
+本项目研究如何从多模态偏好数据中，将扁平的自然语言评价准则逐步演化为可解释的结构化 Rubric Forest。给定图像、问题和两个候选回答，系统需要判断哪些准则与当前样本相关、应当沿哪条路径执行，以及如何聚合各节点的判断。
 
-## Updates
+项目目前处于研究开发阶段。Rubric 的表示、执行和验证基础设施已经完成，具体的自动演化算法仍在持续设计和迭代。
 
-- **2025-05-16**: 🎉 Our paper has been accepted to the main conference of **ACL 2025**.
-- **2025-03-07**: 🛠️ We release the Python implementation of *CritiQ* on GitHub.
-- **2025-02-26**: 📝 We published the preprint [*CritiQ: Mining Data Quality Criteria from Human Preferences*](https://arxiv.org/abs/2502.19279) on arXiv.
+## 我们要解决的问题
 
-## Introduction
+传统 Rubric 通常将所有准则视为相互独立的扁平列表，并对每个样本执行全部准则后进行多数投票。这种方式忽略了准则之间的前置依赖、粒度差异，以及不同样本可能需要不同评价路径的问题。
 
-![](./assets/critiq.png)
+我们的目标是让 Rubric 从少量自然语言准则出发，在多模态偏好反馈的驱动下逐步生长、分化和精简。最终的层级与级联关系应当成为演化过程的自然产物，而不是预先手工固定的最终结构。
 
-Language models require high‑quality data, yet common selection methods (heuristics, perplexity, classifiers, prompt engineering) are costly, expert‑heavy, and can introduce bias. CritiQ automatically learns interpretable quality criteria from ~30 human preference pairs and uses them to select data efficiently. CritiQ Flow evolves criteria with a manager agent and makes pairwise judgments with worker agents, optionally boosted by a knowledge base distilled from prior work. We then train a CritiQ Scorer to assign quality scores for scalable selection. Across code, math, and logic, CritiQ attains high accuracy on human‑annotated tests and improves downstream performance when continuing to train Llama 3.1 versus uniform sampling. Ablations confirm the benefits of the knowledge base and reflection, and we analyze criteria evolution and the effect of majority voting.
+## 核心思想
 
-## Quick Start
+Rubric 被表示为由多个根节点组成的 Forest，准则是其中的节点，条件依赖是节点之间的边。通用准则可以位于上层，细粒度准则只在父节点满足相应条件时继续执行。
 
-### Installation
+系统将偏好投票与路径控制拆成两个通道：Pairwise Worker 负责输出权威的 `A`、`B` 或弃权投票，Gate Worker 负责提供是否进入子节点所需的状态。这样既保留原有准则的判断语义，也支持结构化的 root-to-leaf cascade。
 
-```bash
-git clone https://github.com/KYLN24/CritiQ
-cd CritiQ
-pip install -e ".[vllm,train]"
-```
-### Usage
+## 整体架构
 
-#### (Optional) Prepare the Knowledge Base
-
-We do not release the knowledge base for *CritiQ Flow* due to the license issue of the source data. You can prepare you own knowledge base following the instructions in the paper.
-
-The format of the knowledge base should be a JSON file with the following structure:
-
-```json
-[
-    {
-        "name": "Criterion 1",
-        "description": "Description of criterion 1"
-    },
-    {
-        "name": "Criterion 2",
-        "description": "Description of criterion 2"
-    }
-]
+```mermaid
+flowchart TD
+    X["多模态偏好样本<br/>图像、问题、回答 A、回答 B"] --> R["Root Router"]
+    R --> F["选中的 Rubric 子树"]
+    F --> P["Pairwise Vote Worker<br/>A / B / 弃权"]
+    F --> G["Gate State Worker<br/>子节点激活状态"]
+    P --> C["Root-to-leaf Cascade Executor"]
+    G --> C
+    C --> A["子树与根节点聚合"]
+    A --> Y["最终偏好<br/>A / B / Tie"]
+    C --> T["Trace、覆盖率、执行路径、<br/>纠错效果与推理成本"]
+    T -. 为后续演化提供反馈 .-> F
 ```
 
-Alternatively, CritiQ can be used without the knowledge base. In this case, the LLMs will generate the criteria from several examples.
+当前实现包含版本化的 Rubric Schema、确定性的遍历与聚合规则、离线重放、在线惰性执行、cache/trace 校验和多后端推理池。Shared-output 实验允许不同路由与聚合策略复用完全相同的模型判断，从而公平比较结构本身的作用。
 
-#### Prepare Data
+## 当前完成状态
 
-The preference data should be in one of these formats:
+- [x] 结构化判断与聚合语义
+- [x] 不可变的 Rubric Tree/Forest 表示与校验
+- [x] Root Router 与 root-to-leaf Cascade Executor
+- [x] Pairwise/Gate 双通道执行
+- [x] Offline replay、cache、trace、telemetry 与 backend pool
+- [x] 静态 Rubric 的 shared-output 实验
+- [ ] 自动 Rubric evolution loop
+- [ ] 基于反馈的准则与结构优化
 
-**Pair Data Format** (for preference comparison):
-```json
-[{"A": "text1", "B": "text2", "answer": "A"}]
+当前基础设施已经能够稳定地表示、执行、重放和比较 Structured Rubrics。现有实验恢复了原 Pairwise baseline，但手工构造的静态 Forest 只带来了较小改善，当前 Root Router 也存在遗漏有用准则的问题。这些结果说明执行与反馈链路已经可用，下一阶段应重点演化 Rubric 本身。
+
+## 当前实验入口
+
+正式的实验入口为：
+
+```powershell
+python -m experiments.evolving_structured_rubrics.run_shared_output_pool --help
 ```
 
-**Zero-One Data Format** (for binary classification):
-```json
-[{"text": "sample text", "label": 1}]
-```
+本地运行可以参考配置模板 [`shared_output_pool.example.json`](experiments/evolving_structured_rubrics/configs/shared_output_pool.example.json)。本地 endpoint、checkpoint 路径、prediction、trace 和 cache 不提交到 Git。
 
-#### Run CritiQ Flow
+相关文档：
 
-![](./assets/critiqflow.png)
+- [Idea 初稿](docs/Evolving%20Structured%20Rubrics%20from%20Multimodal%20Preferences.md)
+- [实现计划](docs/Evolving%20Structured%20Rubrics%20Implementation%20Plan.md)
+- [Shared-output 实验总结](docs/experiment-results/shared_output_pool_v1_summary.md)
 
-See `demo.py` for a complete example. Key steps:
-1. Configure your model settings and API keys
-2. Load your dataset 
-3. Initialize `Workflow` with desired parameters
-4. Call `workflow.get_init_criteria()` to generate initial criteria
-5. Call `workflow.optimize()` to iteratively improve criteria quality
+## 基于 CritiQ-V
 
-#### Agent Annotation
+本项目建立在 CritiQ-V 之上。CritiQ-V 是我们对 [CritiQ](https://github.com/KYLN24/CritiQ) 的多模态扩展，负责将自然语言准则挖掘和 Pairwise Evaluation 适配到带图像的偏好数据；本项目在此基础上进一步研究 Rubric 的结构表示、条件路由、级联执行和后续结构演化。
 
-```sh
-python -m critiq.scripts.annotation --help
-# Configure dataset path, model settings, and criteria for annotation
-```
-
-#### Train CritiQ Scorer
-
-```sh
-set -e
-
-# Training
-torchrun --nproc-per-node=8 -m critiq.scripts.train_reward \
-         --model=/path/to/your/base/model \
-         --job_name=your_job_name \
-         --output_dir=/path/to/output/dir \
-         --data=/path/to/annotated/data.jsonl \
-         --batch_size=4 \
-         --eval_batch_size=4 \
-         --max_length=32768 \
-         --eval_steps=50 \
-         --epochs=3 \
-         --lr=2e-5 \
-         --accum=4 \
-         --zero_stage=2 \
-         --gradient_checkpointing \
-         --warmup_ratio=0.2 \
-         --use_qwen2_rm
-
-# Evaluation
-torchrun --nproc-per-node=8 -m critiq.scripts.train_reward \
-         --model=/path/to/trained/model \
-         --data=/path/to/eval/data.jsonl \
-         --eval_batch_size=8 \
-         --max_length=32768 \
-         --only_eval \
-         --use_qwen2_rm
-```
-
-#### Score the Dataset
-
-```sh
-# Using regular inference
-python -m critiq.scripts.reward_predict \
-       --model_path=/path/to/trained/model \
-       --data=/path/to/dataset.jsonl \
-       --output_dir=/path/to/output/dir
-
-# Using VLLM for faster inference (recommended for large datasets)
-CUDA_VISIBLE_DEVICES=0 python -m critiq.scripts.reward_predict_vllm \
-       --model_path=/path/to/trained/model \
-       --data=/path/to/dataset.jsonl \
-       --output_dir=/path/to/output/dir \
-       --text_field=content \
-       --vllm_max_model_len=32768 \
-       --vllm_tensor_parallel_size=1 \
-       --max_data_chars=20000 \
-       --vllm_port=8000
-```
-
-#### Perform Sampling
-
-Use the scored results to sample high-quality data based on the learned criteria. For efficient temperature-based sampling with Gumbel distribution, refer to: https://github.com/princeton-nlp/QuRating/blob/main/data_tools/select_subset.py
-
-## Citation
-
-If you find our work helpful, please consider citing it in your publications:
+如果本项目对你的研究有所帮助，也请引用原始 CritiQ 工作：
 
 ```bibtex
 @misc{guo2025critiqminingdataquality,
-      title={CritiQ: Mining Data Quality Criteria from Human Preferences}, 
-      author={Honglin Guo and Kai Lv and Qipeng Guo and Tianyi Liang and Zhiheng Xi and Demin Song and Qiuyinzhe Zhang and Yu Sun and Kai Chen and Xipeng Qiu and Tao Gui},
-      year={2025},
-      eprint={2502.19279},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2502.19279}, 
+  title        = {CritiQ: Mining Data Quality Criteria from Human Preferences},
+  author       = {Honglin Guo and Kai Lv and Qipeng Guo and Tianyi Liang and Zhiheng Xi and Demin Song and Qiuyinzhe Zhang and Yu Sun and Kai Chen and Xipeng Qiu and Tao Gui},
+  year         = {2025},
+  eprint       = {2502.19279},
+  archivePrefix= {arXiv},
+  primaryClass = {cs.CL},
+  url          = {https://arxiv.org/abs/2502.19279}
 }
 ```
