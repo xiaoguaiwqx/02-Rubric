@@ -30,9 +30,29 @@ from typing import Any, Literal, Mapping, Sequence
 
 from tqdm import tqdm
 
-from .agent import Agent
+from .agent import Agent, AgentCallMetrics
 from .i18n import local_prompts
 from .router import RouterManager, RoutingDecision
+from .structured import (
+    FinalPreference,
+    StructuredCriterionSnapshot,
+    StructuredEvaluationOutput,
+    StructuredNodeOutput,
+    StructuredOutputParseError,
+    StructuredPredictionOutput,
+    StructuredWorkerRequestSpec,
+    Vote,
+    aggregate_selected_roots,
+    make_parse_failure_judgement,
+    parse_structured_worker_response,
+    structured_worker_prompt_sha256,
+    structured_input_fingerprint,
+)
+from .structured_prompts import (
+    STRUCTURED_MULTIMODAL_WORKER_PROMPT,
+    STRUCTURED_WORKER_PROMPT_POSTFIX,
+)
+from .structured.telemetry import ModelCallMetrics, TokenPricing
 from .utils import (
     USE_TQDM,
     Criterion,
@@ -840,6 +860,412 @@ class MultiModalPairEvaluator(PairEvaluator):
         if answer not in ("A", "B", "U"):
             answer = None
         return answer, thought
+
+
+class StructuredMultiModalPairEvaluator(MultiModalPairEvaluator):
+    """Multimodal evaluator that preserves a full NodeJudgement per criterion."""
+
+    worker_prompt_postfix = STRUCTURED_WORKER_PROMPT_POSTFIX
+
+    def __init__(
+        self,
+        worker_args: dict,
+        dataset: Sequence[PairData],
+        worker_backend_id: str,
+        max_concurrent: int = 1,
+        max_retries: int = 3,
+        worker_prompt: str | None = None,
+        max_data_chars: int | None = None,
+        image_field: str = "image_path",
+        question_field: str = "question",
+        sample_id_field: str = "sample_id",
+        encode_local_image: bool = True,
+        worker_pricing: TokenPricing | None = None,
+    ) -> None:
+        if not dataset:
+            raise ValueError("structured multimodal dataset must not be empty")
+        if (
+            isinstance(max_concurrent, bool)
+            or not isinstance(max_concurrent, int)
+            or max_concurrent < 1
+        ):
+            raise ValueError("max_concurrent must be a positive integer")
+        if (
+            isinstance(max_retries, bool)
+            or not isinstance(max_retries, int)
+            or max_retries < 0
+        ):
+            raise ValueError("max_retries must be a non-negative integer")
+        if not isinstance(worker_backend_id, str) or not worker_backend_id.strip():
+            raise ValueError("worker_backend_id must be a non-empty string")
+        if max_data_chars is not None and (
+            isinstance(max_data_chars, bool)
+            or not isinstance(max_data_chars, int)
+            or max_data_chars < 1
+        ):
+            raise ValueError("max_data_chars must be None or a positive integer")
+        if not isinstance(encode_local_image, bool):
+            raise TypeError("encode_local_image must be bool")
+        if not isinstance(sample_id_field, str) or not sample_id_field.strip():
+            raise ValueError("sample_id_field must be a non-empty string")
+        if not isinstance(worker_args, dict):
+            raise TypeError("worker_args must be a dict")
+        if worker_pricing is not None and not isinstance(worker_pricing, TokenPricing):
+            raise TypeError("worker_pricing must be TokenPricing or None")
+
+        sample_ids: list[str] = []
+        for index, data in enumerate(dataset):
+            if not isinstance(data, Mapping):
+                raise ValueError(f"dataset row {index + 1} must be an object")
+            sample_id = data.get(sample_id_field)
+            if not isinstance(sample_id, str) or not sample_id.strip():
+                raise ValueError(
+                    f"structured multimodal evaluator requires a non-empty "
+                    f"{sample_id_field!r} at row {index + 1}"
+                )
+            if not isinstance(data.get("A"), str) or not isinstance(
+                data.get("B"), str
+            ):
+                raise ValueError(f"A/B must be strings at row {index + 1}")
+            if data.get("answer") not in ("A", "B"):
+                raise ValueError(f"answer must be A or B at row {index + 1}")
+            sample_ids.append(sample_id)
+        if len(set(sample_ids)) != len(sample_ids):
+            raise ValueError("sample IDs must not contain duplicates")
+
+        structured_prompt = worker_prompt or STRUCTURED_MULTIMODAL_WORKER_PROMPT
+        required_placeholders = {
+            "{criterion}",
+            "{description}",
+            "{question}",
+            "{A}",
+            "{B}",
+        }
+        missing_placeholders = {
+            placeholder
+            for placeholder in required_placeholders
+            if placeholder not in structured_prompt
+        }
+        if missing_placeholders:
+            raise ValueError(
+                "structured worker prompt missing placeholders: "
+                f"{sorted(missing_placeholders)}"
+            )
+        self.worker_backend_id = worker_backend_id
+        self.worker_pricing = worker_pricing
+
+        super().__init__(
+            worker_args=worker_args,
+            dataset=dataset,
+            max_concurrent=max_concurrent,
+            max_retries=max_retries,
+            worker_prompt=structured_prompt,
+            max_data_chars=max_data_chars,
+            image_field=image_field,
+            question_field=question_field,
+            encode_local_image=encode_local_image,
+        )
+        self.sample_id_field = sample_id_field
+
+    @staticmethod
+    def _normalize_structured_criteria(
+        criteria: Sequence[Criterion | dict[Literal["name", "description"], str]],
+    ) -> tuple[Criterion, ...]:
+        if not criteria:
+            raise ValueError("criteria must not be empty")
+        normalized: list[Criterion] = []
+        for index, criterion in enumerate(criteria):
+            if isinstance(criterion, dict):
+                try:
+                    criterion = Criterion.from_dict(dict(criterion))
+                except Exception as exc:
+                    raise ValueError(f"invalid criterion at index {index}") from exc
+            if not isinstance(criterion, Criterion):
+                raise TypeError(f"criterion at index {index} must be Criterion or dict")
+            if not isinstance(criterion.name, str) or not criterion.name.strip():
+                raise ValueError(f"criterion name at index {index} must be non-empty")
+            if (
+                not isinstance(criterion.description, str)
+                or not criterion.description.strip()
+            ):
+                raise ValueError(
+                    f"criterion description at index {index} must be non-empty"
+                )
+            normalized.append(criterion)
+        names = [criterion.name for criterion in normalized]
+        if len(set(names)) != len(names):
+            raise ValueError("criterion names must not contain duplicates")
+        return tuple(normalized)
+
+    @staticmethod
+    def _structured_agent_metrics(worker: object) -> AgentCallMetrics:
+        metrics = getattr(worker, "last_call_metrics", None)
+        if isinstance(metrics, AgentCallMetrics):
+            return metrics
+        return AgentCallMetrics(
+            api_attempts=1,
+            input_tokens=None,
+            output_tokens=None,
+            total_tokens=None,
+            usage_complete=False,
+        )
+
+    def infer_one(
+        self,
+        data: PairData,
+        criterion: Criterion,
+    ) -> tuple[StructuredNodeOutput, ModelCallMetrics]:
+        """Infer one sample-node lazily and return current-run API telemetry."""
+
+        if not isinstance(data, Mapping):
+            raise TypeError("data must be a mapping")
+        if not isinstance(criterion, Criterion):
+            raise TypeError("criterion must be Criterion")
+
+        last_raw_response: str | None = None
+        last_parse_error = "worker did not return a parseable response"
+        last_inconsistent: StructuredNodeOutput | None = None
+        total_attempts = self.max_retries + 1
+        agent_metrics: list[AgentCallMetrics] = []
+
+        for attempt_count in range(1, total_attempts + 1):
+            worker = Agent(**self.worker_args)
+            prompt = self._make_user_content(data, criterion)
+            raw_response = worker(prompt, stream=False)
+            agent_metrics.append(self._structured_agent_metrics(worker))
+            last_raw_response = (
+                raw_response if isinstance(raw_response, str) else None
+            )
+            try:
+                judgement = parse_structured_worker_response(raw_response)
+            except StructuredOutputParseError as exc:
+                last_parse_error = str(exc)
+                print_debug(
+                    "Failed to parse structured worker response",
+                    f"attempt={attempt_count}/{total_attempts}",
+                    raw_response,
+                    exc,
+                )
+                continue
+
+            output = StructuredNodeOutput(
+                judgement=judgement,
+                raw_response=raw_response,
+                parse_error=None,
+                attempt_count=attempt_count,
+            )
+            if judgement.consistency_ok:
+                final_output = output
+                break
+            last_inconsistent = output
+            print_debug(
+                "Structured worker response failed consistency validation",
+                f"attempt={attempt_count}/{total_attempts}",
+                judgement.consistency_errors,
+            )
+
+        else:
+            if last_inconsistent is not None:
+                final_output = StructuredNodeOutput(
+                    judgement=last_inconsistent.judgement,
+                    raw_response=last_inconsistent.raw_response,
+                    parse_error=None,
+                    attempt_count=total_attempts,
+                )
+            else:
+                final_output = StructuredNodeOutput(
+                    judgement=make_parse_failure_judgement(),
+                    raw_response=last_raw_response,
+                    parse_error=last_parse_error,
+                    attempt_count=total_attempts,
+                )
+
+        metrics = ModelCallMetrics.from_agent_calls(
+            agent_metrics,
+            logical_evaluations=1,
+            parse_retries=max(0, len(agent_metrics) - 1),
+            pricing=self.worker_pricing,
+        )
+        return final_output, metrics
+
+    def _pred_one_openai(
+        self,
+        data: PairData,
+        criterion: Criterion,
+        ttl: int,
+    ) -> StructuredNodeOutput:
+        """Compatibility wrapper used by existing batch prediction."""
+
+        if ttl != self.max_retries:
+            raise ValueError("ttl must equal evaluator max_retries")
+        return self.infer_one(data, criterion)[0]
+
+    def pred_openai(
+        self,
+        criteria: Sequence[Criterion],
+    ) -> tuple[dict[str, StructuredNodeOutput], ...]:
+        """Evaluate the dataset/criterion Cartesian product in stable input order."""
+
+        with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
+            futures = [
+                executor.submit(
+                    self._pred_one_openai,
+                    data,
+                    criterion,
+                    self.max_retries,
+                )
+                for data in self.dataset
+                for criterion in criteria
+            ]
+            for _ in tqdm(
+                as_completed(futures),
+                total=len(futures),
+                dynamic_ncols=True,
+                disable=not USE_TQDM,
+            ):
+                pass
+
+            results = (future.result() for future in futures)
+            outputs: list[dict[str, StructuredNodeOutput]] = []
+            for _data in self.dataset:
+                outputs.append(
+                    {
+                        criterion.name: next(results)
+                        for criterion in criteria
+                    }
+                )
+        return tuple(outputs)
+
+    def _structured_sample_fingerprints(self) -> tuple[str, ...]:
+        return tuple(
+            self.sample_fingerprint(data)
+            for data in self.dataset
+        )
+
+    def sample_fingerprint(self, data: PairData) -> str:
+        return structured_input_fingerprint(
+            data,
+            image_field=self.image_field,
+            question_field=self.question_field,
+            sample_id_field=self.sample_id_field,
+            max_data_chars=self.max_data_chars,
+            encode_local_image=self.encode_local_image,
+        )
+
+    def request_spec(self) -> StructuredWorkerRequestSpec:
+        decoding_config = self.worker_args.get("request_kwargs") or {}
+        try:
+            decoding_config = json.loads(
+                json.dumps(decoding_config, ensure_ascii=False, allow_nan=False)
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError("worker request_kwargs must be JSON serializable") from exc
+        return StructuredWorkerRequestSpec(
+            model=str(self.worker_args.get("model", "gpt-4o-mini")),
+            worker_backend_id=self.worker_backend_id,
+            prompt_sha256=structured_worker_prompt_sha256(
+                self.worker_prompt,
+                self.worker_prompt_postfix,
+            ),
+            max_data_chars=self.max_data_chars,
+            encode_local_image=self.encode_local_image,
+            image_field=self.image_field,
+            question_field=self.question_field,
+            sample_id_field=self.sample_id_field,
+            decoding_config=decoding_config,
+        )
+
+
+    def pred(
+        self,
+        criteria: Sequence[Criterion | dict[Literal["name", "description"], str]],
+    ) -> StructuredPredictionOutput:
+        """Return versioned structured outputs plus a flat-uniform sanity vote."""
+
+        sample_fingerprints = self._structured_sample_fingerprints()
+        normalized = self._normalize_structured_criteria(criteria)
+        node_outputs = self.pred_openai(normalized)
+        if self._structured_sample_fingerprints() != sample_fingerprints:
+            raise RuntimeError(
+                "structured worker inputs changed while prediction was running"
+            )
+
+        criterion_names = tuple(criterion.name for criterion in normalized)
+        flat_answers = tuple(
+            aggregate_selected_roots(
+                {
+                    name: outputs[name].local_decision.vote
+                    for name in criterion_names
+                },
+                criterion_names,
+            )
+            for outputs in node_outputs
+        )
+        return StructuredPredictionOutput(
+            sample_ids=tuple(
+                str(data[self.sample_id_field]) for data in self.dataset
+            ),
+            sample_fingerprints=sample_fingerprints,
+            criteria=tuple(
+                StructuredCriterionSnapshot(
+                    name=criterion.name,
+                    description=criterion.description,
+                )
+                for criterion in normalized
+            ),
+            node_outputs=node_outputs,
+            flat_answers=flat_answers,
+            request_spec=self.request_spec(),
+        )
+
+    def eval(
+        self,
+        criteria: Sequence[Criterion | dict[Literal["name", "description"], str]],
+        update_score: bool = False,
+    ) -> StructuredEvaluationOutput:
+        """Compute flat sanity accuracy and decisive-vote coverage."""
+
+        normalized = self._normalize_structured_criteria(criteria)
+        prediction = self.pred(normalized)
+        is_correct = tuple(
+            answer in (FinalPreference.A, FinalPreference.B)
+            and answer.value == data["answer"]
+            for data, answer in zip(self.dataset, prediction.flat_answers)
+        )
+        decisive_answers = sum(
+            answer in (FinalPreference.A, FinalPreference.B)
+            for answer in prediction.flat_answers
+        )
+        accuracy = sum(is_correct) / len(is_correct)
+        coverage = decisive_answers / len(prediction.flat_answers)
+
+        per_criterion_accuracy: dict[str, float] = {}
+        per_criterion_coverage: dict[str, float] = {}
+        for criterion in normalized:
+            decisive = 0
+            correct = 0
+            for data, outputs in zip(self.dataset, prediction.node_outputs):
+                vote = outputs[criterion.name].local_decision.vote
+                if vote not in (Vote.A, Vote.B):
+                    continue
+                decisive += 1
+                if vote.value == data["answer"]:
+                    correct += 1
+            per_criterion_accuracy[criterion.name] = (
+                correct / decisive if decisive else 0.0
+            )
+            per_criterion_coverage[criterion.name] = decisive / len(self.dataset)
+            if update_score:
+                criterion.score = per_criterion_accuracy[criterion.name]
+
+        return StructuredEvaluationOutput(
+            prediction=prediction,
+            is_correct=is_correct,
+            accuracy=accuracy,
+            coverage=coverage,
+            per_criterion_accuracy=per_criterion_accuracy,
+            per_criterion_coverage=per_criterion_coverage,
+        )
 
 
 class MoEPairEvaluator(MultiModalPairEvaluator):

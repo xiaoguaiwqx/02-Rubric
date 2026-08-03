@@ -9,6 +9,7 @@ import json
 import os
 import random
 import time
+from dataclasses import dataclass
 from time import sleep
 from typing import Any
 
@@ -19,6 +20,19 @@ RATE_LIMIT_RETRY_ATTEMPTS = 50
 FORBIDDEN_RETRY_BASE_DELAY = 1
 FORBIDDEN_RETRY_MAX_DELAY = 60
 WORKFLOW_AGENT_LOGFILE = os.getenv("WORKFLOW_AGENT_LOGFILE", None)
+
+
+@dataclass(frozen=True)
+class AgentCallMetrics:
+    """Observed cost of one public Agent call without changing its return type."""
+
+    api_attempts: int = 0
+    input_tokens: int | None = 0
+    output_tokens: int | None = 0
+    total_tokens: int | None = 0
+    usage_complete: bool = True
+    latency_seconds: float = 0.0
+    error_count: int = 0
 
 
 class Agent:
@@ -32,6 +46,7 @@ class Agent:
         api_keys: str | list[str] | None = None,
         request_kwargs: dict[str, Any] = None,
         tensor_parallel_size: int | None = None,
+        api_retry_attempts: int = RATE_LIMIT_RETRY_ATTEMPTS,
     ):
         # `system` 是可选的，因为大多数 workflow prompt 都是在外部手动拼接的。
         self.system = system
@@ -52,11 +67,59 @@ class Agent:
         self.request_kwargs = {}
         if request_kwargs is not None:
             self.request_kwargs.update(request_kwargs)
+        if (
+            isinstance(api_retry_attempts, bool)
+            or not isinstance(api_retry_attempts, int)
+            or api_retry_attempts < 0
+        ):
+            raise ValueError("api_retry_attempts must be a non-negative integer")
+        self.api_retry_attempts = api_retry_attempts
 
         # 每个 agent 持有自己的 client，这样请求配置始终局限在当前实例内。
         self.client = OpenAI(
             api_key=random.choice(self.api_keys), base_url=self.base_url
         )
+        self._api_attempts = 0
+        self._input_tokens = 0
+        self._output_tokens = 0
+        self._total_tokens = 0
+        self._usage_complete = False
+        self._error_count = 0
+        self._last_call_metrics = AgentCallMetrics()
+
+    @property
+    def last_call_metrics(self) -> AgentCallMetrics:
+        """Metrics for the most recent public call, exposed read-only."""
+
+        return self._last_call_metrics
+
+    def _reset_call_metrics(self) -> None:
+        self._api_attempts = 0
+        self._input_tokens = 0
+        self._output_tokens = 0
+        self._total_tokens = 0
+        # A public call has complete usage only after a successful response
+        # supplies all usage fields. Failed attempts do not have token usage
+        # and must not permanently poison a later successful retry.
+        self._usage_complete = False
+        self._error_count = 0
+
+    def _record_usage(self, usage: object | None) -> None:
+        if usage is None:
+            self._usage_complete = False
+            return
+        values = (
+            getattr(usage, "prompt_tokens", None),
+            getattr(usage, "completion_tokens", None),
+            getattr(usage, "total_tokens", None),
+        )
+        if any(isinstance(value, bool) or not isinstance(value, int) for value in values):
+            self._usage_complete = False
+            return
+        self._input_tokens += values[0]
+        self._output_tokens += values[1]
+        self._total_tokens += values[2]
+        self._usage_complete = True
 
     @staticmethod
     def _extract_status_code(error: Exception) -> int | None:
@@ -76,13 +139,17 @@ class Agent:
         )
 
     def chat_completion_openai(
-        self, messages, stream: bool = True, ttl: int = RATE_LIMIT_RETRY_ATTEMPTS
+        self, messages, stream: bool = True, ttl: int | None = None
     ):
         """将当前消息列表发送到 OpenAI 兼容后端。"""
+        if ttl is None:
+            ttl = self.api_retry_attempts
         response = ""
         if ttl >= 0:
             try:
                 if stream:
+                    self._api_attempts += 1
+                    self._usage_complete = False
                     chunk_stream = self.client.chat.completions.create(
                         stream=True,
                         model=self.model,
@@ -98,14 +165,14 @@ class Agent:
                             response += chunk.choices[0].delta.content
                     print()
                 else:
-                    response = (
-                        self.client.chat.completions.create(
-                            model=self.model, messages=messages, **self.request_kwargs
-                        )
-                        .choices[0]
-                        .message.content
+                    self._api_attempts += 1
+                    completion = self.client.chat.completions.create(
+                        model=self.model, messages=messages, **self.request_kwargs
                     )
+                    self._record_usage(getattr(completion, "usage", None))
+                    response = completion.choices[0].message.content
             except RateLimitError as e:
+                self._error_count += 1
                 if ttl > 0:
                     print(
                         f"Rate limit exceeded, waiting for {RATE_LIMIT_RETRY_DELAY} seconds and retrying... {ttl=}",
@@ -119,10 +186,11 @@ class Agent:
                     )
                 raise
             except Exception as e:  # pylint: disable=W0718:broad-exception-caught
+                self._error_count += 1
                 # status_code = self._extract_status_code(e)
                 # if status_code == 403 and ttl > 0:
                 if ttl > 0:
-                    retry_index = RATE_LIMIT_RETRY_ATTEMPTS - ttl
+                    retry_index = self.api_retry_attempts - ttl
                     backoff = min(
                         FORBIDDEN_RETRY_MAX_DELAY,
                         FORBIDDEN_RETRY_BASE_DELAY * (2**retry_index),
@@ -142,7 +210,7 @@ class Agent:
         return response
 
     def chat_completion(
-        self, messages, stream: bool = True, ttl: int = RATE_LIMIT_RETRY_ATTEMPTS
+        self, messages, stream: bool = True, ttl: int | None = None
     ):
         """为未来接入不同后端保留的兼容分发层。"""
         return self.chat_completion_openai(messages, stream=stream, ttl=ttl)
@@ -164,6 +232,8 @@ class Agent:
 
     def __call__(self, prompt, stream: bool = True) -> str | None:
         """追加一轮用户输入，调用模型，并保存 assistant 回复。"""
+        self._reset_call_metrics()
+        started_at = time.perf_counter()
         self.history.append({"role": "user", "content": prompt})
         try:
             response = self.chat_completion(self.history, stream=stream)
@@ -171,6 +241,15 @@ class Agent:
         except Exception as e:  # pylint: disable=W0718:broad-exception-caught
             self.history.pop()
             print(e)
+            self._last_call_metrics = AgentCallMetrics(
+                api_attempts=self._api_attempts,
+                input_tokens=(self._input_tokens if self._usage_complete else None),
+                output_tokens=(self._output_tokens if self._usage_complete else None),
+                total_tokens=(self._total_tokens if self._usage_complete else None),
+                usage_complete=self._usage_complete,
+                latency_seconds=time.perf_counter() - started_at,
+                error_count=self._error_count,
+            )
             return None
         self.history.append({"role": "assistant", "content": response})
         if WORKFLOW_AGENT_LOGFILE:
@@ -195,6 +274,15 @@ class Agent:
                     )
                     + "\n"
                 )
+        self._last_call_metrics = AgentCallMetrics(
+            api_attempts=self._api_attempts,
+            input_tokens=(self._input_tokens if self._usage_complete else None),
+            output_tokens=(self._output_tokens if self._usage_complete else None),
+            total_tokens=(self._total_tokens if self._usage_complete else None),
+            usage_complete=self._usage_complete,
+            latency_seconds=time.perf_counter() - started_at,
+            error_count=self._error_count,
+        )
         return response
 
     def get_last_reply(self):

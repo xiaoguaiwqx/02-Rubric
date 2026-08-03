@@ -1,7 +1,7 @@
 """CritiQ 工作流的公共导出入口。"""
 
 from . import agent, workflow
-from .agent import Agent
+from .agent import Agent, AgentCallMetrics
 from .evaluator import (
     BaselinePairEvaluator,
     CriterionPerformance,
@@ -11,6 +11,7 @@ from .evaluator import (
     PairEvaluator,
     PredictionOutput,
     PredictionOutputWithAnswer,
+    StructuredMultiModalPairEvaluator,
     ZeroOneEvaluator,
     get_evaluator_cls_from_dataset,
     load_criterion_performance,
@@ -42,6 +43,7 @@ __all__ = [
     "agent",
     "workflow",
     "Agent",
+    "AgentCallMetrics",
     "BaselinePairEvaluator",
     "CriterionPerformance",
     "EvaluationOutput",
@@ -50,6 +52,7 @@ __all__ = [
     "PairEvaluator",
     "PredictionOutput",
     "PredictionOutputWithAnswer",
+    "StructuredMultiModalPairEvaluator",
     "RouterManager",
     "RoutingDecision",
     "ZeroOneEvaluator",
