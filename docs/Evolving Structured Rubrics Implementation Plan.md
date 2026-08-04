@@ -346,100 +346,183 @@ experiments/evolving_structured_rubrics/
 
 ---
 
-## 8. Phase 5：统一 Evolution Operator 接口
+## 8. Phase 5：Evolution Core 与 Init Baseline
 
-下一阶段先建立最小的 propose/apply/evaluate/rollback 闭环：
+Phase 5 先建立可审计的 `propose → apply → refresh → evaluate → accept/reject` 语义层，不实现真实演化算子。Rubric 为不可变对象；reject 时继续使用 `R_before`，不执行危险的逆向 rollback。
 
-```python
-class EvolutionOperator:
-    def should_trigger(context) -> bool: ...
-    def propose(context) -> list[EditCandidate]: ...
-    def apply(rubric, candidate) -> StructuredRubric: ...
-    def rollback(rubric, candidate) -> StructuredRubric: ...
+### 8.1 数据边界
+
+```text
+discovery_train_90_pair.jsonl
+  → 生成全节点 Pairwise P05 artifact
+  → 提取反馈、生成/筛选候选、决定接受或拒绝
+
+heldout_validation_500_pair.jsonl
+  → 只评估 Init Rubric 和最终 Evolved Rubric
+  → 中间 operator 与 evolution rounds 禁止读取
 ```
 
-每个 candidate 保存 `R_before`、`R_after`、触发证据、受影响 nodes 和 lineage。节点级指标只用于发现问题，接受或回退必须比较完整 offline cascade。
+当前 discovery-90 是探索集，允许方法对其适配；heldout-500 的中间访问由 CLI stage 和 manifest 阻止。以后增加 reserve-100 后，再将 candidate acceptance 从 discovery-90 移到 reserve-100。
 
-Artifact 复用规则：
+### 8.2 Multi-Crit Init Rubric
 
-- 只修改 edges/aggregation 时，可以重放现有 Pairwise/Gate outputs；
-- criterion 文本发生变化或新增 node 时，只重新生成受影响 nodes 的 Pairwise outputs；
-- status-dependent parent 文本或角色变化时刷新对应 Gate outputs；
-- roots 或 root descriptions 变化时刷新 Router outputs；
-- 未受影响 outputs 必须复用，避免将模型采样差异误认为结构收益。
+初始 Rubric 使用 [Multi-Crit](https://arxiv.org/abs/2511.21662) 为 Open-ended Generation 人工定义的五条准则原文。当前 RLHF-V discovery 数据主要是视觉问答、详细描述和图像内容解释，因此第一版不混入 Verifiable Reasoning 的另一套五条准则。
+
+```text
+Completeness and Coverage
+  Address the full scope of the task in the user’s query, covering all major
+  elements specified in the prompt as well as relevant visual aspects and
+  contextual cues.
+
+Visual Grounding and Details
+  Reference observable elements in the image such as objects, spatial
+  relationships, colors, or text, and bases its description or analysis on
+  these details.
+
+Factuality / No Hallucination
+  Avoid visual or factual errors, ensuring all details and claims are presented
+  in the image or reasonably supported by the prompt.
+
+Creativity and Expressiveness
+  Demonstrates imagination and originality when appropriate, or precise and
+  knowledgeable articulation for analytical tasks, while remaining
+  contextually appropriate.
+
+Clarity and Coherence
+  Communicates ideas clearly and logically, with fluent language,
+  well-organized structure, and smooth flow of information.
+```
+
+结构固定为 `5 nodes / 5 roots / 0 edges`，score 均为 `1.0`，examples 初始为空，lineage 保存论文、任务类型、原始顺序和初始化版本。由于每棵 root 都是单节点 subtree，Init Rubric 的 B1 与 M1 必须逐样本完全一致。
+
+### 8.3 Feedback 与 Gap
+
+节点统计只读取 discovery-90 的 all-node Pairwise artifact：
+
+```text
+support       = valid decisive A/B 数
+accuracy      = decisive votes 中与 gold 一致的比例
+coverage      = support / 90
+wrong         = valid decisive 但与 gold 不一致
+abstain       = valid None/U
+answer_invalid / parse_invalid 分开统计
+```
+
+Gap 定义为：对样本 `s`，当前所有 node 都没有产生与 gold 相同的有效 decisive vote。必须区分：
+
+- `rubric_gap`：all-node outputs 中没有正确 decisive vote；
+- `cascade_failure`：M1 final 为 wrong/Tie；
+- `aggregation_conflict`：存在正确 decisive node，但 M1 final 仍为 wrong/Tie。
+
+Fitness 暂作为诊断指标，使用 `alpha=2.0`、`lambda=0.1`、`len_max=2000`。Phase 5 不用 Fitness 自动触发 operator。
+
+### 8.4 Patch 与 ArtifactRefreshPlan
+
+Evolution Core 提供版本化 candidate、patch、diff、feedback、refresh plan 和 decision。Patch 在应用前校验 base Rubric hash，应用后复用 Phase 2 Forest validation。
+
+Artifact 影响规则：
+
+| 修改 | Pairwise | Gate | Router |
+|---|---|---|---|
+| 修改 description | 刷新该 node | 若为 status parent 则刷新 | 若为 root 则标记 stale |
+| 新增 child | 生成 child | `ALWAYS` 不需要 Gate | 不变 |
+| 新增 root | 生成 root | 无 status edge则不需要 | 标记 stale |
+| 只修改 edge | 复用 | 新增 status edge 时补齐 | roots 不变则复用 |
+| 删除 node | 删除对应输出 | 删除无用输出 | root 集合变化时标记 stale |
+
+未受影响 Pairwise outputs 必须逐项复用，避免把采样差异解释为 Rubric edit 的收益。
+
+### 8.5 阈值校准与阶段门槛
+
+Phase 5 已完成一次 Init baseline。discovery-90 的 M1 accuracy/coverage 为 `0.6556/0.9667`，heldout-500 的 Init 结果为 `0.6500/0.9720`，B1 与 M1 逐样本一致；五个 roots 的 coverage 均超过 `0.91`，节点 accuracy 位于 `0.5632–0.6966`。discovery-90 中有 15 个 rubric gaps、31 个 cascade failures，其中16个属于 aggregation conflicts。
+
+基于该分布，第一版触发与结构阈值冻结为：
+
+```text
+tau_acc         = 0.55
+tau_split       = 0.70
+tau_cov_high    = 0.80
+tau_refine      = 0.80
+N_min_support   = 15
+N_min_wrong     = 15
+N_min_cluster   = 5
+max_children    = 5
+```
+
+这些数值只产生 operator 候选，不直接决定接受。Specialize 的统计候选需满足 `accuracy < 0.70`、`coverage >= 0.80`、`support >= 15`、`wrong >= 15`；Refine 候选需满足 `0.55 < accuracy < 0.80`、`coverage < 0.80`、`support >= 15`。Pairwise Worker 在第一轮继续使用 P05（`temperature=0.5`）。
+
+单次 discovery-90 M1 接受规则只保留两个结果门槛：accuracy 至少净提升 `2/90`，final-valid rate 不低于 `0.95`。Rubric/Artifact 合法、数据隔离和 trace replay 属于工程有效性前提，不与结果门槛混合。Coverage、corrected/harmed、child correction/harm 和 subtree conflict 继续报告，但不作为硬拒绝条件。P05 每个候选只运行一次，不设置重复确认；B1/H1/G1/M2 仍不能覆盖 M1 的接受结论。
+
+trigger、acceptance 和单次 P05 execution 共同写入版本化 `phase5-v2` 配置及 frozen manifest；完整 discovery-90 M1 始终是接受依据。
 
 ---
 
-## 9. Phase 6：逐个实现演化算子
+## 9. Phase 6：逐个实现 Refine、Specialize、Create
 
-算子接口稳定后逐个实现，不在同一轮同时引入多个不可归因修改。
+每个算子必须单独实现、真实运行、review 和提交；一轮不能同时接受多个不可归因的修改。
 
 ### 9.1 Refine
 
-- 根据 Pairwise 错误、abstain 和 `thought` 改写 criterion description；
-- 保持 node ID 和 topology 不变；
-- 重新推理该 node，并用完整 cascade 决定接受或回退。
+- 根据 node 的 wrong、abstain、Pairwise thought 和代表多模态样本，让 CritiQ-V Manager 先反思再生成两个 description 候选；
+- node ID、criterion name、root 顺序和 topology 不变；
+- 只刷新目标 node Pairwise outputs；
+- discovery-90 完整 M1 before/after 是唯一接受依据。
 
 ### 9.2 Specialize
 
-- 从 parent 的错误或残余场景生成更具体的 children；
-- 保留 parent 作为共享 prefix；
-- 为新 edges 选择有限枚举 EdgeCondition；
-- 检查 child correction/harm、activation、碎片化和完整 cascade。
+触发候选为低 accuracy、高 coverage、具有足够 decisive wrong 且错误能形成至少两个有效语义 cluster 的 parent。
 
-`SplitReplace` 不属于首轮实现；如后续删除 parent，应作为独立算子和消融。
+```text
+decisive wrong samples
+  → 逐样本 ErrorSignature
+  → Manager 对 signatures 做 2–5 个语义 clusters
+  → 每个有效 cluster 生成一个更窄的 child criterion
+  → parent + children subtree 与原 parent subtree 竞争
+```
+
+ErrorSignature 保存 task pattern、visual focus、candidate difference、parent failure 和 suggested subdomain。Cluster 必须引用完整且互斥的 sample IDs，每个 cluster 至少包含5条样本，并说明共同判断失败而不是共同图片主题；每条 wrong sample 必须进入一个 cluster 或显式进入 unclustered。由于 Specialize 保留 parent，不要求有效 clusters 覆盖固定比例的 wrong samples。
+
+Specialize 保留 parent，children 数量严格等于有效 cluster 数量，不设置目标数量：有效 cluster 少于2个则不触发 Specialize，存在2–5个则分别生成2–5个 children。`max_children=5` 只是结构上限，不允许为了达到上限强行拆分；超出上限的模式进入 unclustered。第一版所有新 edges 固定为 `ALWAYS`，不同时优化 Gate/Child Router；examples 只供 Manager、lineage 和审计，不进入 Pairwise prompt。无论 children 数量多少，整棵 root subtree 仍最多贡献一票。接受报告包含 cluster support、child accuracy、非目标 abstain、sibling agreement、child correction/harm 和完整 M1。
+
+首个单算子验证对象固定为 `visual_grounding_and_details`。它在 discovery-90 上的 accuracy/coverage/support/wrong 为 `0.6966/0.9889/89/27`，满足触发条件，并且已有实验观察表明视觉 grounding 错误可以形成多个可解释子域。具体 children 仍必须从这27条真实 wrong samples 的 ErrorSignatures 中归纳，不能预先硬编码类别。
 
 ### 9.3 Create
 
-- 从完整 cascade 的错误或全弃权样本中发现 gap；
-- 生成新 root 并补齐 Pairwise/Router outputs；
-- 加入 Forest 后验证完整 cascade。
+- 从正式 `rubric_gap` 样本中提取 gap signatures 并聚类；
+- 为最佳 cluster 生成两个独立 root 候选；
+- 检查与现有 nodes 的 vote agreement，避免明显重复；
+- 只增加 root，不修改已有 node，也不创建 child；
+- M1 接受阶段只补 Pairwise，Router 标记 stale，最终 M2 诊断前再刷新。
 
-### 9.4 Merge
-
-- 使用 Pairwise vote agreement 和共同支持样本寻找候选；
-- 生成 merged node，并明确 children 重挂接方式；
-- 更新受影响 outputs 后验证完整 cascade。
-
-### 9.5 Drop
-
-- 找到低价值 node 或 subtree；
-- 明确 children 的删除、提升或重挂接方式；
-- 暂时修改并离线重放，完整性能不下降才接受。
+Merge、Drop、SplitReplace、Child Router、DAG、example-conditioned Worker 和 learned EdgeCondition 均不属于第一版 Phase 6。
 
 ---
 
 ## 10. Phase 7：接入完整 Evolution Workflow
 
-只有单算子分别通过后，才接入完整 workflow：
+只有 Refine、Specialize、Create 分别通过后，才根据三者的触发频率、合法率、接受率、收益、失败模式和调用成本冻结调度顺序。
 
 ```text
-评估当前 StructuredRubric
-    ↓
-读取 Pairwise/Gate/Router 与 Dual Trace 反馈
-    ↓
-检测 operator trigger
-    ↓
-生成一个 operator candidate
-    ↓
-刷新受影响 artifacts
-    ↓
-在 validation split 比较完整 offline cascade
-    ↓
-接受或回退
-    ↓
-保存 rubric、lineage、artifact identity 和 metrics
+加载当前 Rubric 与 discovery-90 artifacts
+  → 提取 feedback
+  → 检测已冻结 trigger
+  → 生成候选并局部刷新 artifacts
+  → discovery-90 完整 M1 before/after
+  → 每轮最多接受一个 edit
+  → 原子保存 checkpoint
+  → 收敛后仅对最终 Rubric 运行一次 heldout-500
 ```
 
-一轮最多接受一个 Rubric edit，避免多个变化同时发生后无法归因。Proposal data 用于发现问题和生成候选，validation data 用于接受或回退；当前 heldout-500 只作为工程诊断集，不用于继续调参后声称 unseen 泛化。
+最终报告比较 Init Rubric 与 Evolved Rubric。B1/H1/G1/M1/M2 可在 discovery-90 上诊断；heldout-500 只允许 `init-baseline` 和 `final-evaluation` 两个阶段读取。
 
 ---
 
-## 11. 后续候选：Child Router
+## 11. 后续候选
 
-当前 internal routing 使用可解释的 `Gate State Worker + EdgeCondition`。后续可以增加 Child Router，让模型联合选择一个或多个直接 children，并与规则基线比较 accuracy、稳定性和真实成本。
-
-Child Router 不得改变 Pairwise Worker 的权威 vote；invalid selection 必须可追踪地回退 eligible/all children。本阶段不实现，也不提前冻结其 schema。
+- **Merge / Drop**：在前三个算子稳定后再处理节点重挂接和历史生存状态；
+- **SplitReplace**：作为“删除 parent”消融，与保留 parent 的 Specialize 分开；
+- **Child Router**：替代固定 EdgeCondition 选择 children，但不得改变 Pairwise 权威 vote；
+- **DAG / learned edge / examples 进入 Worker**：分别作为后续独立扩展，不与第一版演化闭环混合。
 
 ---
 
@@ -447,13 +530,15 @@ Child Router 不得改变 Pairwise Worker 的权威 vote；invalid selection 必
 
 - [x] 正式聚合 vote 只来自 Pairwise Worker
 - [x] Gate 只控制 status-dependent edges，不覆盖 Pairwise vote
-- [x] `PARENT_NONDECISIVE` 只接受有效模型 abstain，parse failure 不触发
-- [x] B1/H1 不调用 Gate，只有 M2 调用 Root Router
-- [x] 多 children 可同时执行，每棵 root subtree 最多一票
 - [x] 第一版采用单 parent Forest，多前提依赖保存在 lineage
-- [x] accuracy 只由 offline shared-output replay 计算
-- [x] strict_v0 是当前正式静态结构，projected_v0 仅用于历史复现
-- [x] Structured Worker v1 和 Trace v1 仅保留兼容，不进入 evolution loop
-- [x] Phase 4 的权威结论为 baseline recovered、Cascade/Router 需要改进
-- [ ] Phase 5 开始前冻结 proposal/validation 数据边界和 operator acceptance metric
-- [ ] 每个 operator 单独通过后再组合 evolution workflow
+- [x] discovery-90 用于反馈、筛选和接受；heldout-500 只用于 Init/Final
+- [x] Init Rubric 使用 Multi-Crit Open-ended 五条原文，结构为 5 roots / 0 edges
+- [x] Gap 从 all-node Pairwise artifact 计算，不受 traversal 隐藏节点影响
+- [x] Specialize 使用 ErrorSignature → Cluster → Child，并保留 parent
+- [x] 第一版 Specialize edges 全部使用 `ALWAYS`
+- [x] Refine、Specialize、Create 单独通过后才组合 workflow
+- [x] Phase 5 Init baseline 与 feedback report 完成
+- [x] 根据 Phase 5 实测分布冻结 trigger 与结构阈值
+- [x] 冻结精简的 candidate acceptance 与单次 P05 execution 规则
+- [ ] 三个单算子分别完成端到端验证
+- [ ] Phase 7 调度顺序完成 review 并冻结

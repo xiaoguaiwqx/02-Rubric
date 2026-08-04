@@ -23,6 +23,61 @@ HELDOUT_DATASET_SHA256 = (
 )
 EXPECTED_CRITERIA_COUNT = 17
 
+MULTICRIT_OPEN_ENDED_CRITERIA = (
+    (
+        "completeness_and_coverage",
+        "Completeness and Coverage",
+        "Address the full scope of the task in the user’s query, covering all major elements specified in the prompt as well as relevant visual aspects and contextual cues.",
+    ),
+    (
+        "visual_grounding_and_details",
+        "Visual Grounding and Details",
+        "Reference observable elements in the image such as objects, spatial relationships, colors, or text, and bases its description or analysis on these details.",
+    ),
+    (
+        "factuality_no_hallucination",
+        "Factuality / No Hallucination",
+        "Avoid visual or factual errors, ensuring all details and claims are presented in the image or reasonably supported by the prompt.",
+    ),
+    (
+        "creativity_and_expressiveness",
+        "Creativity and Expressiveness",
+        "Demonstrates imagination and originality when appropriate, or precise and knowledgeable articulation for analytical tasks, while remaining contextually appropriate.",
+    ),
+    (
+        "clarity_and_coherence",
+        "Clarity and Coherence",
+        "Communicates ideas clearly and logically, with fluent language, well-organized structure, and smooth flow of information.",
+    ),
+)
+
+
+def build_multicrit_open_ended_init_rubric() -> StructuredRubric:
+    """Build the deterministic five-root Phase 5 initialization rubric."""
+
+    nodes: dict[str, RubricNode] = {}
+    root_ids: list[str] = []
+    for index, (name, display_name, description) in enumerate(
+        MULTICRIT_OPEN_ENDED_CRITERIA, 1
+    ):
+        node_id = f"init_{index:02d}_{name}"
+        root_ids.append(node_id)
+        nodes[node_id] = RubricNode(
+            node_id=node_id,
+            criterion=RubricCriterionSnapshot(name, description, 1.0),
+            examples=(),
+            lineage={
+                "initialization": "human_defined_seed",
+                "source": "Multi-Crit: Benchmarking Multimodal Judges on Pluralistic Criteria-Following",
+                "source_url": "https://arxiv.org/abs/2511.21662",
+                "task_family": "open_ended_generation",
+                "source_display_name": display_name,
+                "source_order": index,
+                "init_version": "multicrit_open_ended_v1",
+            },
+        )
+    return StructuredRubric(nodes=nodes, edges=(), root_ids=tuple(root_ids))
+
 NODE_IDS = (
     "c01_visual_grounding",
     "c02_factual_consistency",
