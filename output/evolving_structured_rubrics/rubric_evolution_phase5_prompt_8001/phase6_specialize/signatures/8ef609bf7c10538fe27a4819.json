@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "signature": {
+    "sample_id": "rlhfv-001449",
+    "task_pattern": "The parent criterion fails to prioritize factual accuracy in direct response to the question, instead rewarding descriptive accuracy of non-relevant visual elements.",
+    "visual_focus": "The lighthouse is the dominant visual element, but the presence of a car (or bus) is directly relevant to the question and must be addressed.",
+    "candidate_difference": "Candidate A correctly identifies the car's presence and describes the lighthouse, while Candidate B correctly describes the lighthouse but falsely denies the car's presence.",
+    "parent_failure": "The parent criterion incorrectly prioritizes visual grounding of non-essential elements (lighthouse location) over direct factual response to the question (car presence), leading to a misjudgment that rewards the less accurate candidate.",
+    "suggested_subdomain": "factual_accuracy"
+  },
+  "raw_response": "{\n  \"sample_id\": \"rlhfv-001449\",\n  \"task_pattern\": \"The parent criterion fails to prioritize factual accuracy in direct response to the question, instead rewarding descriptive accuracy of non-relevant visual elements.\",\n  \"visual_focus\": \"The lighthouse is the dominant visual element, but the presence of a car (or bus) is directly relevant to the question and must be addressed.\",\n  \"candidate_difference\": \"Candidate A correctly identifies the car's presence and describes the lighthouse, while Candidate B correctly describes the lighthouse but falsely denies the car's presence.\",\n  \"parent_failure\": \"The parent criterion incorrectly prioritizes visual grounding of non-essential elements (lighthouse location) over direct factual response to the question (car presence), leading to a misjudgment that rewards the less accurate candidate.\",\n  \"suggested_subdomain\": \"factual_accuracy\"\n}",
+  "parse_error": null,
+  "attempt_count": 1,
+  "metrics": {
+    "logical_evaluations": 1,
+    "api_attempts": 1,
+    "parse_retries": 0,
+    "input_tokens": 691,
+    "output_tokens": 184,
+    "total_tokens": 875,
+    "usage_complete": true,
+    "call_latency_seconds": 4.117438100001891,
+    "estimated_cost_usd": null,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "error_count": 0
+  },
+  "request_spec": {
+    "schema_version": "1.0.0",
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+    "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+    "decoding_config": {
+      "temperature": 0.2,
+      "seed": 42
+    },
+    "prompt_version": "1.0.0",
+    "parser_version": "1.0.0"
+  }
+}

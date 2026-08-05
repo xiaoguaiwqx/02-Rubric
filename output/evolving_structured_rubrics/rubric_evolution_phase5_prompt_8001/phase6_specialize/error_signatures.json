@@ -1,0 +1,1086 @@
+{
+  "schema_version": "1.0.0",
+  "parent_node_id": "init_02_visual_grounding_and_details",
+  "outputs": [
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-002695",
+        "task_pattern": "The parent criterion fails to distinguish between accurate and inaccurate spatial descriptions when the error involves misrepresenting relative positioning or scale, especially when the misstatement is visually evident but not immediately obvious to the evaluator.",
+        "visual_focus": "The dog is positioned on the left side of the bed, occupying a large portion of the frame, while the cat is on the right side, partially obscured and taking up less visual space. The dog is not in the center of the image.",
+        "candidate_difference": "Candidate A incorrectly claims the dog occupies most of the space on the bed near the edge and is not in the center, while Candidate B correctly states the dog is in the center and takes up a small portion near the edge — contradicting the visual evidence. Candidate A’s description is factually inaccurate despite appearing more detailed.",
+        "parent_failure": "The parent criterion failed to recognize that Candidate A’s description contains a critical visual misrepresentation of the dog’s position and relative size, which directly contradicts the image. The parent prioritized 'detail' over visual accuracy, missing that the error in Candidate A undermines the very foundation of visual grounding.",
+        "suggested_subdomain": "spatial_accuracy"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-002695\",\n  \"task_pattern\": \"The parent criterion fails to distinguish between accurate and inaccurate spatial descriptions when the error involves misrepresenting relative positioning or scale, especially when the misstatement is visually evident but not immediately obvious to the evaluator.\",\n  \"visual_focus\": \"The dog is positioned on the left side of the bed, occupying a large portion of the frame, while the cat is on the right side, partially obscured and taking up less visual space. The dog is not in the center of the image.\",\n  \"candidate_difference\": \"Candidate A incorrectly claims the dog occupies most of the space on the bed near the edge and is not in the center, while Candidate B correctly states the dog is in the center and takes up a small portion near the edge — contradicting the visual evidence. Candidate A’s description is factually inaccurate despite appearing more detailed.\",\n  \"parent_failure\": \"The parent criterion failed to recognize that Candidate A’s description contains a critical visual misrepresentation of the dog’s position and relative size, which directly contradicts the image. The parent prioritized 'detail' over visual accuracy, missing that the error in Candidate A undermines the very foundation of visual grounding.\",\n  \"suggested_subdomain\": \"spatial_accuracy\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 823,
+        "output_tokens": 268,
+        "total_tokens": 1091,
+        "usage_complete": true,
+        "call_latency_seconds": 13.157076000003144,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-004979",
+        "task_pattern": "The parent criterion failed to account for the visual salience and contextual plausibility of elements that are not explicitly labeled or obvious, leading to misjudgment of candidate accuracy.",
+        "visual_focus": "The parent criterion prioritized literal matching of observable elements (e.g., gray surroundings, absence of numbers) without considering the visual prominence or contextual plausibility of features like the hydrant’s color or the presence of numbers on the ground.",
+        "candidate_difference": "Candidate A correctly identifies the hydrant as silver (visually accurate), notes visible numbers on the ground (which are orange markings, likely painted, and clearly present), and describes active water flow — all of which are visually grounded. Candidate B incorrectly claims the surroundings are gray (the scene is urban with buildings and pavement, not monochromatic gray) and omits the visible numbers, which are a key visual detail.",
+        "parent_failure": "The parent criterion failed to distinguish the human-preferred answer because it prioritized superficial or ambiguous visual cues (e.g., 'gray surroundings', 'no visible numbers') over more salient, contextually accurate, and visually verifiable details (e.g., hydrant color, presence of painted markings). It misjudged the visual grounding of Candidate A by dismissing accurate observations as 'inaccuracies' without verifying their visual plausibility.",
+        "suggested_subdomain": "Visual salience and contextual plausibility of descriptive elements"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-004979\",\n  \"task_pattern\": \"The parent criterion failed to account for the visual salience and contextual plausibility of elements that are not explicitly labeled or obvious, leading to misjudgment of candidate accuracy.\",\n  \"visual_focus\": \"The parent criterion prioritized literal matching of observable elements (e.g., gray surroundings, absence of numbers) without considering the visual prominence or contextual plausibility of features like the hydrant’s color or the presence of numbers on the ground.\",\n  \"candidate_difference\": \"Candidate A correctly identifies the hydrant as silver (visually accurate), notes visible numbers on the ground (which are orange markings, likely painted, and clearly present), and describes active water flow — all of which are visually grounded. Candidate B incorrectly claims the surroundings are gray (the scene is urban with buildings and pavement, not monochromatic gray) and omits the visible numbers, which are a key visual detail.\",\n  \"parent_failure\": \"The parent criterion failed to distinguish the human-preferred answer because it prioritized superficial or ambiguous visual cues (e.g., 'gray surroundings', 'no visible numbers') over more salient, contextually accurate, and visually verifiable details (e.g., hydrant color, presence of painted markings). It misjudged the visual grounding of Candidate A by dismissing accurate observations as 'inaccuracies' without verifying their visual plausibility.\",\n  \"suggested_subdomain\": \"Visual salience and contextual plausibility of descriptive elements\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 658,
+        "output_tokens": 319,
+        "total_tokens": 977,
+        "usage_complete": true,
+        "call_latency_seconds": 13.82143100000394,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000082",
+        "task_pattern": "The parent criterion failed to detect that Candidate B’s description is factually accurate while Candidate A’s is misleading, due to the parent’s misinterpretation of the image’s content.",
+        "visual_focus": "The parent criterion focused on the presence of a single couch and lamp placements, but overlooked the actual visual evidence of two couches and the precise positioning of lamps in the image.",
+        "candidate_difference": "Candidate A incorrectly describes only one couch, while Candidate B correctly identifies two couches and accurately describes the positions of the lamps (left side and middle).",
+        "parent_failure": "The parent criterion failed to distinguish the human-preferred answer because it relied on an inaccurate interpretation of the image’s content, assuming Candidate A’s description was more visually grounded when it was actually less accurate.",
+        "suggested_subdomain": "visual_accuracy"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000082\",\n  \"task_pattern\": \"The parent criterion failed to detect that Candidate B’s description is factually accurate while Candidate A’s is misleading, due to the parent’s misinterpretation of the image’s content.\",\n  \"visual_focus\": \"The parent criterion focused on the presence of a single couch and lamp placements, but overlooked the actual visual evidence of two couches and the precise positioning of lamps in the image.\",\n  \"candidate_difference\": \"Candidate A incorrectly describes only one couch, while Candidate B correctly identifies two couches and accurately describes the positions of the lamps (left side and middle).\",\n  \"parent_failure\": \"The parent criterion failed to distinguish the human-preferred answer because it relied on an inaccurate interpretation of the image’s content, assuming Candidate A’s description was more visually grounded when it was actually less accurate.\",\n  \"suggested_subdomain\": \"visual_accuracy\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 829,
+        "output_tokens": 197,
+        "total_tokens": 1026,
+        "usage_complete": true,
+        "call_latency_seconds": 10.949039800005266,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-003046",
+        "task_pattern": "The parent criterion fails to distinguish between plausible biological reasoning and unsupported speculation when the answer references the image, even if the reference is factually incorrect.",
+        "visual_focus": "The bird's size and appearance are visually observable, but the parent criterion incorrectly prioritizes the bird's visual presence over the accuracy of its size comparison to a velociraptor.",
+        "candidate_difference": "Candidate A incorrectly identifies the bird as Archaeopteryx and makes unsupported claims about rapid evolution into an apex predator, while Candidate B correctly references the bird's size relative to Velociraptor and explains evolution as a slow process based on biological principles.",
+        "parent_failure": "The parent criterion failed to recognize that Candidate A, despite its factual error, correctly references the bird in the image and provides a plausible, albeit speculative, biological explanation grounded in observable size comparison, whereas Candidate B, while technically accurate, does not engage with the visual grounding as effectively.",
+        "suggested_subdomain": "biological plausibility and visual grounding"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-003046\",\n  \"task_pattern\": \"The parent criterion fails to distinguish between plausible biological reasoning and unsupported speculation when the answer references the image, even if the reference is factually incorrect.\",\n  \"visual_focus\": \"The bird's size and appearance are visually observable, but the parent criterion incorrectly prioritizes the bird's visual presence over the accuracy of its size comparison to a velociraptor.\",\n  \"candidate_difference\": \"Candidate A incorrectly identifies the bird as Archaeopteryx and makes unsupported claims about rapid evolution into an apex predator, while Candidate B correctly references the bird's size relative to Velociraptor and explains evolution as a slow process based on biological principles.\",\n  \"parent_failure\": \"The parent criterion failed to recognize that Candidate A, despite its factual error, correctly references the bird in the image and provides a plausible, albeit speculative, biological explanation grounded in observable size comparison, whereas Candidate B, while technically accurate, does not engage with the visual grounding as effectively.\",\n  \"suggested_subdomain\": \"biological plausibility and visual grounding\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 676,
+        "output_tokens": 231,
+        "total_tokens": 907,
+        "usage_complete": true,
+        "call_latency_seconds": 12.490364600002067,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-002726",
+        "task_pattern": "The parent criterion failed to recognize that visual grounding must be accurate and specific, not just descriptive; it penalized the candidate for not matching a subjective interpretation of 'orderly' or 'consistent distance' rather than the actual visual evidence.",
+        "visual_focus": "The curved shape of the racetrack and the spatial arrangement of horses and jockeys along its bend.",
+        "candidate_difference": "Candidate A describes the track as curved and horses as orderly with consistent spacing, while Candidate B incorrectly claims the track is straight and spacing is inconsistent — both contradicting the visual evidence.",
+        "parent_failure": "The parent criterion failed to distinguish the human-preferred answer because it misinterpreted the visual evidence: the track is clearly curved, and the horses are not in a straight line or uniformly spaced — Candidate B’s description is factually accurate, while Candidate A’s is misleading. The parent incorrectly assumed Candidate A’s description was 'aligned with visual evidence' when it was not.",
+        "suggested_subdomain": "Visual accuracy over subjective interpretation"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-002726\",\n  \"task_pattern\": \"The parent criterion failed to recognize that visual grounding must be accurate and specific, not just descriptive; it penalized the candidate for not matching a subjective interpretation of 'orderly' or 'consistent distance' rather than the actual visual evidence.\",\n  \"visual_focus\": \"The curved shape of the racetrack and the spatial arrangement of horses and jockeys along its bend.\",\n  \"candidate_difference\": \"Candidate A describes the track as curved and horses as orderly with consistent spacing, while Candidate B incorrectly claims the track is straight and spacing is inconsistent — both contradicting the visual evidence.\",\n  \"parent_failure\": \"The parent criterion failed to distinguish the human-preferred answer because it misinterpreted the visual evidence: the track is clearly curved, and the horses are not in a straight line or uniformly spaced — Candidate B’s description is factually accurate, while Candidate A’s is misleading. The parent incorrectly assumed Candidate A’s description was 'aligned with visual evidence' when it was not.\",\n  \"suggested_subdomain\": \"Visual accuracy over subjective interpretation\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 751,
+        "output_tokens": 238,
+        "total_tokens": 989,
+        "usage_complete": true,
+        "call_latency_seconds": 12.699339700004202,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-002699",
+        "task_pattern": "The parent criterion failed to detect that Candidate B’s description, though less detailed, correctly identifies key visual elements (balloons, light) that Candidate A misrepresents or omits, leading to a factual error in spatial relationships.",
+        "visual_focus": "The parent criterion prioritized quantity and perceived detail over factual accuracy in object identification and spatial positioning, missing that Candidate B’s description aligns better with the actual image content.",
+        "candidate_difference": "Candidate A inaccurately describes the background as having a dining table and TV, while Candidate B correctly identifies balloons and a light, and accurately describes chair positions and spatial layout relative to those elements.",
+        "parent_failure": "The parent criterion failed to distinguish the human-preferred answer because it prioritized surface-level detail and assumed accuracy based on verbosity, without verifying object identity or spatial relationships against the actual image.",
+        "suggested_subdomain": "visual_accuracy_and_spatial_verification"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-002699\",\n  \"task_pattern\": \"The parent criterion failed to detect that Candidate B’s description, though less detailed, correctly identifies key visual elements (balloons, light) that Candidate A misrepresents or omits, leading to a factual error in spatial relationships.\",\n  \"visual_focus\": \"The parent criterion prioritized quantity and perceived detail over factual accuracy in object identification and spatial positioning, missing that Candidate B’s description aligns better with the actual image content.\",\n  \"candidate_difference\": \"Candidate A inaccurately describes the background as having a dining table and TV, while Candidate B correctly identifies balloons and a light, and accurately describes chair positions and spatial layout relative to those elements.\",\n  \"parent_failure\": \"The parent criterion failed to distinguish the human-preferred answer because it prioritized surface-level detail and assumed accuracy based on verbosity, without verifying object identity or spatial relationships against the actual image.\",\n  \"suggested_subdomain\": \"visual_accuracy_and_spatial_verification\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 784,
+        "output_tokens": 215,
+        "total_tokens": 999,
+        "usage_complete": true,
+        "call_latency_seconds": 11.91428719999385,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000277",
+        "task_pattern": "Judges penalize candidates for mentioning non-visual semantic labels (e.g., 'website') even when the label is contextually plausible and the visual elements are correctly described.",
+        "visual_focus": "The visual grounding criterion prioritizes accurate description of observable elements (color, text, layout) over semantic interpretation of the text's function or origin.",
+        "candidate_difference": "Candidate A correctly describes the visual elements (white background, black text, contrast) but incorrectly labels the text as 'logo' text, which is not visually verifiable. Candidate B correctly describes the visual elements and accurately labels the text as 'website' text, which is contextually appropriate and visually grounded.",
+        "parent_failure": "The parent criterion failed to recognize that Candidate B’s mention of 'website' text is not a visual element but a semantic label that is contextually appropriate and does not violate visual grounding. The parent incorrectly assumed that labeling text as 'website' text is a visual misstep, when it is actually a correct contextual interpretation that aligns with the image’s purpose.",
+        "suggested_subdomain": "semantic_contextual_accuracy"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000277\",\n  \"task_pattern\": \"Judges penalize candidates for mentioning non-visual semantic labels (e.g., 'website') even when the label is contextually plausible and the visual elements are correctly described.\",\n  \"visual_focus\": \"The visual grounding criterion prioritizes accurate description of observable elements (color, text, layout) over semantic interpretation of the text's function or origin.\",\n  \"candidate_difference\": \"Candidate A correctly describes the visual elements (white background, black text, contrast) but incorrectly labels the text as 'logo' text, which is not visually verifiable. Candidate B correctly describes the visual elements and accurately labels the text as 'website' text, which is contextually appropriate and visually grounded.\",\n  \"parent_failure\": \"The parent criterion failed to recognize that Candidate B’s mention of 'website' text is not a visual element but a semantic label that is contextually appropriate and does not violate visual grounding. The parent incorrectly assumed that labeling text as 'website' text is a visual misstep, when it is actually a correct contextual interpretation that aligns with the image’s purpose.\",\n  \"suggested_subdomain\": \"semantic_contextual_accuracy\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 993,
+        "output_tokens": 254,
+        "total_tokens": 1247,
+        "usage_complete": true,
+        "call_latency_seconds": 12.968453100009356,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-002829",
+        "task_pattern": "Judges prioritize visual accuracy over factual correctness when evaluating grounding, leading to preference for candidates that misidentify the landmark but correctly describe observable elements.",
+        "visual_focus": "The visual focus is on the bridge's structure, including the two towers, their relative heights, the suspension cables, and the presence of boats and vehicles.",
+        "candidate_difference": "Candidate A incorrectly states the bridge is made of concrete and has towers in the middle, while Candidate B correctly identifies the material as stone and the towers at the ends with one taller than the other — matching the visual evidence.",
+        "parent_failure": "The parent criterion failed to distinguish the human-preferred answer because it incorrectly prioritized the misidentification of the landmark (London Bridge vs. Tower Bridge) as a secondary issue, while overlooking that Candidate A's description of the bridge's material and tower placement contradicts the visual evidence, making it less grounded.",
+        "suggested_subdomain": "visual_accuracy_of_structural_elements"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-002829\",\n  \"task_pattern\": \"Judges prioritize visual accuracy over factual correctness when evaluating grounding, leading to preference for candidates that misidentify the landmark but correctly describe observable elements.\",\n  \"visual_focus\": \"The visual focus is on the bridge's structure, including the two towers, their relative heights, the suspension cables, and the presence of boats and vehicles.\",\n  \"candidate_difference\": \"Candidate A incorrectly states the bridge is made of concrete and has towers in the middle, while Candidate B correctly identifies the material as stone and the towers at the ends with one taller than the other — matching the visual evidence.\",\n  \"parent_failure\": \"The parent criterion failed to distinguish the human-preferred answer because it incorrectly prioritized the misidentification of the landmark (London Bridge vs. Tower Bridge) as a secondary issue, while overlooking that Candidate A's description of the bridge's material and tower placement contradicts the visual evidence, making it less grounded.\",\n  \"suggested_subdomain\": \"visual_accuracy_of_structural_elements\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 2232,
+        "output_tokens": 223,
+        "total_tokens": 2455,
+        "usage_complete": true,
+        "call_latency_seconds": 11.989176599992788,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-003218",
+        "task_pattern": "The parent criterion fails to distinguish between accurate visual interpretation and superficial or misleading visual descriptions, especially when the image contains ambiguous or non-standard visual elements.",
+        "visual_focus": "The parent criterion prioritizes identifying recognizable logos or standard icons over interpreting ambiguous or contextually misleading visual cues, such as a human-shaped silhouette that is not a logo.",
+        "candidate_difference": "Candidate A correctly identifies the human-shaped silhouette as a non-logo element (possibly a photo or icon) and avoids mislabeling it as the Flickr logo, while Candidate B incorrectly labels the silhouette as the 'Flickr's logo', which is inaccurate and misleading.",
+        "parent_failure": "The parent criterion failed to recognize that the human-shaped silhouette is not the Flickr logo, and instead penalized Candidate A for not identifying it as such, despite Candidate A's description being more accurate and aligned with the actual visual content. The parent criterion conflated 'visual grounding' with 'identifying standard logos', ignoring the nuance of visual interpretation.",
+        "suggested_subdomain": "visual_accuracy_and_contextual_understanding"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-003218\",\n  \"task_pattern\": \"The parent criterion fails to distinguish between accurate visual interpretation and superficial or misleading visual descriptions, especially when the image contains ambiguous or non-standard visual elements.\",\n  \"visual_focus\": \"The parent criterion prioritizes identifying recognizable logos or standard icons over interpreting ambiguous or contextually misleading visual cues, such as a human-shaped silhouette that is not a logo.\",\n  \"candidate_difference\": \"Candidate A correctly identifies the human-shaped silhouette as a non-logo element (possibly a photo or icon) and avoids mislabeling it as the Flickr logo, while Candidate B incorrectly labels the silhouette as the 'Flickr's logo', which is inaccurate and misleading.\",\n  \"parent_failure\": \"The parent criterion failed to recognize that the human-shaped silhouette is not the Flickr logo, and instead penalized Candidate A for not identifying it as such, despite Candidate A's description being more accurate and aligned with the actual visual content. The parent criterion conflated 'visual grounding' with 'identifying standard logos', ignoring the nuance of visual interpretation.\",\n  \"suggested_subdomain\": \"visual_accuracy_and_contextual_understanding\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 1159,
+        "output_tokens": 244,
+        "total_tokens": 1403,
+        "usage_complete": true,
+        "call_latency_seconds": 12.765023200001451,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-004830",
+        "task_pattern": "The parent criterion incorrectly prioritizes explicit visual referencing over contextual plausibility and avoids penalizing speculative or non-visual reasoning that aligns with human preference.",
+        "visual_focus": "The parent criterion fixates on the literal presence of 'two people not wearing jerseys' as sufficient visual grounding, ignoring that the criterion should evaluate whether the analysis is grounded in observable details to support a plausible inference, not merely whether it mentions a visual fact.",
+        "candidate_difference": "Candidate A offers multiple plausible, non-visual explanations (casual activity, forgot jerseys, spectators) without referencing visual evidence, yet is preferred. Candidate B references the visual fact but then infers a team-based explanation that is not visually supported (e.g., 'players usually wear jerseys'), which is a non-visual assumption.",
+        "parent_failure": "The parent criterion failed to distinguish human preference because it conflated 'mentioning a visual fact' with 'grounding analysis in visual details'. It penalized Candidate A for not referencing visual evidence, while Candidate B’s inference about team identity is unsupported by visual context, yet was rewarded for mentioning the visual fact.",
+        "suggested_subdomain": "visual_contextual_plausibility"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-004830\",\n  \"task_pattern\": \"The parent criterion incorrectly prioritizes explicit visual referencing over contextual plausibility and avoids penalizing speculative or non-visual reasoning that aligns with human preference.\",\n  \"visual_focus\": \"The parent criterion fixates on the literal presence of 'two people not wearing jerseys' as sufficient visual grounding, ignoring that the criterion should evaluate whether the analysis is grounded in observable details to support a plausible inference, not merely whether it mentions a visual fact.\",\n  \"candidate_difference\": \"Candidate A offers multiple plausible, non-visual explanations (casual activity, forgot jerseys, spectators) without referencing visual evidence, yet is preferred. Candidate B references the visual fact but then infers a team-based explanation that is not visually supported (e.g., 'players usually wear jerseys'), which is a non-visual assumption.\",\n  \"parent_failure\": \"The parent criterion failed to distinguish human preference because it conflated 'mentioning a visual fact' with 'grounding analysis in visual details'. It penalized Candidate A for not referencing visual evidence, while Candidate B’s inference about team identity is unsupported by visual context, yet was rewarded for mentioning the visual fact.\",\n  \"suggested_subdomain\": \"visual_contextual_plausibility\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 716,
+        "output_tokens": 269,
+        "total_tokens": 985,
+        "usage_complete": true,
+        "call_latency_seconds": 13.231162700001732,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000541",
+        "task_pattern": "The parent criterion failed to recognize that the human preference is based on aesthetic judgment and compositional interpretation, not strict factual accuracy about object arrangement.",
+        "visual_focus": "The visual focus is on the icy pine branches and their composition, including the way ice forms on needles and the depth created by background blur.",
+        "candidate_difference": "Candidate A describes the branches as 'arranged in a line' and 'balanced and harmonious,' while Candidate B correctly describes them as 'arranged in a messy way,' which aligns with the visual evidence of irregular, natural branch growth.",
+        "parent_failure": "The parent criterion incorrectly prioritized factual accuracy over aesthetic alignment with the image, failing to recognize that the human preference favors Candidate B for its more authentic visual description of the branch arrangement, even though it contains a minor factual deviation.",
+        "suggested_subdomain": "aesthetic_composition"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000541\",\n  \"task_pattern\": \"The parent criterion failed to recognize that the human preference is based on aesthetic judgment and compositional interpretation, not strict factual accuracy about object arrangement.\",\n  \"visual_focus\": \"The visual focus is on the icy pine branches and their composition, including the way ice forms on needles and the depth created by background blur.\",\n  \"candidate_difference\": \"Candidate A describes the branches as 'arranged in a line' and 'balanced and harmonious,' while Candidate B correctly describes them as 'arranged in a messy way,' which aligns with the visual evidence of irregular, natural branch growth.\",\n  \"parent_failure\": \"The parent criterion incorrectly prioritized factual accuracy over aesthetic alignment with the image, failing to recognize that the human preference favors Candidate B for its more authentic visual description of the branch arrangement, even though it contains a minor factual deviation.\",\n  \"suggested_subdomain\": \"aesthetic_composition\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 607,
+        "output_tokens": 207,
+        "total_tokens": 814,
+        "usage_complete": true,
+        "call_latency_seconds": 11.382611900000484,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000042",
+        "task_pattern": "The parent criterion failed to account for the subjective interpretation of facial expressions and background context as valid visual grounding elements when they are ambiguous or contextually misleading.",
+        "visual_focus": "The parent criterion prioritized observable, verifiable details (suit, tie, serious expression) while dismissing interpretations that, though not directly verifiable, are grounded in visual cues (e.g., background shelves, expression tone).",
+        "candidate_difference": "Candidate A only referenced verifiable visual elements (suit, tie, serious expression), while Candidate B added contextually grounded but unsupported interpretations (warehouse, arrogant expression) that, though inaccurate, better aligned with the human-preferred answer by reflecting the image’s actual visual cues (e.g., background shelves, expression tone).",
+        "parent_failure": "The parent criterion failed to distinguish between grounded visual interpretation and unsupported inference, misjudging Candidate B’s use of contextually relevant visual cues (e.g., background shelves, expression tone) as invalid, despite their alignment with the human-preferred answer.",
+        "suggested_subdomain": "visual_contextual_inference"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000042\",\n  \"task_pattern\": \"The parent criterion failed to account for the subjective interpretation of facial expressions and background context as valid visual grounding elements when they are ambiguous or contextually misleading.\",\n  \"visual_focus\": \"The parent criterion prioritized observable, verifiable details (suit, tie, serious expression) while dismissing interpretations that, though not directly verifiable, are grounded in visual cues (e.g., background shelves, expression tone).\",\n  \"candidate_difference\": \"Candidate A only referenced verifiable visual elements (suit, tie, serious expression), while Candidate B added contextually grounded but unsupported interpretations (warehouse, arrogant expression) that, though inaccurate, better aligned with the human-preferred answer by reflecting the image’s actual visual cues (e.g., background shelves, expression tone).\",\n  \"parent_failure\": \"The parent criterion failed to distinguish between grounded visual interpretation and unsupported inference, misjudging Candidate B’s use of contextually relevant visual cues (e.g., background shelves, expression tone) as invalid, despite their alignment with the human-preferred answer.\",\n  \"suggested_subdomain\": \"visual_contextual_inference\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 853,
+        "output_tokens": 247,
+        "total_tokens": 1100,
+        "usage_complete": true,
+        "call_latency_seconds": 12.872117600010824,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-004995",
+        "task_pattern": "Misjudging subtle posture cues as unsupported when they are visually accurate and contextually plausible.",
+        "visual_focus": "The horse statue's leg positioning and body posture relative to the ground.",
+        "candidate_difference": "Candidate A omits any mention of leg bending, while Candidate B explicitly states 'legs bent' — a detail that is visually present and consistent with the horse's stance.",
+        "parent_failure": "The parent failed to recognize that 'legs bent' is a valid, visually grounded observation that aligns with the horse's posture, and incorrectly labeled it as unsupported, thereby misjudging the human-preferred answer.",
+        "suggested_subdomain": "Posture and stance interpretation in static sculptures"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-004995\",\n  \"task_pattern\": \"Misjudging subtle posture cues as unsupported when they are visually accurate and contextually plausible.\",\n  \"visual_focus\": \"The horse statue's leg positioning and body posture relative to the ground.\",\n  \"candidate_difference\": \"Candidate A omits any mention of leg bending, while Candidate B explicitly states 'legs bent' — a detail that is visually present and consistent with the horse's stance.\",\n  \"parent_failure\": \"The parent failed to recognize that 'legs bent' is a valid, visually grounded observation that aligns with the horse's posture, and incorrectly labeled it as unsupported, thereby misjudging the human-preferred answer.\",\n  \"suggested_subdomain\": \"Posture and stance interpretation in static sculptures\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 662,
+        "output_tokens": 170,
+        "total_tokens": 832,
+        "usage_complete": true,
+        "call_latency_seconds": 10.04445929999929,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-001052",
+        "task_pattern": "The parent criterion incorrectly prioritizes the mere presence of visual elements over their interpretive accuracy and relevance to the question.",
+        "visual_focus": "The parent criterion focuses on whether candidates mention any visual elements, without evaluating whether those elements are correctly interpreted or directly relevant to the question of passenger pickup.",
+        "candidate_difference": "Candidate A avoids referencing specific visual elements, while Candidate B references a bus stop under a bridge and nearby people — but these elements are not clearly visible or verifiable in the image, making B’s grounding misleading.",
+        "parent_failure": "The parent criterion failed to distinguish between correct and incorrect visual grounding. It rewarded Candidate B for mentioning any visual elements, even though those elements are ambiguous or not clearly observable, while penalizing Candidate A for not mentioning them — despite A’s more cautious, accurate interpretation based on what is actually visible.",
+        "suggested_subdomain": "visual_grounding_accuracy"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-001052\",\n  \"task_pattern\": \"The parent criterion incorrectly prioritizes the mere presence of visual elements over their interpretive accuracy and relevance to the question.\",\n  \"visual_focus\": \"The parent criterion focuses on whether candidates mention any visual elements, without evaluating whether those elements are correctly interpreted or directly relevant to the question of passenger pickup.\",\n  \"candidate_difference\": \"Candidate A avoids referencing specific visual elements, while Candidate B references a bus stop under a bridge and nearby people — but these elements are not clearly visible or verifiable in the image, making B’s grounding misleading.\",\n  \"parent_failure\": \"The parent criterion failed to distinguish between correct and incorrect visual grounding. It rewarded Candidate B for mentioning any visual elements, even though those elements are ambiguous or not clearly observable, while penalizing Candidate A for not mentioning them — despite A’s more cautious, accurate interpretation based on what is actually visible.\",\n  \"suggested_subdomain\": \"visual_grounding_accuracy\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 689,
+        "output_tokens": 211,
+        "total_tokens": 900,
+        "usage_complete": true,
+        "call_latency_seconds": 11.42790719999175,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000932",
+        "task_pattern": "The parent criterion fails to account for the nuance of visual detail interpretation, particularly when distinguishing between a formal suit and a casual jacket/undershirt combination based on limited visual evidence.",
+        "visual_focus": "The parent criterion prioritizes the most visually apparent clothing elements (e.g., 'black suit', 'bow tie') while overlooking subtle but critical visual cues (e.g., collar shape, absence of bow tie, visible shirt collar) that support Candidate A's description.",
+        "candidate_difference": "Candidate A correctly identifies the visible white collar and absence of a bow tie, implying a jacket and undershirt, while Candidate B misinterprets the visual evidence by assuming a formal suit and bow tie, which are not supported by the image.",
+        "parent_failure": "The parent criterion failed to distinguish the human-preferred answer because it prioritized the assumption of a formal suit over the observable visual evidence of a white collar and lack of bow tie, which strongly supports Candidate A's description.",
+        "suggested_subdomain": "clothing_formality_and_collar_visibility"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000932\",\n  \"task_pattern\": \"The parent criterion fails to account for the nuance of visual detail interpretation, particularly when distinguishing between a formal suit and a casual jacket/undershirt combination based on limited visual evidence.\",\n  \"visual_focus\": \"The parent criterion prioritizes the most visually apparent clothing elements (e.g., 'black suit', 'bow tie') while overlooking subtle but critical visual cues (e.g., collar shape, absence of bow tie, visible shirt collar) that support Candidate A's description.\",\n  \"candidate_difference\": \"Candidate A correctly identifies the visible white collar and absence of a bow tie, implying a jacket and undershirt, while Candidate B misinterprets the visual evidence by assuming a formal suit and bow tie, which are not supported by the image.\",\n  \"parent_failure\": \"The parent criterion failed to distinguish the human-preferred answer because it prioritized the assumption of a formal suit over the observable visual evidence of a white collar and lack of bow tie, which strongly supports Candidate A's description.\",\n  \"suggested_subdomain\": \"clothing_formality_and_collar_visibility\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 738,
+        "output_tokens": 244,
+        "total_tokens": 982,
+        "usage_complete": true,
+        "call_latency_seconds": 12.765845400004764,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-004571",
+        "task_pattern": "The parent criterion incorrectly penalizes a candidate for including a plausible, contextually supported inference (web browsing) while rewarding a candidate that makes a more generic, visually grounded statement without considering the actual visual evidence.",
+        "visual_focus": "The Apple logo visible on the computer screen and the physical Apple logo on the filing cabinet.",
+        "candidate_difference": "Candidate A infers the computer is 'browsing Apple-related web pages' based on the visible Apple logo on the screen, while Candidate B only states the device is an 'Apple product' based on the same logo, avoiding unsupported claims.",
+        "parent_failure": "The parent criterion failed to recognize that the inference in Candidate A (web browsing) is not only plausible but also visually supported by the content displayed on the screen, which is a direct observable element. The criterion conflated 'unsupported inference' with 'inference', ignoring that some inferences are grounded in visual context.",
+        "suggested_subdomain": "visual_contextual_inference"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-004571\",\n  \"task_pattern\": \"The parent criterion incorrectly penalizes a candidate for including a plausible, contextually supported inference (web browsing) while rewarding a candidate that makes a more generic, visually grounded statement without considering the actual visual evidence.\",\n  \"visual_focus\": \"The Apple logo visible on the computer screen and the physical Apple logo on the filing cabinet.\",\n  \"candidate_difference\": \"Candidate A infers the computer is 'browsing Apple-related web pages' based on the visible Apple logo on the screen, while Candidate B only states the device is an 'Apple product' based on the same logo, avoiding unsupported claims.\",\n  \"parent_failure\": \"The parent criterion failed to recognize that the inference in Candidate A (web browsing) is not only plausible but also visually supported by the content displayed on the screen, which is a direct observable element. The criterion conflated 'unsupported inference' with 'inference', ignoring that some inferences are grounded in visual context.\",\n  \"suggested_subdomain\": \"visual_contextual_inference\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 703,
+        "output_tokens": 228,
+        "total_tokens": 931,
+        "usage_complete": true,
+        "call_latency_seconds": 12.546881299989764,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000150",
+        "task_pattern": "The parent criterion failed to recognize that a correct answer must strictly adhere to the visual evidence without introducing unsupported inferences, even when those inferences are plausible.",
+        "visual_focus": "The blue corner visible just out of frame on the left, and the motorcycles in the foreground.",
+        "candidate_difference": "Candidate A infers a picnic table and sun umbrella based on the blue corner, while Candidate B correctly identifies a tent and includes relevant context (motorcycles) without misattributing the blue corner.",
+        "parent_failure": "The parent criterion incorrectly prioritized Candidate A’s plausible but unsupported inference over Candidate B’s accurate visual grounding, failing to penalize the introduction of non-visual details that mislead the analysis.",
+        "suggested_subdomain": "visual_accuracy_and_constraint"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000150\",\n  \"task_pattern\": \"The parent criterion failed to recognize that a correct answer must strictly adhere to the visual evidence without introducing unsupported inferences, even when those inferences are plausible.\",\n  \"visual_focus\": \"The blue corner visible just out of frame on the left, and the motorcycles in the foreground.\",\n  \"candidate_difference\": \"Candidate A infers a picnic table and sun umbrella based on the blue corner, while Candidate B correctly identifies a tent and includes relevant context (motorcycles) without misattributing the blue corner.\",\n  \"parent_failure\": \"The parent criterion incorrectly prioritized Candidate A’s plausible but unsupported inference over Candidate B’s accurate visual grounding, failing to penalize the introduction of non-visual details that mislead the analysis.\",\n  \"suggested_subdomain\": \"visual_accuracy_and_constraint\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 679,
+        "output_tokens": 184,
+        "total_tokens": 863,
+        "usage_complete": true,
+        "call_latency_seconds": 10.428072099995916,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000628",
+        "task_pattern": "The parent criterion incorrectly prioritizes the presence of a visible object as the sole indicator of visual grounding, while ignoring contextual plausibility and the absence of visual evidence for the object's relevance to the person's action.",
+        "visual_focus": "The parent criterion fixates on the white frisbee as the primary visual anchor, assuming its presence automatically grounds the description, even when the object is not clearly associated with the person in question.",
+        "candidate_difference": "Candidate A avoids object-centric grounding and instead infers a plausible, contextually consistent activity (waiting for stage) based on posture and spatial context, while Candidate B misattributes an object (frisbee) to the person in the background despite visual ambiguity and lack of clear connection.",
+        "parent_failure": "The parent criterion failed to distinguish human preference because it conflated 'visual grounding' with 'object presence' and penalized contextual inference (Candidate A) while rewarding an unsupported object association (Candidate B), ignoring that the frisbee is not visibly held by or directly relevant to the background person.",
+        "suggested_subdomain": "contextual_plausibility"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000628\",\n  \"task_pattern\": \"The parent criterion incorrectly prioritizes the presence of a visible object as the sole indicator of visual grounding, while ignoring contextual plausibility and the absence of visual evidence for the object's relevance to the person's action.\",\n  \"visual_focus\": \"The parent criterion fixates on the white frisbee as the primary visual anchor, assuming its presence automatically grounds the description, even when the object is not clearly associated with the person in question.\",\n  \"candidate_difference\": \"Candidate A avoids object-centric grounding and instead infers a plausible, contextually consistent activity (waiting for stage) based on posture and spatial context, while Candidate B misattributes an object (frisbee) to the person in the background despite visual ambiguity and lack of clear connection.\",\n  \"parent_failure\": \"The parent criterion failed to distinguish human preference because it conflated 'visual grounding' with 'object presence' and penalized contextual inference (Candidate A) while rewarding an unsupported object association (Candidate B), ignoring that the frisbee is not visibly held by or directly relevant to the background person.\",\n  \"suggested_subdomain\": \"contextual_plausibility\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 615,
+        "output_tokens": 255,
+        "total_tokens": 870,
+        "usage_complete": true,
+        "call_latency_seconds": 12.894950900008553,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-001002",
+        "task_pattern": "The parent criterion failed to distinguish between accurate and inaccurate visual grounding when the correct answer involves a more specific, observable detail that is not the most prominent object in the scene.",
+        "visual_focus": "The parent criterion prioritized the most visually salient object (the woman using a laptop) over a less prominent but correctly identified detail (a male near a black object).",
+        "candidate_difference": "Candidate A correctly identifies a male wearing a coat near a black object in the upper left, while Candidate B incorrectly identifies a woman wearing a jacket using a laptop, which is visually accurate but less specific to the question’s focus on 'anyone wearing a coat'.",
+        "parent_failure": "The parent criterion failed to recognize that Candidate A’s answer, though less detailed, correctly identifies a person wearing a coat and provides a spatial reference that aligns with the image, while Candidate B’s answer misrepresents the person’s clothing (jacket vs. coat) and omits the key detail of the coat, making it less aligned with the visual grounding requirement.",
+        "suggested_subdomain": "clothing_type_accuracy"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-001002\",\n  \"task_pattern\": \"The parent criterion failed to distinguish between accurate and inaccurate visual grounding when the correct answer involves a more specific, observable detail that is not the most prominent object in the scene.\",\n  \"visual_focus\": \"The parent criterion prioritized the most visually salient object (the woman using a laptop) over a less prominent but correctly identified detail (a male near a black object).\",\n  \"candidate_difference\": \"Candidate A correctly identifies a male wearing a coat near a black object in the upper left, while Candidate B incorrectly identifies a woman wearing a jacket using a laptop, which is visually accurate but less specific to the question’s focus on 'anyone wearing a coat'.\",\n  \"parent_failure\": \"The parent criterion failed to recognize that Candidate A’s answer, though less detailed, correctly identifies a person wearing a coat and provides a spatial reference that aligns with the image, while Candidate B’s answer misrepresents the person’s clothing (jacket vs. coat) and omits the key detail of the coat, making it less aligned with the visual grounding requirement.\",\n  \"suggested_subdomain\": \"clothing_type_accuracy\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 651,
+        "output_tokens": 253,
+        "total_tokens": 904,
+        "usage_complete": true,
+        "call_latency_seconds": 12.94075470000098,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000764",
+        "task_pattern": "The parent criterion failed to distinguish between accurate and misleading visual grounding when the candidate misidentifies a structural element (e.g., ceiling vs. shelf) that is visually ambiguous or contextually misleading.",
+        "visual_focus": "The signs are suspended from overhead structures, not mounted on shelves or walls, and the spatial context is clearly indoors with architectural features like glass doors and tiled floors.",
+        "candidate_difference": "Candidate A correctly identifies the signs as hanging from the ceiling indoors, while Candidate B incorrectly claims they are on shelves, which is not visually supported.",
+        "parent_failure": "The parent criterion failed to recognize that Candidate B’s error is not a failure to ground visually, but rather a misinterpretation of the spatial structure (shelves vs. ceiling), and incorrectly penalized Candidate B for this while overlooking that Candidate B’s grounding is still visually plausible and contextually accurate (indoor, not on street).",
+        "suggested_subdomain": "spatial_structure_identification"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000764\",\n  \"task_pattern\": \"The parent criterion failed to distinguish between accurate and misleading visual grounding when the candidate misidentifies a structural element (e.g., ceiling vs. shelf) that is visually ambiguous or contextually misleading.\",\n  \"visual_focus\": \"The signs are suspended from overhead structures, not mounted on shelves or walls, and the spatial context is clearly indoors with architectural features like glass doors and tiled floors.\",\n  \"candidate_difference\": \"Candidate A correctly identifies the signs as hanging from the ceiling indoors, while Candidate B incorrectly claims they are on shelves, which is not visually supported.\",\n  \"parent_failure\": \"The parent criterion failed to recognize that Candidate B’s error is not a failure to ground visually, but rather a misinterpretation of the spatial structure (shelves vs. ceiling), and incorrectly penalized Candidate B for this while overlooking that Candidate B’s grounding is still visually plausible and contextually accurate (indoor, not on street).\",\n  \"suggested_subdomain\": \"spatial_structure_identification\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 662,
+        "output_tokens": 226,
+        "total_tokens": 888,
+        "usage_complete": true,
+        "call_latency_seconds": 12.049200000008568,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000307",
+        "task_pattern": "The parent criterion failed to distinguish between accurate and inaccurate visual grounding when the correct answer relies on a subtle or indirect visual cue that is not immediately obvious as a representation of the target object.",
+        "visual_focus": "The parent criterion focused on the literal presence of smokestack-like structures (e.g., cake decorations) without considering the contextual or symbolic representation of the smokestack within the train-themed cake design.",
+        "candidate_difference": "Candidate A misidentifies the smokestack as a train engine-shaped cake, while Candidate B correctly identifies the smokestack as two black cupcakes positioned to represent smokestacks, aligning with the visual evidence of the train’s smokestacks being represented by the cupcakes’ shape and placement.",
+        "parent_failure": "The parent criterion failed to recognize that Candidate B’s answer is more visually grounded because it correctly identifies the smokestack as represented by the cupcakes (black, cylindrical, positioned at the top of the train cars), whereas Candidate A incorrectly assumes the train engine cake itself is the smokestack, ignoring the actual visual representation of smokestacks in the image.",
+        "suggested_subdomain": "Visual representation of symbolic or contextual elements within a themed scene"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000307\",\n  \"task_pattern\": \"The parent criterion failed to distinguish between accurate and inaccurate visual grounding when the correct answer relies on a subtle or indirect visual cue that is not immediately obvious as a representation of the target object.\",\n  \"visual_focus\": \"The parent criterion focused on the literal presence of smokestack-like structures (e.g., cake decorations) without considering the contextual or symbolic representation of the smokestack within the train-themed cake design.\",\n  \"candidate_difference\": \"Candidate A misidentifies the smokestack as a train engine-shaped cake, while Candidate B correctly identifies the smokestack as two black cupcakes positioned to represent smokestacks, aligning with the visual evidence of the train’s smokestacks being represented by the cupcakes’ shape and placement.\",\n  \"parent_failure\": \"The parent criterion failed to recognize that Candidate B’s answer is more visually grounded because it correctly identifies the smokestack as represented by the cupcakes (black, cylindrical, positioned at the top of the train cars), whereas Candidate A incorrectly assumes the train engine cake itself is the smokestack, ignoring the actual visual representation of smokestacks in the image.\",\n  \"suggested_subdomain\": \"Visual representation of symbolic or contextual elements within a themed scene\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 641,
+        "output_tokens": 265,
+        "total_tokens": 906,
+        "usage_complete": true,
+        "call_latency_seconds": 5.298589500001981,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-001449",
+        "task_pattern": "The parent criterion fails to prioritize factual accuracy in direct response to the question, instead rewarding descriptive accuracy of non-relevant visual elements.",
+        "visual_focus": "The lighthouse is the dominant visual element, but the presence of a car (or bus) is directly relevant to the question and must be addressed.",
+        "candidate_difference": "Candidate A correctly identifies the car's presence and describes the lighthouse, while Candidate B correctly describes the lighthouse but falsely denies the car's presence.",
+        "parent_failure": "The parent criterion incorrectly prioritizes visual grounding of non-essential elements (lighthouse location) over direct factual response to the question (car presence), leading to a misjudgment that rewards the less accurate candidate.",
+        "suggested_subdomain": "factual_accuracy"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-001449\",\n  \"task_pattern\": \"The parent criterion fails to prioritize factual accuracy in direct response to the question, instead rewarding descriptive accuracy of non-relevant visual elements.\",\n  \"visual_focus\": \"The lighthouse is the dominant visual element, but the presence of a car (or bus) is directly relevant to the question and must be addressed.\",\n  \"candidate_difference\": \"Candidate A correctly identifies the car's presence and describes the lighthouse, while Candidate B correctly describes the lighthouse but falsely denies the car's presence.\",\n  \"parent_failure\": \"The parent criterion incorrectly prioritizes visual grounding of non-essential elements (lighthouse location) over direct factual response to the question (car presence), leading to a misjudgment that rewards the less accurate candidate.\",\n  \"suggested_subdomain\": \"factual_accuracy\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 691,
+        "output_tokens": 184,
+        "total_tokens": 875,
+        "usage_complete": true,
+        "call_latency_seconds": 4.117438100001891,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000478",
+        "task_pattern": "Misjudging relative anatomical positions by conflating mid-leg with knee-level due to visual ambiguity in waterline.",
+        "visual_focus": "The waterline on the lower legs of two people standing in shallow ocean water.",
+        "candidate_difference": "Candidate A describes water at 'middle of legs' while Candidate B says 'near knees'; the human preference favors B as more accurate anatomically and visually grounded.",
+        "parent_failure": "The parent failed to recognize that 'middle of legs' is anatomically ambiguous and visually indistinct from 'near knees' in shallow water, leading to a misjudgment of visual grounding based on a misleadingly precise but inaccurate descriptor.",
+        "suggested_subdomain": "Anatomical landmark precision in visual grounding"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000478\",\n  \"task_pattern\": \"Misjudging relative anatomical positions by conflating mid-leg with knee-level due to visual ambiguity in waterline.\",\n  \"visual_focus\": \"The waterline on the lower legs of two people standing in shallow ocean water.\",\n  \"candidate_difference\": \"Candidate A describes water at 'middle of legs' while Candidate B says 'near knees'; the human preference favors B as more accurate anatomically and visually grounded.\",\n  \"parent_failure\": \"The parent failed to recognize that 'middle of legs' is anatomically ambiguous and visually indistinct from 'near knees' in shallow water, leading to a misjudgment of visual grounding based on a misleadingly precise but inaccurate descriptor.\",\n  \"suggested_subdomain\": \"Anatomical landmark precision in visual grounding\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 624,
+        "output_tokens": 180,
+        "total_tokens": 804,
+        "usage_complete": true,
+        "call_latency_seconds": 3.737407599997823,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000449",
+        "task_pattern": "The parent criterion fails to distinguish between correct and incorrect visual grounding when the evidence is ambiguous or absent, leading to misjudgment of candidate quality.",
+        "visual_focus": "The parent criterion incorrectly prioritizes the presence of snow on the sign as definitive evidence, while ignoring the possibility that the absence of snow on the sign (or ground) might be due to snow having melted or been cleared, not because it hasn't snowed.",
+        "candidate_difference": "Candidate A correctly notes the lack of visible snow as insufficient evidence to confirm recent snowfall, while Candidate B incorrectly assumes snow on the sign proves recent snowfall, ignoring the possibility of snow having melted or been removed.",
+        "parent_failure": "The parent criterion failed to recognize that the absence of snow on the sign (or ground) does not necessarily imply no recent snowfall, and that Candidate A’s cautious interpretation aligns with human preference by avoiding overinterpretation of ambiguous visual cues.",
+        "suggested_subdomain": "Ambiguous Visual Evidence Interpretation"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000449\",\n  \"task_pattern\": \"The parent criterion fails to distinguish between correct and incorrect visual grounding when the evidence is ambiguous or absent, leading to misjudgment of candidate quality.\",\n  \"visual_focus\": \"The parent criterion incorrectly prioritizes the presence of snow on the sign as definitive evidence, while ignoring the possibility that the absence of snow on the sign (or ground) might be due to snow having melted or been cleared, not because it hasn't snowed.\",\n  \"candidate_difference\": \"Candidate A correctly notes the lack of visible snow as insufficient evidence to confirm recent snowfall, while Candidate B incorrectly assumes snow on the sign proves recent snowfall, ignoring the possibility of snow having melted or been removed.\",\n  \"parent_failure\": \"The parent criterion failed to recognize that the absence of snow on the sign (or ground) does not necessarily imply no recent snowfall, and that Candidate A’s cautious interpretation aligns with human preference by avoiding overinterpretation of ambiguous visual cues.\",\n  \"suggested_subdomain\": \"Ambiguous Visual Evidence Interpretation\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 679,
+        "output_tokens": 232,
+        "total_tokens": 911,
+        "usage_complete": true,
+        "call_latency_seconds": 3.99000380000507,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000837",
+        "task_pattern": "The parent criterion failed to recognize that visual grounding must align with human perception of object identity, not just textual accuracy or detail quantity.",
+        "visual_focus": "The parent criterion focused on the candidate's textual precision and detail listing, rather than the visual evidence of ham (thin, cured, marbled meat) that is clearly present on the plate.",
+        "candidate_difference": "Candidate A incorrectly denies ham while listing it as 'possibly sausages' and 'Iberian ham', showing a mismatch between visual evidence and text. Candidate B correctly identifies ham and describes its visual context, matching human perception.",
+        "parent_failure": "The parent criterion conflated 'detailed description' with 'accuracy', failing to distinguish between a candidate that misidentifies an object (A) and one that correctly identifies it (B), despite both providing visual references.",
+        "suggested_subdomain": "object_identity_verification"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000837\",\n  \"task_pattern\": \"The parent criterion failed to recognize that visual grounding must align with human perception of object identity, not just textual accuracy or detail quantity.\",\n  \"visual_focus\": \"The parent criterion focused on the candidate's textual precision and detail listing, rather than the visual evidence of ham (thin, cured, marbled meat) that is clearly present on the plate.\",\n  \"candidate_difference\": \"Candidate A incorrectly denies ham while listing it as 'possibly sausages' and 'Iberian ham', showing a mismatch between visual evidence and text. Candidate B correctly identifies ham and describes its visual context, matching human perception.\",\n  \"parent_failure\": \"The parent criterion conflated 'detailed description' with 'accuracy', failing to distinguish between a candidate that misidentifies an object (A) and one that correctly identifies it (B), despite both providing visual references.\",\n  \"suggested_subdomain\": \"object_identity_verification\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 624,
+        "output_tokens": 210,
+        "total_tokens": 834,
+        "usage_complete": true,
+        "call_latency_seconds": 3.727942100013024,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-001347",
+        "task_pattern": "Misjudging spatial relationships by conflating depth with proximity, especially when objects are in background blur.",
+        "visual_focus": "The toy's position in the foreground and the sheep's position in the background, with depth-of-field blurring the background.",
+        "candidate_difference": "Candidate A correctly identifies the sheep as 'in front of' the toy (misleadingly implying foreground), while Candidate B correctly identifies them as 'behind' the toy (accurate spatial depth), despite both being in the background.",
+        "parent_failure": "The parent criterion failed to prioritize spatial accuracy over mere visual element reference, misjudging Candidate B's correct depth description as an error due to a misunderstanding of 'behind' versus 'in front of' in depth context.",
+        "suggested_subdomain": "spatial_depth_accuracy"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-001347\",\n  \"task_pattern\": \"Misjudging spatial relationships by conflating depth with proximity, especially when objects are in background blur.\",\n  \"visual_focus\": \"The toy's position in the foreground and the sheep's position in the background, with depth-of-field blurring the background.\",\n  \"candidate_difference\": \"Candidate A correctly identifies the sheep as 'in front of' the toy (misleadingly implying foreground), while Candidate B correctly identifies them as 'behind' the toy (accurate spatial depth), despite both being in the background.\",\n  \"parent_failure\": \"The parent criterion failed to prioritize spatial accuracy over mere visual element reference, misjudging Candidate B's correct depth description as an error due to a misunderstanding of 'behind' versus 'in front of' in depth context.\",\n  \"suggested_subdomain\": \"spatial_depth_accuracy\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 637,
+        "output_tokens": 194,
+        "total_tokens": 831,
+        "usage_complete": true,
+        "call_latency_seconds": 3.1791108999896096,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "signature": {
+        "sample_id": "rlhfv-000740",
+        "task_pattern": "Overcounting due to misinterpreting blurred or indistinct figures as distinct individuals.",
+        "visual_focus": "Background figures behind the chain-link fence, particularly the blurred shapes on the left and right.",
+        "candidate_difference": "Candidate A identifies three men, while Candidate B identifies one man — the latter correctly recognizes only the clearly visible figure on the right, ignoring the ambiguous shapes on the left.",
+        "parent_failure": "The parent criterion failed to prioritize visual clarity and avoid overcounting ambiguous figures, instead rewarding detailed but inaccurate enumeration, which contradicts human preference for accuracy over verbosity.",
+        "suggested_subdomain": "visual_accuracy_and_clarity"
+      },
+      "raw_response": "{\n  \"sample_id\": \"rlhfv-000740\",\n  \"task_pattern\": \"Overcounting due to misinterpreting blurred or indistinct figures as distinct individuals.\",\n  \"visual_focus\": \"Background figures behind the chain-link fence, particularly the blurred shapes on the left and right.\",\n  \"candidate_difference\": \"Candidate A identifies three men, while Candidate B identifies one man — the latter correctly recognizes only the clearly visible figure on the right, ignoring the ambiguous shapes on the left.\",\n  \"parent_failure\": \"The parent criterion failed to prioritize visual clarity and avoid overcounting ambiguous figures, instead rewarding detailed but inaccurate enumeration, which contradicts human preference for accuracy over verbosity.\",\n  \"suggested_subdomain\": \"visual_accuracy_and_clarity\"\n}",
+      "parse_error": null,
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 570,
+        "output_tokens": 161,
+        "total_tokens": 731,
+        "usage_complete": true,
+        "call_latency_seconds": 2.7120952999976,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      }
+    }
+  ]
+}

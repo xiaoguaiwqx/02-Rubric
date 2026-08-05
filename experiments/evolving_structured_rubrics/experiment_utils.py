@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import threading
 import time
 import urllib.request
@@ -12,6 +13,22 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from critiq.structured.telemetry import ModelCallMetrics
+
+
+def load_local_env(path: Path) -> None:
+    """Load simple KEY=VALUE entries without adding a dotenv dependency."""
+
+    if not path.is_file():
+        return
+    with path.open("r", encoding="utf-8") as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            if key:
+                os.environ.setdefault(key, value.strip().strip('"').strip("'"))
 
 
 def canonical_sha256(value: object) -> str:

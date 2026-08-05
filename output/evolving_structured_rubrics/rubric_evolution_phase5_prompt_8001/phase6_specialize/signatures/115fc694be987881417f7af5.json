@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "signature": {
+    "sample_id": "rlhfv-000082",
+    "task_pattern": "The parent criterion failed to detect that Candidate B’s description is factually accurate while Candidate A’s is misleading, due to the parent’s misinterpretation of the image’s content.",
+    "visual_focus": "The parent criterion focused on the presence of a single couch and lamp placements, but overlooked the actual visual evidence of two couches and the precise positioning of lamps in the image.",
+    "candidate_difference": "Candidate A incorrectly describes only one couch, while Candidate B correctly identifies two couches and accurately describes the positions of the lamps (left side and middle).",
+    "parent_failure": "The parent criterion failed to distinguish the human-preferred answer because it relied on an inaccurate interpretation of the image’s content, assuming Candidate A’s description was more visually grounded when it was actually less accurate.",
+    "suggested_subdomain": "visual_accuracy"
+  },
+  "raw_response": "{\n  \"sample_id\": \"rlhfv-000082\",\n  \"task_pattern\": \"The parent criterion failed to detect that Candidate B’s description is factually accurate while Candidate A’s is misleading, due to the parent’s misinterpretation of the image’s content.\",\n  \"visual_focus\": \"The parent criterion focused on the presence of a single couch and lamp placements, but overlooked the actual visual evidence of two couches and the precise positioning of lamps in the image.\",\n  \"candidate_difference\": \"Candidate A incorrectly describes only one couch, while Candidate B correctly identifies two couches and accurately describes the positions of the lamps (left side and middle).\",\n  \"parent_failure\": \"The parent criterion failed to distinguish the human-preferred answer because it relied on an inaccurate interpretation of the image’s content, assuming Candidate A’s description was more visually grounded when it was actually less accurate.\",\n  \"suggested_subdomain\": \"visual_accuracy\"\n}",
+  "parse_error": null,
+  "attempt_count": 1,
+  "metrics": {
+    "logical_evaluations": 1,
+    "api_attempts": 1,
+    "parse_retries": 0,
+    "input_tokens": 829,
+    "output_tokens": 197,
+    "total_tokens": 1026,
+    "usage_complete": true,
+    "call_latency_seconds": 10.949039800005266,
+    "estimated_cost_usd": null,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "error_count": 0
+  },
+  "request_spec": {
+    "schema_version": "1.0.0",
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+    "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+    "decoding_config": {
+      "temperature": 0.2,
+      "seed": 42
+    },
+    "prompt_version": "1.0.0",
+    "parser_version": "1.0.0"
+  }
+}

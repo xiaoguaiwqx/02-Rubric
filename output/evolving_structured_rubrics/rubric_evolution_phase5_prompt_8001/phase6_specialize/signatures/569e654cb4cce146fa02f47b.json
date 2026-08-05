@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "signature": {
+    "sample_id": "rlhfv-000541",
+    "task_pattern": "The parent criterion failed to recognize that the human preference is based on aesthetic judgment and compositional interpretation, not strict factual accuracy about object arrangement.",
+    "visual_focus": "The visual focus is on the icy pine branches and their composition, including the way ice forms on needles and the depth created by background blur.",
+    "candidate_difference": "Candidate A describes the branches as 'arranged in a line' and 'balanced and harmonious,' while Candidate B correctly describes them as 'arranged in a messy way,' which aligns with the visual evidence of irregular, natural branch growth.",
+    "parent_failure": "The parent criterion incorrectly prioritized factual accuracy over aesthetic alignment with the image, failing to recognize that the human preference favors Candidate B for its more authentic visual description of the branch arrangement, even though it contains a minor factual deviation.",
+    "suggested_subdomain": "aesthetic_composition"
+  },
+  "raw_response": "{\n  \"sample_id\": \"rlhfv-000541\",\n  \"task_pattern\": \"The parent criterion failed to recognize that the human preference is based on aesthetic judgment and compositional interpretation, not strict factual accuracy about object arrangement.\",\n  \"visual_focus\": \"The visual focus is on the icy pine branches and their composition, including the way ice forms on needles and the depth created by background blur.\",\n  \"candidate_difference\": \"Candidate A describes the branches as 'arranged in a line' and 'balanced and harmonious,' while Candidate B correctly describes them as 'arranged in a messy way,' which aligns with the visual evidence of irregular, natural branch growth.\",\n  \"parent_failure\": \"The parent criterion incorrectly prioritized factual accuracy over aesthetic alignment with the image, failing to recognize that the human preference favors Candidate B for its more authentic visual description of the branch arrangement, even though it contains a minor factual deviation.\",\n  \"suggested_subdomain\": \"aesthetic_composition\"\n}",
+  "parse_error": null,
+  "attempt_count": 1,
+  "metrics": {
+    "logical_evaluations": 1,
+    "api_attempts": 1,
+    "parse_retries": 0,
+    "input_tokens": 607,
+    "output_tokens": 207,
+    "total_tokens": 814,
+    "usage_complete": true,
+    "call_latency_seconds": 11.382611900000484,
+    "estimated_cost_usd": null,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "error_count": 0
+  },
+  "request_spec": {
+    "schema_version": "1.0.0",
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+    "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+    "decoding_config": {
+      "temperature": 0.2,
+      "seed": 42
+    },
+    "prompt_version": "1.0.0",
+    "parser_version": "1.0.0"
+  }
+}

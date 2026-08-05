@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "signature": {
+    "sample_id": "rlhfv-004571",
+    "task_pattern": "The parent criterion incorrectly penalizes a candidate for including a plausible, contextually supported inference (web browsing) while rewarding a candidate that makes a more generic, visually grounded statement without considering the actual visual evidence.",
+    "visual_focus": "The Apple logo visible on the computer screen and the physical Apple logo on the filing cabinet.",
+    "candidate_difference": "Candidate A infers the computer is 'browsing Apple-related web pages' based on the visible Apple logo on the screen, while Candidate B only states the device is an 'Apple product' based on the same logo, avoiding unsupported claims.",
+    "parent_failure": "The parent criterion failed to recognize that the inference in Candidate A (web browsing) is not only plausible but also visually supported by the content displayed on the screen, which is a direct observable element. The criterion conflated 'unsupported inference' with 'inference', ignoring that some inferences are grounded in visual context.",
+    "suggested_subdomain": "visual_contextual_inference"
+  },
+  "raw_response": "{\n  \"sample_id\": \"rlhfv-004571\",\n  \"task_pattern\": \"The parent criterion incorrectly penalizes a candidate for including a plausible, contextually supported inference (web browsing) while rewarding a candidate that makes a more generic, visually grounded statement without considering the actual visual evidence.\",\n  \"visual_focus\": \"The Apple logo visible on the computer screen and the physical Apple logo on the filing cabinet.\",\n  \"candidate_difference\": \"Candidate A infers the computer is 'browsing Apple-related web pages' based on the visible Apple logo on the screen, while Candidate B only states the device is an 'Apple product' based on the same logo, avoiding unsupported claims.\",\n  \"parent_failure\": \"The parent criterion failed to recognize that the inference in Candidate A (web browsing) is not only plausible but also visually supported by the content displayed on the screen, which is a direct observable element. The criterion conflated 'unsupported inference' with 'inference', ignoring that some inferences are grounded in visual context.\",\n  \"suggested_subdomain\": \"visual_contextual_inference\"\n}",
+  "parse_error": null,
+  "attempt_count": 1,
+  "metrics": {
+    "logical_evaluations": 1,
+    "api_attempts": 1,
+    "parse_retries": 0,
+    "input_tokens": 703,
+    "output_tokens": 228,
+    "total_tokens": 931,
+    "usage_complete": true,
+    "call_latency_seconds": 12.546881299989764,
+    "estimated_cost_usd": null,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "error_count": 0
+  },
+  "request_spec": {
+    "schema_version": "1.0.0",
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+    "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+    "decoding_config": {
+      "temperature": 0.2,
+      "seed": 42
+    },
+    "prompt_version": "1.0.0",
+    "parser_version": "1.0.0"
+  }
+}

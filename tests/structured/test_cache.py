@@ -59,6 +59,18 @@ def node_output():
 
 
 class JsonPredictionCacheTest(unittest.TestCase):
+    def test_atomic_cache_temp_name_does_not_repeat_long_cache_key(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / ("long-cache-directory-" * 4)
+            cache = JsonPredictionCache(root)
+            payload = node_cache_key_payload(
+                sample_fingerprint="e" * 64, criterion_name="c",
+                criterion_description="desc", request_spec=worker_spec(),
+            )
+            cache.put_node(payload, node_output(), ModelCallMetrics())
+            self.assertEqual(node_output(), cache.get_node(payload).output)
+            self.assertFalse(tuple((root / "node").glob("*.tmp")))
+
     def test_node_and_router_round_trip_include_invalid_results(self):
         with tempfile.TemporaryDirectory() as directory:
             cache = JsonPredictionCache(directory)

@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "signature": {
+    "sample_id": "rlhfv-001052",
+    "task_pattern": "The parent criterion incorrectly prioritizes the mere presence of visual elements over their interpretive accuracy and relevance to the question.",
+    "visual_focus": "The parent criterion focuses on whether candidates mention any visual elements, without evaluating whether those elements are correctly interpreted or directly relevant to the question of passenger pickup.",
+    "candidate_difference": "Candidate A avoids referencing specific visual elements, while Candidate B references a bus stop under a bridge and nearby people — but these elements are not clearly visible or verifiable in the image, making B’s grounding misleading.",
+    "parent_failure": "The parent criterion failed to distinguish between correct and incorrect visual grounding. It rewarded Candidate B for mentioning any visual elements, even though those elements are ambiguous or not clearly observable, while penalizing Candidate A for not mentioning them — despite A’s more cautious, accurate interpretation based on what is actually visible.",
+    "suggested_subdomain": "visual_grounding_accuracy"
+  },
+  "raw_response": "{\n  \"sample_id\": \"rlhfv-001052\",\n  \"task_pattern\": \"The parent criterion incorrectly prioritizes the mere presence of visual elements over their interpretive accuracy and relevance to the question.\",\n  \"visual_focus\": \"The parent criterion focuses on whether candidates mention any visual elements, without evaluating whether those elements are correctly interpreted or directly relevant to the question of passenger pickup.\",\n  \"candidate_difference\": \"Candidate A avoids referencing specific visual elements, while Candidate B references a bus stop under a bridge and nearby people — but these elements are not clearly visible or verifiable in the image, making B’s grounding misleading.\",\n  \"parent_failure\": \"The parent criterion failed to distinguish between correct and incorrect visual grounding. It rewarded Candidate B for mentioning any visual elements, even though those elements are ambiguous or not clearly observable, while penalizing Candidate A for not mentioning them — despite A’s more cautious, accurate interpretation based on what is actually visible.\",\n  \"suggested_subdomain\": \"visual_grounding_accuracy\"\n}",
+  "parse_error": null,
+  "attempt_count": 1,
+  "metrics": {
+    "logical_evaluations": 1,
+    "api_attempts": 1,
+    "parse_retries": 0,
+    "input_tokens": 689,
+    "output_tokens": 211,
+    "total_tokens": 900,
+    "usage_complete": true,
+    "call_latency_seconds": 11.42790719999175,
+    "estimated_cost_usd": null,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "error_count": 0
+  },
+  "request_spec": {
+    "schema_version": "1.0.0",
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+    "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+    "decoding_config": {
+      "temperature": 0.2,
+      "seed": 42
+    },
+    "prompt_version": "1.0.0",
+    "parser_version": "1.0.0"
+  }
+}

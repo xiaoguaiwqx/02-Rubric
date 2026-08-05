@@ -231,7 +231,11 @@ class JsonPredictionCache:
             "output": dict(output),
             "generation_metrics": generation_metrics.to_dict(),
         }
-        temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+        # Keep the temporary name short.  Repeating the 64-character cache key
+        # here can push otherwise valid cache paths beyond Windows MAX_PATH.
+        # The file remains in the destination directory, so os.replace stays
+        # atomic without embedding the key in the temporary filename.
+        temporary = path.with_name(f".{uuid.uuid4().hex}.tmp")
         try:
             temporary.write_text(
                 json.dumps(payload, indent=2, ensure_ascii=False, allow_nan=False),

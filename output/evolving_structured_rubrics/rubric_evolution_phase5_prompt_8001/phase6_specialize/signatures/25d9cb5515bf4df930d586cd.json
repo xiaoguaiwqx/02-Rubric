@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "signature": {
+    "sample_id": "rlhfv-000042",
+    "task_pattern": "The parent criterion failed to account for the subjective interpretation of facial expressions and background context as valid visual grounding elements when they are ambiguous or contextually misleading.",
+    "visual_focus": "The parent criterion prioritized observable, verifiable details (suit, tie, serious expression) while dismissing interpretations that, though not directly verifiable, are grounded in visual cues (e.g., background shelves, expression tone).",
+    "candidate_difference": "Candidate A only referenced verifiable visual elements (suit, tie, serious expression), while Candidate B added contextually grounded but unsupported interpretations (warehouse, arrogant expression) that, though inaccurate, better aligned with the human-preferred answer by reflecting the image’s actual visual cues (e.g., background shelves, expression tone).",
+    "parent_failure": "The parent criterion failed to distinguish between grounded visual interpretation and unsupported inference, misjudging Candidate B’s use of contextually relevant visual cues (e.g., background shelves, expression tone) as invalid, despite their alignment with the human-preferred answer.",
+    "suggested_subdomain": "visual_contextual_inference"
+  },
+  "raw_response": "{\n  \"sample_id\": \"rlhfv-000042\",\n  \"task_pattern\": \"The parent criterion failed to account for the subjective interpretation of facial expressions and background context as valid visual grounding elements when they are ambiguous or contextually misleading.\",\n  \"visual_focus\": \"The parent criterion prioritized observable, verifiable details (suit, tie, serious expression) while dismissing interpretations that, though not directly verifiable, are grounded in visual cues (e.g., background shelves, expression tone).\",\n  \"candidate_difference\": \"Candidate A only referenced verifiable visual elements (suit, tie, serious expression), while Candidate B added contextually grounded but unsupported interpretations (warehouse, arrogant expression) that, though inaccurate, better aligned with the human-preferred answer by reflecting the image’s actual visual cues (e.g., background shelves, expression tone).\",\n  \"parent_failure\": \"The parent criterion failed to distinguish between grounded visual interpretation and unsupported inference, misjudging Candidate B’s use of contextually relevant visual cues (e.g., background shelves, expression tone) as invalid, despite their alignment with the human-preferred answer.\",\n  \"suggested_subdomain\": \"visual_contextual_inference\"\n}",
+  "parse_error": null,
+  "attempt_count": 1,
+  "metrics": {
+    "logical_evaluations": 1,
+    "api_attempts": 1,
+    "parse_retries": 0,
+    "input_tokens": 853,
+    "output_tokens": 247,
+    "total_tokens": 1100,
+    "usage_complete": true,
+    "call_latency_seconds": 12.872117600010824,
+    "estimated_cost_usd": null,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "error_count": 0
+  },
+  "request_spec": {
+    "schema_version": "1.0.0",
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+    "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+    "decoding_config": {
+      "temperature": 0.2,
+      "seed": 42
+    },
+    "prompt_version": "1.0.0",
+    "parser_version": "1.0.0"
+  }
+}

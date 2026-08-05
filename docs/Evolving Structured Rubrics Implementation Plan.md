@@ -482,9 +482,13 @@ decisive wrong samples
 
 ErrorSignature 保存 task pattern、visual focus、candidate difference、parent failure 和 suggested subdomain。Cluster 必须引用完整且互斥的 sample IDs，每个 cluster 至少包含5条样本，并说明共同判断失败而不是共同图片主题；每条 wrong sample 必须进入一个 cluster 或显式进入 unclustered。由于 Specialize 保留 parent，不要求有效 clusters 覆盖固定比例的 wrong samples。
 
+三个 Manager 阶段分别冻结 model、backend pool、输入模态和 request identity。第一轮由本地 Qwen3-VL-8B 生成多模态 ErrorSignature；语义聚类与 child 生成使用硅基流动 Qwen3.5-397B-A17B 的思考模式。后两个阶段使用文本输入，child 阶段读取代表样本的 question/A/B/gold 与 signatures，不发送图片。聚类采用 v1 的一次完整 partition 输出（temperature=0.2），不做事后 repair、自动合并或小簇降级；child 生成使用 temperature=0.7。这样聚类失败保持可见，同时允许仅通过配置替换 Manager，而不改变算子语义。
+
 Specialize 保留 parent，children 数量严格等于有效 cluster 数量，不设置目标数量：有效 cluster 少于2个则不触发 Specialize，存在2–5个则分别生成2–5个 children。`max_children=5` 只是结构上限，不允许为了达到上限强行拆分；超出上限的模式进入 unclustered。第一版所有新 edges 固定为 `ALWAYS`，不同时优化 Gate/Child Router；examples 只供 Manager、lineage 和审计，不进入 Pairwise prompt。无论 children 数量多少，整棵 root subtree 仍最多贡献一票。接受报告包含 cluster support、child accuracy、非目标 abstain、sibling agreement、child correction/harm 和完整 M1。
 
 首个单算子验证对象固定为 `visual_grounding_and_details`。它在 discovery-90 上的 accuracy/coverage/support/wrong 为 `0.6966/0.9889/89/27`，满足触发条件，并且已有实验观察表明视觉 grounding 错误可以形成多个可解释子域。具体 children 仍必须从这27条真实 wrong samples 的 ErrorSignatures 中归纳，不能预先硬编码类别。
+
+当前已实现 Specialize v1 的严格 Manager 协议、trigger、ErrorSignature/cluster/child schema、确定性 Patch、局部 Pairwise artifact 拼装、机制诊断与完整 M1 接受逻辑。真实运行仍按 signatures → cluster review → child proposal → evaluate 分阶段进行；在完成 discovery-90 单算子实验前，不将本项标记为端到端通过。
 
 ### 9.3 Create
 

@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "signature": {
+    "sample_id": "rlhfv-000478",
+    "task_pattern": "Misjudging relative anatomical positions by conflating mid-leg with knee-level due to visual ambiguity in waterline.",
+    "visual_focus": "The waterline on the lower legs of two people standing in shallow ocean water.",
+    "candidate_difference": "Candidate A describes water at 'middle of legs' while Candidate B says 'near knees'; the human preference favors B as more accurate anatomically and visually grounded.",
+    "parent_failure": "The parent failed to recognize that 'middle of legs' is anatomically ambiguous and visually indistinct from 'near knees' in shallow water, leading to a misjudgment of visual grounding based on a misleadingly precise but inaccurate descriptor.",
+    "suggested_subdomain": "Anatomical landmark precision in visual grounding"
+  },
+  "raw_response": "{\n  \"sample_id\": \"rlhfv-000478\",\n  \"task_pattern\": \"Misjudging relative anatomical positions by conflating mid-leg with knee-level due to visual ambiguity in waterline.\",\n  \"visual_focus\": \"The waterline on the lower legs of two people standing in shallow ocean water.\",\n  \"candidate_difference\": \"Candidate A describes water at 'middle of legs' while Candidate B says 'near knees'; the human preference favors B as more accurate anatomically and visually grounded.\",\n  \"parent_failure\": \"The parent failed to recognize that 'middle of legs' is anatomically ambiguous and visually indistinct from 'near knees' in shallow water, leading to a misjudgment of visual grounding based on a misleadingly precise but inaccurate descriptor.\",\n  \"suggested_subdomain\": \"Anatomical landmark precision in visual grounding\"\n}",
+  "parse_error": null,
+  "attempt_count": 1,
+  "metrics": {
+    "logical_evaluations": 1,
+    "api_attempts": 1,
+    "parse_retries": 0,
+    "input_tokens": 624,
+    "output_tokens": 180,
+    "total_tokens": 804,
+    "usage_complete": true,
+    "call_latency_seconds": 3.737407599997823,
+    "estimated_cost_usd": null,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "error_count": 0
+  },
+  "request_spec": {
+    "schema_version": "1.0.0",
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+    "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+    "decoding_config": {
+      "temperature": 0.2,
+      "seed": 42
+    },
+    "prompt_version": "1.0.0",
+    "parser_version": "1.0.0"
+  }
+}

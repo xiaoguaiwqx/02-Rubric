@@ -39,6 +39,14 @@ class BackendPoolTest(unittest.TestCase):
                 ),
             )
 
+    def test_single_endpoint_pool_is_supported_for_stage_specific_managers(self):
+        spec = BackendPoolSpec(
+            "strong-manager", "checkpoint", 1,
+            (BackendEndpointSpec("only", "http://manager/v1", "/model", 1),),
+        )
+        self.assertEqual(len(spec.endpoints), 1)
+        self.assertIn("strong-manager", spec.backend_id)
+
     def test_first_available_slots_enforce_endpoint_and_global_limits(self):
         active = {"http://a/v1": 0, "http://b/v1": 0}
         maximum = dict(active)

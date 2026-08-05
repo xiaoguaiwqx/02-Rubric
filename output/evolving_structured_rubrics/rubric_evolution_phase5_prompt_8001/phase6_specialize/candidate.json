@@ -1,0 +1,668 @@
+{
+  "schema_version": "1.0.0",
+  "parent_node_id": "init_02_visual_grounding_and_details",
+  "edit_candidate": {
+    "schema_version": "1.0.0",
+    "candidate_id": "specialize_94b7440e6cb9",
+    "operator": "specialize",
+    "rationale": "Specialize visual_grounding_and_details into 5 error subdomains",
+    "patch": {
+      "schema_version": "1.0.0",
+      "base_rubric_sha256": "88f831f700967c31d22941b2cc660d9b48034bb3310706fe3124781ba53a09c8",
+      "upsert_nodes": [
+        {
+          "node_id": "init_02_visual_grounding_and_details__contextual_inference_semantics__af741d1570",
+          "criterion": {
+            "name": "contextual_semantic_accuracy",
+            "description": "Criterion focus: Evaluates the accuracy and plausibility of semantic labels and contextual inferences derived from visual cues, rather than just the presence of observable elements.\n\nApplicable only when: Candidates differ in their interpretation of visual elements' meaning, function, or context (e.g., labeling text purpose, inferring activity from posture, identifying icons vs. generic shapes).\n\nNot applicable when: Differences are purely about object detection counts, colors, or spatial layout without semantic interpretation, or when inferences are pure hallucinations unrelated to any visual cues.\n\nDecision rule: Prefer the candidate that offers semantically accurate labels and contextually plausible inferences grounded in visual cues. If one candidate makes a reasonable inference (e.g., text function, activity context) supported by visual evidence while the other makes a semantically inaccurate claim (e.g., misidentifying a logo) or forces an unsupported object association to appear grounded, prefer the former. Return None if both offer equally plausible interpretations or if the difference is purely stylistic.",
+            "score": 1.0
+          },
+          "examples": [
+            {
+              "sample_id": "rlhfv-000277",
+              "question": "How do the elements in the image relate to each other in terms of positioning or composition?",
+              "A": "The elements in the image are well-positioned and complement each other. The white background provides a neutral and simple setting for the white text in the logo, while the overall shape of the text is well-suited to the logo design. The font used in the image also contrasts, displayed in black, which enhances the overall effect of the logo and emphasizes its modern, clean style. The combination of white and black creates a striking contrast, adding visual interest and sophistication to the overall appearance of the image.",
+              "B": "The elements in the image are well-positioned and complement each other. The white background provides a neutral and simple setting for the black text of the website, while the font of the text is very clean. The color of the font used in the image contrasts with the background color, and the text color is black, which enhances the overall effect of the image and emphasizes its modern, clean style. The combination of white and black creates a striking contrast, adding visual interest and sophistication to the overall appearance of the image.",
+              "gold": "B",
+              "signature_summary": "The parent criterion failed to recognize that Candidate B’s mention of 'website' text is not a visual element but a semantic label that is contextually appropriate and does not violate visual grounding. The parent incorrectly assumed that labeling text as 'website' text is a visual misstep, when it is actually a correct contextual interpretation that aligns with the image’s purpose.",
+              "image_sha256": "3764241ad99352cd273a41483943d28ed744e19cdcde9a4517c813d83b6926c7"
+            },
+            {
+              "sample_id": "rlhfv-003218",
+              "question": "Create a thorough description describing the given image. Include the text contents and the information they convey in the description.",
+              "A": "The image features a white keyboard with a small piece of paper or card placed on top of it. The paper has \"Flickr\" written on it, indicating that it might be related to the popular photo-sharing platform. There is also a human-shaped pattern visible on the card, which could be an icon associated with Flickr. This could suggest that the person using the computer may have been browsing or working with images from Flickr, or perhaps they were organizing their digital content.",
+              "B": "The image features a white keyboard with a small piece of paper or card placed on top of it. The paper has \"Flickr\" written on it, indicating that it might be related to the popular photo-sharing platform. There is also the Flickr's logo visible on the card. This could suggest that the person using the computer may have been browsing or working with images from Flickr, or perhaps they were organizing their digital content.",
+              "gold": "A",
+              "signature_summary": "The parent criterion failed to recognize that the human-shaped silhouette is not the Flickr logo, and instead penalized Candidate A for not identifying it as such, despite Candidate A's description being more accurate and aligned with the actual visual content. The parent criterion conflated 'visual grounding' with 'identifying standard logos', ignoring the nuance of visual interpretation.",
+              "image_sha256": "590e192f27ac7a4134e6277f0b2c2ba85d1034c658fd770097267a033d6a533e"
+            },
+            {
+              "sample_id": "rlhfv-004830",
+              "question": "Why aren't two of the individuals in the picture wearing jerseys?",
+              "A": "There are no people wearing jerseys in the photo, which could be because they are not players, or it might be because this is a casual activity rather than a professional game, or perhaps they simply forgot to wear jerseys. The team seems to be mainly composed of frisbee players, or it could be that they are all spectators of a frisbee competition.",
+              "B": "In the photo, there are two people not wearing jerseys, which could be because they are not players. The team seems to be mainly composed of frisbee players, and players usually wear jerseys to identify themselves as part of the team. In this case, these two individuals might not be part of the team, but are present for other reasons.",
+              "gold": "A",
+              "signature_summary": "The parent criterion failed to distinguish human preference because it conflated 'mentioning a visual fact' with 'grounding analysis in visual details'. It penalized Candidate A for not referencing visual evidence, while Candidate B’s inference about team identity is unsupported by visual context, yet was rewarded for mentioning the visual fact.",
+              "image_sha256": "f00dc8b73b66522212d80ecf1e67adf5d51c7f9c9aa325933b1c47c2aeb07492"
+            }
+          ],
+          "lineage": {
+            "operator": "specialize",
+            "parent_node_id": "init_02_visual_grounding_and_details",
+            "cluster": {
+              "cluster_id": "contextual_inference_semantics",
+              "label": "Contextual Inference and Semantics",
+              "shared_failure": "The parent criterion fails to recognize valid contextual inferences, semantic labels, or non-literal visual interpretations that align with human understanding, often penalizing them for not being strictly 'visual' or explicit.",
+              "distinction": "Focuses on the interpretation of meaning, intent, or context derived from visual cues, rather than strict object identification or spatial geometry.",
+              "sample_ids": [
+                "rlhfv-000277",
+                "rlhfv-003218",
+                "rlhfv-004830",
+                "rlhfv-000042",
+                "rlhfv-004571",
+                "rlhfv-000628"
+              ]
+            },
+            "rationale": "This criterion is narrower than the parent because it specifically targets the interpretation of visual details (semantics/context) rather than the mere presence of visual details. It addresses the cluster's shared failure where the parent penalizes valid inferences or accurate semantic labels for not being 'strictly visual' enough, while rewarding literal but semantically inaccurate descriptions. It helps the judge distinguish between grounded inference and hallucination, prioritizing human-aligned understanding over rigid object listing.",
+            "specialize_version": "1.0.0"
+          }
+        },
+        {
+          "node_id": "init_02_visual_grounding_and_details__object_attribute_identification__92317b4a61",
+          "criterion": {
+            "name": "object_attribute_verification",
+            "description": "Criterion focus: Evaluates the factual accuracy of specific object attributes including counts, materials, clothing details, and identity claims against observable visual evidence.\n\nApplicable only when: Candidates make conflicting claims about quantifiable object properties (e.g., number of objects, material composition, clothing items, object identity) that can be directly verified against the image.\n\nNot applicable when: Differences are purely stylistic or descriptive flair, both candidates make equally accurate attribute claims, claims involve semantic interpretation rather than observable attributes, or attribute claims cannot be visually verified from the image.\n\nDecision rule: Prefer the candidate whose object attribute claims (counts, materials, clothing, identity) more accurately match the visual evidence. If both candidates make equally accurate or equally inaccurate attribute claims, or if the image quality prevents reliable verification, return None.",
+            "score": 1.0
+          },
+          "examples": [
+            {
+              "sample_id": "rlhfv-000082",
+              "question": "How do the elements in the image relate to each other in terms of positioning or composition?",
+              "A": "In the image, the spacious, dark room features a couch situated near a wooden table. There are several lamps placed around the room, some near the couch and others near the wooden table. Additionally, a television is visible in the room. The overall composition of these elements creates a cozy and inviting atmosphere, with the couch and wooden table serving as focal points for relaxation and socializing. The lamps, positioned strategically, add warmth and ambiance to the space, while the television offers entertainment options. Overall, the elements in the room are thoughtfully placed and designed to enhance the room's functionality and aesthetics.",
+              "B": "In the image, the spacious, semi-dark room features two couches situated near a wooden table. There are several lamps placed around the room, one is on the left side of the image and another one is in the middle. Additionally, a television is visible in the room. The overall composition of these elements creates a cozy and inviting atmosphere, with the couches and wooden table serving as focal points for relaxation and socializing. The lamps, positioned strategically, add warmth and ambiance to the space, while the television offers entertainment options. Overall, the elements in the room are thoughtfully placed and designed to enhance the room's functionality and aesthetics.",
+              "gold": "B",
+              "signature_summary": "The parent criterion failed to distinguish the human-preferred answer because it relied on an inaccurate interpretation of the image’s content, assuming Candidate A’s description was more visually grounded when it was actually less accurate.",
+              "image_sha256": "e599d2c0b47c8e47217becd0ed0a486afeb2f201c3c7fda6f0ed1caad550b689"
+            },
+            {
+              "sample_id": "rlhfv-002829",
+              "question": "Create a detailed description describing the elements of the given worldwide landmark image. Identify the name of the landmark and describe the objects, colors, perspectives, etc.",
+              "A": "The image features the iconic London Bridge, a large bridge spanning across the River Thames. Today the bridge is made of concrete, and has two towers in the middle, both of the same height. It connects the Borough High Street of Southwark to the King William Street in the City of London, facilitating the crossing of vehicles and pedestrians across the Thames.\n\nSeveral boats can be seen in the water near the lower right corner of the image, adding to the lively atmosphere of the scene. There are also two traffic lights on the bridge, further emphasizing its importance as a transportation hub for both locals and tourists alike.",
+              "B": "The image features the iconic London Bridge, a large bridge spanning across the city of London. The bridge is made of stone and has towers at both ends, with one tower being taller than the other. It connects the City of London and Southwark, allowing vehicles and pedestrians to cross the Thames.\n\nSeveral boats can be seen in the water under the bridge, adding to the lively atmosphere of the scene. There are also several cars crossing the bridge, further emphasizing its importance as a transportation hub for both locals and tourists alike.",
+              "gold": "A",
+              "signature_summary": "The parent criterion failed to distinguish the human-preferred answer because it incorrectly prioritized the misidentification of the landmark (London Bridge vs. Tower Bridge) as a secondary issue, while overlooking that Candidate A's description of the bridge's material and tower placement contradicts the visual evidence, making it less grounded.",
+              "image_sha256": "e49ee63958444b9e7cdc13c0ee64293b2a3f766448171fc79fe67520f8d37685"
+            },
+            {
+              "sample_id": "rlhfv-000932",
+              "question": "Analyze the image and provide a comprehensive description of the celebrity's appearance and attire.",
+              "A": "The image features a male celebrity with a very short haircut, giving him a comical appearance. He is dressed in a black jacket, paired with a white undershirt. The celebrity is smiling, as he sits inside a black limousine with one of its windows open, and he is poking his head out of the window.",
+              "B": "The image features a male celebrity with a very short haircut, giving him a comical appearance. He is dressed in a black suit, paired with a black bow tie. The celebrity appears to be smiling as he sits inside a black limousine with one of its windows slightly open.",
+              "gold": "A",
+              "signature_summary": "The parent criterion failed to distinguish the human-preferred answer because it prioritized the assumption of a formal suit over the observable visual evidence of a white collar and lack of bow tie, which strongly supports Candidate A's description.",
+              "image_sha256": "ea5a9f2060a17e6ce4dd4a5e74dfabc174af950c31146e9f90d4ee799bc4b311"
+            }
+          ],
+          "lineage": {
+            "operator": "specialize",
+            "parent_node_id": "init_02_visual_grounding_and_details",
+            "cluster": {
+              "cluster_id": "object_attribute_identification",
+              "label": "Object and Attribute Identification",
+              "shared_failure": "The parent criterion fails to verify specific object identities or attributes (count, material, clothing), often accepting incorrect or generic descriptions over precise visual evidence.",
+              "distinction": "Centers on the accuracy of naming, counting, or describing specific physical properties of objects within the scene.",
+              "sample_ids": [
+                "rlhfv-000082",
+                "rlhfv-002829",
+                "rlhfv-000932",
+                "rlhfv-000837",
+                "rlhfv-000740"
+              ]
+            },
+            "rationale": "This criterion is narrower than the parent visual_grounding_and_details because it specifically targets verification of concrete object attributes (counts, materials, clothing, identity) rather than general visual referencing. The parent accepts any visual grounding, but this criterion distinguishes accurate from inaccurate attribute claims, addressing the cluster's shared failure where incorrect or generic descriptions are accepted over precise visual evidence.",
+            "specialize_version": "1.0.0"
+          }
+        },
+        {
+          "node_id": "init_02_visual_grounding_and_details__spatial_structural_grounding__383ede1df7",
+          "criterion": {
+            "name": "spatial_structural_accuracy",
+            "description": "Criterion focus: Evaluates the accuracy of spatial relationships, geometric arrangements, depth positioning, and physical postures/structures described in candidates against observable visual evidence.\n\nApplicable only when: Candidates make conflicting claims about spatial relationships (e.g., left/right, front/behind, center/edge), geometric arrangements (e.g., curved vs straight, orderly vs scattered), depth positioning (foreground vs background), or physical postures/structures (e.g., leg positions, body stance, structural elements like ceiling vs shelf) that can be visually verified.\n\nNot applicable when: Differences are purely about object identity, semantic interpretation, object counts, material attributes, or contextual inferences already covered by sibling criteria (contextual_semantic_accuracy, object_attribute_verification), or when spatial claims cannot be reliably verified from the image.\n\nDecision rule: Prefer the candidate whose spatial and structural descriptions more accurately match the visual evidence regarding positions, arrangements, depth, and postures. If both candidates make equally accurate or equally inaccurate spatial claims, or if the image quality prevents reliable verification of spatial relationships, return None.",
+            "score": 1.0
+          },
+          "examples": [
+            {
+              "sample_id": "rlhfv-002695",
+              "question": "How do the elements in the image relate to each other in terms of positioning or composition?",
+              "A": "In the image, there is a dog lying on top of a bed next to a cat. The dog occupies a larger portion of the image, while the cat is closer to the right side of the image. Both animals seem to be resting comfortably, with the dog taking up most of the space on the bed, and the cat being more compactly placed near the edge. This composition creates a sense of harmony between the two animals, as they share the same space peacefully, showcasing their coexistence and companionship.",
+              "B": "In the image, there is a dog lying on top of a bed next to a cat. The dog is positioned in the center of the image, while the cat is closer to the right side of the image. Both animals seem to be resting comfortably, with the dog taking up a small portion of the space on the bed near the edge, and the cat being more compactly placed next to the dog. This composition creates a sense of harmony between the two animals, as they share the same space peacefully, showcasing their coexistence and companionship.",
+              "gold": "B",
+              "signature_summary": "The parent criterion failed to recognize that Candidate A’s description contains a critical visual misrepresentation of the dog’s position and relative size, which directly contradicts the image. The parent prioritized 'detail' over visual accuracy, missing that the error in Candidate A undermines the very foundation of visual grounding.",
+              "image_sha256": "309ffeac9c28e54bf459e8a14a1970af5facc4d657d06a98001c9cba5fcd510e"
+            },
+            {
+              "sample_id": "rlhfv-002726",
+              "question": "How do the elements in the image relate to each other in terms of positioning or composition?",
+              "A": "The horses and jockeys in the image are lined up, racing along a curved track. They are arranged in an orderly manner, maintaining a consistent distance from one another. The arrangement of the horses creates an impression of motion and speed, as they all lean into the bend on the track. The overall composition of the image emphasizes the thrill of the race and the agility of the horses as they navigate the track.",
+              "B": "The horses and jockeys in the image are mixed together, racing along a straight track. They are driven by the jockeys at different speeds, not maintaining a consistent distance from one another. The arrangement of the horses creates an impression of motion and speed, as they all gallop on the track. The overall composition of the image emphasizes the thrill of the race and the agility of the horses as they navigate the track.",
+              "gold": "B",
+              "signature_summary": "The parent criterion failed to distinguish the human-preferred answer because it misinterpreted the visual evidence: the track is clearly curved, and the horses are not in a straight line or uniformly spaced — Candidate B’s description is factually accurate, while Candidate A’s is misleading. The parent incorrectly assumed Candidate A’s description was 'aligned with visual evidence' when it was not.",
+              "image_sha256": "a5e9eda0d3be37978d7eeeca270771874f964092d60715e0fd1ca5566079a41c"
+            },
+            {
+              "sample_id": "rlhfv-004995",
+              "question": "Is the horse standing on its hind legs or standing normally on all four legs?",
+              "A": "The blue horse in the image is standing normally on its four legs. It appears to be in a stable position, with all four hooves firmly planted on the ground. The horse is not in a raised or elevated position.",
+              "B": "The blue horse in the image has its legs bent and is maintaining its current posture by relying on all four legs. It appears to be in a stable position, with all four hooves firmly planted on the ground. The horse's body is not in a raised or elevated position.",
+              "gold": "B",
+              "signature_summary": "The parent failed to recognize that 'legs bent' is a valid, visually grounded observation that aligns with the horse's posture, and incorrectly labeled it as unsupported, thereby misjudging the human-preferred answer.",
+              "image_sha256": "e99bfafebb08e524fe16363edf2dbfb07c885e5897d655cefbc52f8ef7d1b9c3"
+            }
+          ],
+          "lineage": {
+            "operator": "specialize",
+            "parent_node_id": "init_02_visual_grounding_and_details",
+            "cluster": {
+              "cluster_id": "spatial_structural_grounding",
+              "label": "Spatial and Structural Grounding",
+              "shared_failure": "The parent criterion misjudges spatial relationships, structural arrangements, or physical postures, favoring subjective or incorrect descriptions over accurate visual geometry.",
+              "distinction": "Specific to the geometric arrangement, depth, position, and physical structure of elements rather than their identity or semantic meaning.",
+              "sample_ids": [
+                "rlhfv-002695",
+                "rlhfv-002726",
+                "rlhfv-004995",
+                "rlhfv-000764",
+                "rlhfv-000478",
+                "rlhfv-001347"
+              ]
+            },
+            "rationale": "This criterion is narrower than the parent 'visual_grounding_and_details' by focusing exclusively on spatial relationships, geometric arrangements, depth, and physical structures rather than all observable elements. It directly targets the cluster's shared failure mode where the parent misjudges spatial relationships, structural arrangements, or physical postures. Unlike sibling criteria that handle semantic interpretation or object attributes, this criterion isolates geometric and positional accuracy, which is the core distinction in samples like rlhfv-002695 (dog positioning), rlhfv-002726 (track curvature), and rlhfv-004995 (leg posture).",
+            "specialize_version": "1.0.0"
+          }
+        },
+        {
+          "node_id": "init_02_visual_grounding_and_details__ambiguity_evidence_standards__3b400af44c",
+          "criterion": {
+            "name": "evidence_uncertainty_handling",
+            "description": "Criterion focus: Evaluates how candidates handle ambiguous, missing, or symbolic visual evidence, distinguishing between appropriately cautious interpretations and overconfident speculation beyond what is visually verifiable.\n\nApplicable only when: Candidates differ in their treatment of uncertain visual elements (e.g., claiming visibility of ambiguous features, interpreting symbolic representations as literal objects, or drawing inferences from absent/unclear evidence).\n\nNot applicable when: Visual evidence is clear and unambiguous, differences are purely about object counts/colors already covered by sibling criteria, or both candidates exhibit equal levels of appropriate uncertainty or speculation.\n\nDecision rule: Prefer the candidate that appropriately acknowledges uncertainty when visual evidence is ambiguous or absent, avoids overconfident claims about unverifiable elements, and correctly interprets symbolic/contextual representations without treating them as literal objects. If both candidates handle uncertainty equally well or poorly, or if the image quality prevents reliable assessment of evidence ambiguity, return None.",
+            "score": 1.0
+          },
+          "examples": [
+            {
+              "sample_id": "rlhfv-001052",
+              "question": "Can you tell if the bus is picking up passengers?",
+              "A": "Based on the image, I cannot definitively say whether the bus is picking up passengers. Because I can't see the bus stop sign and nearby passengers, and the bus in the picture is relatively vague compared to other elements, the bus may be in the process of driving.",
+              "B": "Based on the picture, I cannot definitively say whether the bus is picking up passengers. However, since the bus is parked at a bus stop under a bridge, and there are a few people nearby, the bus may be waiting to pick up passengers, or it may have just let them off at this spot.",
+              "gold": "A",
+              "signature_summary": "The parent criterion failed to distinguish between correct and incorrect visual grounding. It rewarded Candidate B for mentioning any visual elements, even though those elements are ambiguous or not clearly observable, while penalizing Candidate A for not mentioning them — despite A’s more cautious, accurate interpretation based on what is actually visible.",
+              "image_sha256": "49648e6a68da6bee8855ca6634939c174f651bad2489343118757ed3c8687351"
+            },
+            {
+              "sample_id": "rlhfv-000150",
+              "question": "What is just out of frame on the left with one blue corner showing?",
+              "A": "On the left side of the screen, there is a picnic table with a sun umbrella, you can see its blue corner in the image. This table and umbrella could be part of a campsite or outdoor gathering area.",
+              "B": "There is likely a tent on the left side of the frame, and you can see its blue corner in the image. The tent is probably part of a campsite or an outdoor gathering area. Two motorcycles can also be seen in the scene.",
+              "gold": "B",
+              "signature_summary": "The parent criterion incorrectly prioritized Candidate A’s plausible but unsupported inference over Candidate B’s accurate visual grounding, failing to penalize the introduction of non-visual details that mislead the analysis.",
+              "image_sha256": "525dea99be404b3961d3c1fa34bceb67e0022117723ee3181ce01f1921f4eed1"
+            },
+            {
+              "sample_id": "rlhfv-000449",
+              "question": "Has it snowed recently?",
+              "A": "No, you can't tell from the picture that it has recently snowed because there are no traces of snow on the parking sign next to a nearby tree.",
+              "B": "Yes, it seems that it has recently snowed in this area, as the parking sign next to a nearby tree has been partially covered by snow.",
+              "gold": "A",
+              "signature_summary": "The parent criterion failed to recognize that the absence of snow on the sign (or ground) does not necessarily imply no recent snowfall, and that Candidate A’s cautious interpretation aligns with human preference by avoiding overinterpretation of ambiguous visual cues.",
+              "image_sha256": "6aa880cafb34fee121b273ba096052889442b199ee6eef3b636e60d090ddacf2"
+            }
+          ],
+          "lineage": {
+            "operator": "specialize",
+            "parent_node_id": "init_02_visual_grounding_and_details",
+            "cluster": {
+              "cluster_id": "ambiguity_evidence_standards",
+              "label": "Ambiguity and Evidence Standards",
+              "shared_failure": "The parent criterion fails to apply consistent standards when visual evidence is ambiguous, missing, or symbolic, often rewarding speculation or misinterpreting symbolic representations as literal.",
+              "distinction": "Addresses how the criterion handles uncertainty, absence of evidence, or symbolic content, distinguishing between grounded inference and unsupported guessing.",
+              "sample_ids": [
+                "rlhfv-003046",
+                "rlhfv-001052",
+                "rlhfv-000150",
+                "rlhfv-000307",
+                "rlhfv-000449"
+              ]
+            },
+            "rationale": "This criterion is narrower than the parent 'visual_grounding_and_details' because it specifically targets how candidates handle uncertainty and ambiguity in visual evidence, rather than general visual referencing. It addresses the cluster's shared failure where the parent rewards mere mention of visual elements without evaluating whether those claims are appropriately cautious given evidence quality. The criterion distinguishes grounded inference from unsupported speculation, which is the core distinction in this error cluster.",
+            "specialize_version": "1.0.0"
+          }
+        },
+        {
+          "node_id": "init_02_visual_grounding_and_details__task_relevance_priorities__ffa318a407",
+          "criterion": {
+            "name": "task_prioritized_visual_accuracy",
+            "description": "Criterion focus: Evaluates whether visual grounding appropriately prioritizes factual accuracy and question-relevance over detail quantity, ensuring that visual claims serve the task's core requirements rather than superficial grounding.\n\nApplicable only when: Candidates differ in how they weight visual accuracy versus detail quantity relative to the question's demands, where one candidate's visual claims are more accurate and task-relevant while the other emphasizes volume of details, non-essential elements, or makes inaccurate visual claims.\n\nNot applicable when: Both candidates equally address task-relevant visual elements with similar accuracy, differences are purely stylistic without accuracy implications, or accuracy differences fall squarely under sibling criteria (object_attribute_verification, spatial_structural_accuracy) without task-prioritization concerns.\n\nDecision rule: Prefer the candidate whose visual grounding more accurately addresses the question's core requirements, even if less detailed. If one candidate provides accurate, task-relevant visual evidence while the other provides inaccurate or task-irrelevant visual details, prefer the former. Return None if both candidates equally balance accuracy and task-relevance in their visual grounding.",
+            "score": 1.0
+          },
+          "examples": [
+            {
+              "sample_id": "rlhfv-004979",
+              "question": "Can you describe the street view where the fire hydrant is located?",
+              "A": "The fire hydrant is located on a city street. The main color of the fire hydrant is silver, with a few trees providing some greenery. There are several cars driving along the street, and there is a traffic light in the distance. The scene is during the daytime, and it seems that there are visible numbers on the ground to the right of the fire hydrant.",
+              "B": "The fire hydrant is located at a city street corner. The surrounding area is mainly gray, with a few trees providing some greenery. There are several cars parked along the street, and there are two people in the distance. The scene seems to be during the daytime, and there are no visible numbers on the street.",
+              "gold": "A",
+              "signature_summary": "The parent criterion failed to distinguish the human-preferred answer because it prioritized superficial or ambiguous visual cues (e.g., 'gray surroundings', 'no visible numbers') over more salient, contextually accurate, and visually verifiable details (e.g., hydrant color, presence of painted markings). It misjudged the visual grounding of Candidate A by dismissing accurate observations as 'inaccuracies' without verifying their visual plausibility.",
+              "image_sha256": "b8d53c3208c1b8a83f81ccddb554674b76fe5ef956bb3cb122341ea5fa5b53c8"
+            },
+            {
+              "sample_id": "rlhfv-002699",
+              "question": "How do the elements in the image relate to each other in terms of positioning or composition?",
+              "A": "In this image, two men are standing next to each other, posing for a photo. One man is wearing a red shirt and has a rose in his mouth, while the other man is dressed in a suit with a tie. They appear to be enjoying themselves as they pose together. The background features chairs, a dining table, and a TV. The chairs are positioned on either side of the room, one near the left wall and the other closer to the right side. The dining table is located slightly off-center to the left in the room, and the TV is mounted on the wall above it. This arrangement creates a casual yet stylish atmosphere, with the focus being on the two men posing together.",
+              "B": "In the image, two men are standing next to each other, posing for a photo. One man is wearing a red inner layer and has a rose in his mouth, while the other man is dressed in a shirt with a tie. They appear to be enjoying themselves as they pose together. The background features chairs, balloons, and a light. The chairs are positioned in the lower right corner of the picture, with one apparently being sat on and the other three are respectively located to the left, right and front of this chair. The balloons are above the chairs, and the light is mounted on the ceiling. This arrangement creates a casual yet stylish atmosphere, with the focus being on the two men posing together.",
+              "gold": "B",
+              "signature_summary": "The parent criterion failed to distinguish the human-preferred answer because it prioritized surface-level detail and assumed accuracy based on verbosity, without verifying object identity or spatial relationships against the actual image.",
+              "image_sha256": "fb03eb1944c03204bf34eda34deec4d8890931882a75aac9bfcdac37913a10af"
+            },
+            {
+              "sample_id": "rlhfv-000541",
+              "question": "How do the elements in the image relate to each other in terms of positioning or composition?",
+              "A": "In the image, there are several pine tree branches covered with cold needles. These branches are arranged in a line, creating a sense of depth and structure within the composition. The icy needles add contrast and texture, making the branches appear even more detailed and intriguing. The arrangement of the branches and needles creates a balanced and harmonious composition, drawing the viewer's attention to the natural beauty of the icy pine tree branches.",
+              "B": "In the image, there are several pine tree branches covered with cold ice. These branches are arranged in a messy way, creating a sense of depth and structure within the composition. The icy needles add contrast and texture, making the branches appear even more detailed and intriguing. The presentation of the branches and needles creates a balanced and harmonious composition, drawing the viewer's attention to the natural beauty of the icy pine tree branches.",
+              "gold": "B",
+              "signature_summary": "The parent criterion incorrectly prioritized factual accuracy over aesthetic alignment with the image, failing to recognize that the human preference favors Candidate B for its more authentic visual description of the branch arrangement, even though it contains a minor factual deviation.",
+              "image_sha256": "6a7dfa261a37541d9b5a0a1424e89efd6fc4d5936491c73949d704cb9f8d4fbd"
+            }
+          ],
+          "lineage": {
+            "operator": "specialize",
+            "parent_node_id": "init_02_visual_grounding_and_details",
+            "cluster": {
+              "cluster_id": "task_relevance_priorities",
+              "label": "Task Relevance and Interpretation Priorities",
+              "shared_failure": "The parent criterion prioritizes the wrong aspect of the response (e.g., detail quantity, visual grounding of non-essentials, literal matching) over task relevance, factual accuracy, or aesthetic alignment.",
+              "distinction": "Concerns the hierarchy of evaluation criteria, such as valuing detail over truth, or visual description over direct factual answers to the prompt.",
+              "sample_ids": [
+                "rlhfv-004979",
+                "rlhfv-002699",
+                "rlhfv-000541",
+                "rlhfv-001002",
+                "rlhfv-001449"
+              ]
+            },
+            "rationale": "This criterion is narrower than the parent because it specifically evaluates the hierarchy of visual grounding priorities (accuracy and task-relevance over detail quantity) rather than just whether visual elements are referenced. It targets the cluster's shared failure where the parent criterion rewards superficial visual matching or detail volume over factual accuracy and question alignment, as seen in samples where candidates with fewer but more accurate details are preferred over those with more but inaccurate details.",
+            "specialize_version": "1.0.0"
+          }
+        }
+      ],
+      "remove_node_ids": [],
+      "add_edges": [
+        {
+          "parent_id": "init_02_visual_grounding_and_details",
+          "child_id": "init_02_visual_grounding_and_details__contextual_inference_semantics__af741d1570",
+          "condition": "always"
+        },
+        {
+          "parent_id": "init_02_visual_grounding_and_details",
+          "child_id": "init_02_visual_grounding_and_details__object_attribute_identification__92317b4a61",
+          "condition": "always"
+        },
+        {
+          "parent_id": "init_02_visual_grounding_and_details",
+          "child_id": "init_02_visual_grounding_and_details__spatial_structural_grounding__383ede1df7",
+          "condition": "always"
+        },
+        {
+          "parent_id": "init_02_visual_grounding_and_details",
+          "child_id": "init_02_visual_grounding_and_details__ambiguity_evidence_standards__3b400af44c",
+          "condition": "always"
+        },
+        {
+          "parent_id": "init_02_visual_grounding_and_details",
+          "child_id": "init_02_visual_grounding_and_details__task_relevance_priorities__ffa318a407",
+          "condition": "always"
+        }
+      ],
+      "remove_edges": [],
+      "root_ids": [
+        "init_01_completeness_and_coverage",
+        "init_02_visual_grounding_and_details",
+        "init_03_factuality_no_hallucination",
+        "init_04_creativity_and_expressiveness",
+        "init_05_clarity_and_coherence"
+      ]
+    }
+  },
+  "cluster_proposal": {
+    "schema_version": "1.0.0",
+    "clusters": [
+      {
+        "cluster_id": "contextual_inference_semantics",
+        "label": "Contextual Inference and Semantics",
+        "shared_failure": "The parent criterion fails to recognize valid contextual inferences, semantic labels, or non-literal visual interpretations that align with human understanding, often penalizing them for not being strictly 'visual' or explicit.",
+        "distinction": "Focuses on the interpretation of meaning, intent, or context derived from visual cues, rather than strict object identification or spatial geometry.",
+        "sample_ids": [
+          "rlhfv-000277",
+          "rlhfv-003218",
+          "rlhfv-004830",
+          "rlhfv-000042",
+          "rlhfv-004571",
+          "rlhfv-000628"
+        ]
+      },
+      {
+        "cluster_id": "object_attribute_identification",
+        "label": "Object and Attribute Identification",
+        "shared_failure": "The parent criterion fails to verify specific object identities or attributes (count, material, clothing), often accepting incorrect or generic descriptions over precise visual evidence.",
+        "distinction": "Centers on the accuracy of naming, counting, or describing specific physical properties of objects within the scene.",
+        "sample_ids": [
+          "rlhfv-000082",
+          "rlhfv-002829",
+          "rlhfv-000932",
+          "rlhfv-000837",
+          "rlhfv-000740"
+        ]
+      },
+      {
+        "cluster_id": "spatial_structural_grounding",
+        "label": "Spatial and Structural Grounding",
+        "shared_failure": "The parent criterion misjudges spatial relationships, structural arrangements, or physical postures, favoring subjective or incorrect descriptions over accurate visual geometry.",
+        "distinction": "Specific to the geometric arrangement, depth, position, and physical structure of elements rather than their identity or semantic meaning.",
+        "sample_ids": [
+          "rlhfv-002695",
+          "rlhfv-002726",
+          "rlhfv-004995",
+          "rlhfv-000764",
+          "rlhfv-000478",
+          "rlhfv-001347"
+        ]
+      },
+      {
+        "cluster_id": "ambiguity_evidence_standards",
+        "label": "Ambiguity and Evidence Standards",
+        "shared_failure": "The parent criterion fails to apply consistent standards when visual evidence is ambiguous, missing, or symbolic, often rewarding speculation or misinterpreting symbolic representations as literal.",
+        "distinction": "Addresses how the criterion handles uncertainty, absence of evidence, or symbolic content, distinguishing between grounded inference and unsupported guessing.",
+        "sample_ids": [
+          "rlhfv-003046",
+          "rlhfv-001052",
+          "rlhfv-000150",
+          "rlhfv-000307",
+          "rlhfv-000449"
+        ]
+      },
+      {
+        "cluster_id": "task_relevance_priorities",
+        "label": "Task Relevance and Interpretation Priorities",
+        "shared_failure": "The parent criterion prioritizes the wrong aspect of the response (e.g., detail quantity, visual grounding of non-essentials, literal matching) over task relevance, factual accuracy, or aesthetic alignment.",
+        "distinction": "Concerns the hierarchy of evaluation criteria, such as valuing detail over truth, or visual description over direct factual answers to the prompt.",
+        "sample_ids": [
+          "rlhfv-004979",
+          "rlhfv-002699",
+          "rlhfv-000541",
+          "rlhfv-001002",
+          "rlhfv-001449"
+        ]
+      }
+    ],
+    "unclustered_sample_ids": [],
+    "raw_response": "{\n  \"clusters\": [\n    {\n      \"cluster_id\": \"contextual_inference_semantics\",\n      \"label\": \"Contextual Inference and Semantics\",\n      \"shared_failure\": \"The parent criterion fails to recognize valid contextual inferences, semantic labels, or non-literal visual interpretations that align with human understanding, often penalizing them for not being strictly 'visual' or explicit.\",\n      \"distinction\": \"Focuses on the interpretation of meaning, intent, or context derived from visual cues, rather than strict object identification or spatial geometry.\",\n      \"sample_ids\": [\n        \"rlhfv-000277\",\n        \"rlhfv-003218\",\n        \"rlhfv-004830\",\n        \"rlhfv-000042\",\n        \"rlhfv-004571\",\n        \"rlhfv-000628\"\n      ]\n    },\n    {\n      \"cluster_id\": \"object_attribute_identification\",\n      \"label\": \"Object and Attribute Identification\",\n      \"shared_failure\": \"The parent criterion fails to verify specific object identities or attributes (count, material, clothing), often accepting incorrect or generic descriptions over precise visual evidence.\",\n      \"distinction\": \"Centers on the accuracy of naming, counting, or describing specific physical properties of objects within the scene.\",\n      \"sample_ids\": [\n        \"rlhfv-000082\",\n        \"rlhfv-002829\",\n        \"rlhfv-000932\",\n        \"rlhfv-000837\",\n        \"rlhfv-000740\"\n      ]\n    },\n    {\n      \"cluster_id\": \"spatial_structural_grounding\",\n      \"label\": \"Spatial and Structural Grounding\",\n      \"shared_failure\": \"The parent criterion misjudges spatial relationships, structural arrangements, or physical postures, favoring subjective or incorrect descriptions over accurate visual geometry.\",\n      \"distinction\": \"Specific to the geometric arrangement, depth, position, and physical structure of elements rather than their identity or semantic meaning.\",\n      \"sample_ids\": [\n        \"rlhfv-002695\",\n        \"rlhfv-002726\",\n        \"rlhfv-004995\",\n        \"rlhfv-000764\",\n        \"rlhfv-000478\",\n        \"rlhfv-001347\"\n      ]\n    },\n    {\n      \"cluster_id\": \"ambiguity_evidence_standards\",\n      \"label\": \"Ambiguity and Evidence Standards\",\n      \"shared_failure\": \"The parent criterion fails to apply consistent standards when visual evidence is ambiguous, missing, or symbolic, often rewarding speculation or misinterpreting symbolic representations as literal.\",\n      \"distinction\": \"Addresses how the criterion handles uncertainty, absence of evidence, or symbolic content, distinguishing between grounded inference and unsupported guessing.\",\n      \"sample_ids\": [\n        \"rlhfv-003046\",\n        \"rlhfv-001052\",\n        \"rlhfv-000150\",\n        \"rlhfv-000307\",\n        \"rlhfv-000449\"\n      ]\n    },\n    {\n      \"cluster_id\": \"task_relevance_priorities\",\n      \"label\": \"Task Relevance and Interpretation Priorities\",\n      \"shared_failure\": \"The parent criterion prioritizes the wrong aspect of the response (e.g., detail quantity, visual grounding of non-essentials, literal matching) over task relevance, factual accuracy, or aesthetic alignment.\",\n      \"distinction\": \"Concerns the hierarchy of evaluation criteria, such as valuing detail over truth, or visual description over direct factual answers to the prompt.\",\n      \"sample_ids\": [\n        \"rlhfv-004979\",\n        \"rlhfv-002699\",\n        \"rlhfv-000541\",\n        \"rlhfv-001002\",\n        \"rlhfv-001449\"\n      ]\n    }\n  ],\n  \"unclustered_sample_ids\": []\n}",
+    "attempt_count": 1,
+    "metrics": {
+      "logical_evaluations": 1,
+      "api_attempts": 1,
+      "parse_retries": 0,
+      "input_tokens": 6544,
+      "output_tokens": 9164,
+      "total_tokens": 15708,
+      "usage_complete": true,
+      "call_latency_seconds": 82.81128209999588,
+      "estimated_cost_usd": null,
+      "cache_hits": 0,
+      "cache_misses": 0,
+      "error_count": 0
+    },
+    "request_spec": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+      "prompt_sha256": "1c90f1a20b60c33543cd0bbaa7e980ed10f8623ed649e6b24ce824708e9e15fa",
+      "decoding_config": {
+        "temperature": 0.2,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 8192
+        }
+      },
+      "prompt_version": "1.0.0",
+      "parser_version": "1.0.0"
+    }
+  },
+  "children": [
+    {
+      "schema_version": "1.0.0",
+      "cluster_id": "contextual_inference_semantics",
+      "criterion_name": "contextual_semantic_accuracy",
+      "description": "Criterion focus: Evaluates the accuracy and plausibility of semantic labels and contextual inferences derived from visual cues, rather than just the presence of observable elements.\n\nApplicable only when: Candidates differ in their interpretation of visual elements' meaning, function, or context (e.g., labeling text purpose, inferring activity from posture, identifying icons vs. generic shapes).\n\nNot applicable when: Differences are purely about object detection counts, colors, or spatial layout without semantic interpretation, or when inferences are pure hallucinations unrelated to any visual cues.\n\nDecision rule: Prefer the candidate that offers semantically accurate labels and contextually plausible inferences grounded in visual cues. If one candidate makes a reasonable inference (e.g., text function, activity context) supported by visual evidence while the other makes a semantically inaccurate claim (e.g., misidentifying a logo) or forces an unsupported object association to appear grounded, prefer the former. Return None if both offer equally plausible interpretations or if the difference is purely stylistic.",
+      "rationale": "This criterion is narrower than the parent because it specifically targets the interpretation of visual details (semantics/context) rather than the mere presence of visual details. It addresses the cluster's shared failure where the parent penalizes valid inferences or accurate semantic labels for not being 'strictly visual' enough, while rewarding literal but semantically inaccurate descriptions. It helps the judge distinguish between grounded inference and hallucination, prioritizing human-aligned understanding over rigid object listing.",
+      "representative_sample_ids": [
+        "rlhfv-000277",
+        "rlhfv-003218",
+        "rlhfv-004830"
+      ],
+      "raw_response": "{\n  \"criterion_name\": \"contextual_semantic_accuracy\",\n  \"description\": \"Criterion focus: Evaluates the accuracy and plausibility of semantic labels and contextual inferences derived from visual cues, rather than just the presence of observable elements.\\n\\nApplicable only when: Candidates differ in their interpretation of visual elements' meaning, function, or context (e.g., labeling text purpose, inferring activity from posture, identifying icons vs. generic shapes).\\n\\nNot applicable when: Differences are purely about object detection counts, colors, or spatial layout without semantic interpretation, or when inferences are pure hallucinations unrelated to any visual cues.\\n\\nDecision rule: Prefer the candidate that offers semantically accurate labels and contextually plausible inferences grounded in visual cues. If one candidate makes a reasonable inference (e.g., text function, activity context) supported by visual evidence while the other makes a semantically inaccurate claim (e.g., misidentifying a logo) or forces an unsupported object association to appear grounded, prefer the former. Return None if both offer equally plausible interpretations or if the difference is purely stylistic.\",\n  \"rationale\": \"This criterion is narrower than the parent because it specifically targets the interpretation of visual details (semantics/context) rather than the mere presence of visual details. It addresses the cluster's shared failure where the parent penalizes valid inferences or accurate semantic labels for not being 'strictly visual' enough, while rewarding literal but semantically inaccurate descriptions. It helps the judge distinguish between grounded inference and hallucination, prioritizing human-aligned understanding over rigid object listing.\",\n  \"representative_sample_ids\": [\"rlhfv-000277\", \"rlhfv-003218\", \"rlhfv-004830\"]\n}",
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 2870,
+        "output_tokens": 1857,
+        "total_tokens": 4727,
+        "usage_complete": true,
+        "call_latency_seconds": 16.280198500011466,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3.5-397B-A17B",
+        "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+        "prompt_sha256": "2f23e5681e90d3bf345c4af7a895ac4294053f07d4965018ab542af9d3b47cbd",
+        "decoding_config": {
+          "temperature": 0.7,
+          "seed": 42,
+          "extra_body": {
+            "enable_thinking": true,
+            "thinking_budget": 8192
+          }
+        },
+        "prompt_version": "2.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "cluster_id": "object_attribute_identification",
+      "criterion_name": "object_attribute_verification",
+      "description": "Criterion focus: Evaluates the factual accuracy of specific object attributes including counts, materials, clothing details, and identity claims against observable visual evidence.\n\nApplicable only when: Candidates make conflicting claims about quantifiable object properties (e.g., number of objects, material composition, clothing items, object identity) that can be directly verified against the image.\n\nNot applicable when: Differences are purely stylistic or descriptive flair, both candidates make equally accurate attribute claims, claims involve semantic interpretation rather than observable attributes, or attribute claims cannot be visually verified from the image.\n\nDecision rule: Prefer the candidate whose object attribute claims (counts, materials, clothing, identity) more accurately match the visual evidence. If both candidates make equally accurate or equally inaccurate attribute claims, or if the image quality prevents reliable verification, return None.",
+      "rationale": "This criterion is narrower than the parent visual_grounding_and_details because it specifically targets verification of concrete object attributes (counts, materials, clothing, identity) rather than general visual referencing. The parent accepts any visual grounding, but this criterion distinguishes accurate from inaccurate attribute claims, addressing the cluster's shared failure where incorrect or generic descriptions are accepted over precise visual evidence.",
+      "representative_sample_ids": [
+        "rlhfv-000082",
+        "rlhfv-002829",
+        "rlhfv-000932"
+      ],
+      "raw_response": "{\n  \"criterion_name\": \"object_attribute_verification\",\n  \"description\": \"Criterion focus: Evaluates the factual accuracy of specific object attributes including counts, materials, clothing details, and identity claims against observable visual evidence.\\n\\nApplicable only when: Candidates make conflicting claims about quantifiable object properties (e.g., number of objects, material composition, clothing items, object identity) that can be directly verified against the image.\\n\\nNot applicable when: Differences are purely stylistic or descriptive flair, both candidates make equally accurate attribute claims, claims involve semantic interpretation rather than observable attributes, or attribute claims cannot be visually verified from the image.\\n\\nDecision rule: Prefer the candidate whose object attribute claims (counts, materials, clothing, identity) more accurately match the visual evidence. If both candidates make equally accurate or equally inaccurate attribute claims, or if the image quality prevents reliable verification, return None.\",\n  \"rationale\": \"This criterion is narrower than the parent visual_grounding_and_details because it specifically targets verification of concrete object attributes (counts, materials, clothing, identity) rather than general visual referencing. The parent accepts any visual grounding, but this criterion distinguishes accurate from inaccurate attribute claims, addressing the cluster's shared failure where incorrect or generic descriptions are accepted over precise visual evidence.\",\n  \"representative_sample_ids\": [\"rlhfv-000082\", \"rlhfv-002829\", \"rlhfv-000932\"]\n}",
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 2690,
+        "output_tokens": 1831,
+        "total_tokens": 4521,
+        "usage_complete": true,
+        "call_latency_seconds": 15.231941499994718,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3.5-397B-A17B",
+        "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+        "prompt_sha256": "2f23e5681e90d3bf345c4af7a895ac4294053f07d4965018ab542af9d3b47cbd",
+        "decoding_config": {
+          "temperature": 0.7,
+          "seed": 42,
+          "extra_body": {
+            "enable_thinking": true,
+            "thinking_budget": 8192
+          }
+        },
+        "prompt_version": "2.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "cluster_id": "spatial_structural_grounding",
+      "criterion_name": "spatial_structural_accuracy",
+      "description": "Criterion focus: Evaluates the accuracy of spatial relationships, geometric arrangements, depth positioning, and physical postures/structures described in candidates against observable visual evidence.\n\nApplicable only when: Candidates make conflicting claims about spatial relationships (e.g., left/right, front/behind, center/edge), geometric arrangements (e.g., curved vs straight, orderly vs scattered), depth positioning (foreground vs background), or physical postures/structures (e.g., leg positions, body stance, structural elements like ceiling vs shelf) that can be visually verified.\n\nNot applicable when: Differences are purely about object identity, semantic interpretation, object counts, material attributes, or contextual inferences already covered by sibling criteria (contextual_semantic_accuracy, object_attribute_verification), or when spatial claims cannot be reliably verified from the image.\n\nDecision rule: Prefer the candidate whose spatial and structural descriptions more accurately match the visual evidence regarding positions, arrangements, depth, and postures. If both candidates make equally accurate or equally inaccurate spatial claims, or if the image quality prevents reliable verification of spatial relationships, return None.",
+      "rationale": "This criterion is narrower than the parent 'visual_grounding_and_details' by focusing exclusively on spatial relationships, geometric arrangements, depth, and physical structures rather than all observable elements. It directly targets the cluster's shared failure mode where the parent misjudges spatial relationships, structural arrangements, or physical postures. Unlike sibling criteria that handle semantic interpretation or object attributes, this criterion isolates geometric and positional accuracy, which is the core distinction in samples like rlhfv-002695 (dog positioning), rlhfv-002726 (track curvature), and rlhfv-004995 (leg posture).",
+      "representative_sample_ids": [
+        "rlhfv-002695",
+        "rlhfv-002726",
+        "rlhfv-004995"
+      ],
+      "raw_response": "{\n  \"criterion_name\": \"spatial_structural_accuracy\",\n  \"description\": \"Criterion focus: Evaluates the accuracy of spatial relationships, geometric arrangements, depth positioning, and physical postures/structures described in candidates against observable visual evidence.\\n\\nApplicable only when: Candidates make conflicting claims about spatial relationships (e.g., left/right, front/behind, center/edge), geometric arrangements (e.g., curved vs straight, orderly vs scattered), depth positioning (foreground vs background), or physical postures/structures (e.g., leg positions, body stance, structural elements like ceiling vs shelf) that can be visually verified.\\n\\nNot applicable when: Differences are purely about object identity, semantic interpretation, object counts, material attributes, or contextual inferences already covered by sibling criteria (contextual_semantic_accuracy, object_attribute_verification), or when spatial claims cannot be reliably verified from the image.\\n\\nDecision rule: Prefer the candidate whose spatial and structural descriptions more accurately match the visual evidence regarding positions, arrangements, depth, and postures. If both candidates make equally accurate or equally inaccurate spatial claims, or if the image quality prevents reliable verification of spatial relationships, return None.\",\n  \"rationale\": \"This criterion is narrower than the parent 'visual_grounding_and_details' by focusing exclusively on spatial relationships, geometric arrangements, depth, and physical structures rather than all observable elements. It directly targets the cluster's shared failure mode where the parent misjudges spatial relationships, structural arrangements, or physical postures. Unlike sibling criteria that handle semantic interpretation or object attributes, this criterion isolates geometric and positional accuracy, which is the core distinction in samples like rlhfv-002695 (dog positioning), rlhfv-002726 (track curvature), and rlhfv-004995 (leg posture).\",\n  \"representative_sample_ids\": [\"rlhfv-002695\", \"rlhfv-002726\", \"rlhfv-004995\"]\n}",
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 3023,
+        "output_tokens": 1387,
+        "total_tokens": 4410,
+        "usage_complete": true,
+        "call_latency_seconds": 11.581460800007335,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3.5-397B-A17B",
+        "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+        "prompt_sha256": "2f23e5681e90d3bf345c4af7a895ac4294053f07d4965018ab542af9d3b47cbd",
+        "decoding_config": {
+          "temperature": 0.7,
+          "seed": 42,
+          "extra_body": {
+            "enable_thinking": true,
+            "thinking_budget": 8192
+          }
+        },
+        "prompt_version": "2.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "cluster_id": "ambiguity_evidence_standards",
+      "criterion_name": "evidence_uncertainty_handling",
+      "description": "Criterion focus: Evaluates how candidates handle ambiguous, missing, or symbolic visual evidence, distinguishing between appropriately cautious interpretations and overconfident speculation beyond what is visually verifiable.\n\nApplicable only when: Candidates differ in their treatment of uncertain visual elements (e.g., claiming visibility of ambiguous features, interpreting symbolic representations as literal objects, or drawing inferences from absent/unclear evidence).\n\nNot applicable when: Visual evidence is clear and unambiguous, differences are purely about object counts/colors already covered by sibling criteria, or both candidates exhibit equal levels of appropriate uncertainty or speculation.\n\nDecision rule: Prefer the candidate that appropriately acknowledges uncertainty when visual evidence is ambiguous or absent, avoids overconfident claims about unverifiable elements, and correctly interprets symbolic/contextual representations without treating them as literal objects. If both candidates handle uncertainty equally well or poorly, or if the image quality prevents reliable assessment of evidence ambiguity, return None.",
+      "rationale": "This criterion is narrower than the parent 'visual_grounding_and_details' because it specifically targets how candidates handle uncertainty and ambiguity in visual evidence, rather than general visual referencing. It addresses the cluster's shared failure where the parent rewards mere mention of visual elements without evaluating whether those claims are appropriately cautious given evidence quality. The criterion distinguishes grounded inference from unsupported speculation, which is the core distinction in this error cluster.",
+      "representative_sample_ids": [
+        "rlhfv-001052",
+        "rlhfv-000150",
+        "rlhfv-000449"
+      ],
+      "raw_response": "{\n  \"criterion_name\": \"evidence_uncertainty_handling\",\n  \"description\": \"Criterion focus: Evaluates how candidates handle ambiguous, missing, or symbolic visual evidence, distinguishing between appropriately cautious interpretations and overconfident speculation beyond what is visually verifiable.\\n\\nApplicable only when: Candidates differ in their treatment of uncertain visual elements (e.g., claiming visibility of ambiguous features, interpreting symbolic representations as literal objects, or drawing inferences from absent/unclear evidence).\\n\\nNot applicable when: Visual evidence is clear and unambiguous, differences are purely about object counts/colors already covered by sibling criteria, or both candidates exhibit equal levels of appropriate uncertainty or speculation.\\n\\nDecision rule: Prefer the candidate that appropriately acknowledges uncertainty when visual evidence is ambiguous or absent, avoids overconfident claims about unverifiable elements, and correctly interprets symbolic/contextual representations without treating them as literal objects. If both candidates handle uncertainty equally well or poorly, or if the image quality prevents reliable assessment of evidence ambiguity, return None.\",\n  \"rationale\": \"This criterion is narrower than the parent 'visual_grounding_and_details' because it specifically targets how candidates handle uncertainty and ambiguity in visual evidence, rather than general visual referencing. It addresses the cluster's shared failure where the parent rewards mere mention of visual elements without evaluating whether those claims are appropriately cautious given evidence quality. The criterion distinguishes grounded inference from unsupported speculation, which is the core distinction in this error cluster.\",\n  \"representative_sample_ids\": [\"rlhfv-001052\", \"rlhfv-000150\", \"rlhfv-000449\"]\n}",
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 2930,
+        "output_tokens": 959,
+        "total_tokens": 3889,
+        "usage_complete": true,
+        "call_latency_seconds": 8.37214110000059,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3.5-397B-A17B",
+        "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+        "prompt_sha256": "2f23e5681e90d3bf345c4af7a895ac4294053f07d4965018ab542af9d3b47cbd",
+        "decoding_config": {
+          "temperature": 0.7,
+          "seed": 42,
+          "extra_body": {
+            "enable_thinking": true,
+            "thinking_budget": 8192
+          }
+        },
+        "prompt_version": "2.0.0",
+        "parser_version": "1.0.0"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "cluster_id": "task_relevance_priorities",
+      "criterion_name": "task_prioritized_visual_accuracy",
+      "description": "Criterion focus: Evaluates whether visual grounding appropriately prioritizes factual accuracy and question-relevance over detail quantity, ensuring that visual claims serve the task's core requirements rather than superficial grounding.\n\nApplicable only when: Candidates differ in how they weight visual accuracy versus detail quantity relative to the question's demands, where one candidate's visual claims are more accurate and task-relevant while the other emphasizes volume of details, non-essential elements, or makes inaccurate visual claims.\n\nNot applicable when: Both candidates equally address task-relevant visual elements with similar accuracy, differences are purely stylistic without accuracy implications, or accuracy differences fall squarely under sibling criteria (object_attribute_verification, spatial_structural_accuracy) without task-prioritization concerns.\n\nDecision rule: Prefer the candidate whose visual grounding more accurately addresses the question's core requirements, even if less detailed. If one candidate provides accurate, task-relevant visual evidence while the other provides inaccurate or task-irrelevant visual details, prefer the former. Return None if both candidates equally balance accuracy and task-relevance in their visual grounding.",
+      "rationale": "This criterion is narrower than the parent because it specifically evaluates the hierarchy of visual grounding priorities (accuracy and task-relevance over detail quantity) rather than just whether visual elements are referenced. It targets the cluster's shared failure where the parent criterion rewards superficial visual matching or detail volume over factual accuracy and question alignment, as seen in samples where candidates with fewer but more accurate details are preferred over those with more but inaccurate details.",
+      "representative_sample_ids": [
+        "rlhfv-004979",
+        "rlhfv-002699",
+        "rlhfv-000541"
+      ],
+      "raw_response": "{\n  \"criterion_name\": \"task_prioritized_visual_accuracy\",\n  \"description\": \"Criterion focus: Evaluates whether visual grounding appropriately prioritizes factual accuracy and question-relevance over detail quantity, ensuring that visual claims serve the task's core requirements rather than superficial grounding.\\n\\nApplicable only when: Candidates differ in how they weight visual accuracy versus detail quantity relative to the question's demands, where one candidate's visual claims are more accurate and task-relevant while the other emphasizes volume of details, non-essential elements, or makes inaccurate visual claims.\\n\\nNot applicable when: Both candidates equally address task-relevant visual elements with similar accuracy, differences are purely stylistic without accuracy implications, or accuracy differences fall squarely under sibling criteria (object_attribute_verification, spatial_structural_accuracy) without task-prioritization concerns.\\n\\nDecision rule: Prefer the candidate whose visual grounding more accurately addresses the question's core requirements, even if less detailed. If one candidate provides accurate, task-relevant visual evidence while the other provides inaccurate or task-irrelevant visual details, prefer the former. Return None if both candidates equally balance accuracy and task-relevance in their visual grounding.\",\n  \"rationale\": \"This criterion is narrower than the parent because it specifically evaluates the hierarchy of visual grounding priorities (accuracy and task-relevance over detail quantity) rather than just whether visual elements are referenced. It targets the cluster's shared failure where the parent criterion rewards superficial visual matching or detail volume over factual accuracy and question alignment, as seen in samples where candidates with fewer but more accurate details are preferred over those with more but inaccurate details.\",\n  \"representative_sample_ids\": [\"rlhfv-004979\", \"rlhfv-002699\", \"rlhfv-000541\"]\n}",
+      "attempt_count": 1,
+      "metrics": {
+        "logical_evaluations": 1,
+        "api_attempts": 1,
+        "parse_retries": 0,
+        "input_tokens": 3485,
+        "output_tokens": 3137,
+        "total_tokens": 6622,
+        "usage_complete": true,
+        "call_latency_seconds": 26.261924699996598,
+        "estimated_cost_usd": null,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "error_count": 0
+      },
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3.5-397B-A17B",
+        "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+        "prompt_sha256": "2f23e5681e90d3bf345c4af7a895ac4294053f07d4965018ab542af9d3b47cbd",
+        "decoding_config": {
+          "temperature": 0.7,
+          "seed": 42,
+          "extra_body": {
+            "enable_thinking": true,
+            "thinking_budget": 8192
+          }
+        },
+        "prompt_version": "2.0.0",
+        "parser_version": "1.0.0"
+      }
+    }
+  ],
+  "node_id_by_cluster": {
+    "contextual_inference_semantics": "init_02_visual_grounding_and_details__contextual_inference_semantics__af741d1570",
+    "object_attribute_identification": "init_02_visual_grounding_and_details__object_attribute_identification__92317b4a61",
+    "spatial_structural_grounding": "init_02_visual_grounding_and_details__spatial_structural_grounding__383ede1df7",
+    "ambiguity_evidence_standards": "init_02_visual_grounding_and_details__ambiguity_evidence_standards__3b400af44c",
+    "task_relevance_priorities": "init_02_visual_grounding_and_details__task_relevance_priorities__ffa318a407"
+  }
+}

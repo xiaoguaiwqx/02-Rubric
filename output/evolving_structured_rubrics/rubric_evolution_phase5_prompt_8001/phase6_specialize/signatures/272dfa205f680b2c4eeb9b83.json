@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "signature": {
+    "sample_id": "rlhfv-004979",
+    "task_pattern": "The parent criterion failed to account for the visual salience and contextual plausibility of elements that are not explicitly labeled or obvious, leading to misjudgment of candidate accuracy.",
+    "visual_focus": "The parent criterion prioritized literal matching of observable elements (e.g., gray surroundings, absence of numbers) without considering the visual prominence or contextual plausibility of features like the hydrant’s color or the presence of numbers on the ground.",
+    "candidate_difference": "Candidate A correctly identifies the hydrant as silver (visually accurate), notes visible numbers on the ground (which are orange markings, likely painted, and clearly present), and describes active water flow — all of which are visually grounded. Candidate B incorrectly claims the surroundings are gray (the scene is urban with buildings and pavement, not monochromatic gray) and omits the visible numbers, which are a key visual detail.",
+    "parent_failure": "The parent criterion failed to distinguish the human-preferred answer because it prioritized superficial or ambiguous visual cues (e.g., 'gray surroundings', 'no visible numbers') over more salient, contextually accurate, and visually verifiable details (e.g., hydrant color, presence of painted markings). It misjudged the visual grounding of Candidate A by dismissing accurate observations as 'inaccuracies' without verifying their visual plausibility.",
+    "suggested_subdomain": "Visual salience and contextual plausibility of descriptive elements"
+  },
+  "raw_response": "{\n  \"sample_id\": \"rlhfv-004979\",\n  \"task_pattern\": \"The parent criterion failed to account for the visual salience and contextual plausibility of elements that are not explicitly labeled or obvious, leading to misjudgment of candidate accuracy.\",\n  \"visual_focus\": \"The parent criterion prioritized literal matching of observable elements (e.g., gray surroundings, absence of numbers) without considering the visual prominence or contextual plausibility of features like the hydrant’s color or the presence of numbers on the ground.\",\n  \"candidate_difference\": \"Candidate A correctly identifies the hydrant as silver (visually accurate), notes visible numbers on the ground (which are orange markings, likely painted, and clearly present), and describes active water flow — all of which are visually grounded. Candidate B incorrectly claims the surroundings are gray (the scene is urban with buildings and pavement, not monochromatic gray) and omits the visible numbers, which are a key visual detail.\",\n  \"parent_failure\": \"The parent criterion failed to distinguish the human-preferred answer because it prioritized superficial or ambiguous visual cues (e.g., 'gray surroundings', 'no visible numbers') over more salient, contextually accurate, and visually verifiable details (e.g., hydrant color, presence of painted markings). It misjudged the visual grounding of Candidate A by dismissing accurate observations as 'inaccuracies' without verifying their visual plausibility.\",\n  \"suggested_subdomain\": \"Visual salience and contextual plausibility of descriptive elements\"\n}",
+  "parse_error": null,
+  "attempt_count": 1,
+  "metrics": {
+    "logical_evaluations": 1,
+    "api_attempts": 1,
+    "parse_retries": 0,
+    "input_tokens": 658,
+    "output_tokens": 319,
+    "total_tokens": 977,
+    "usage_complete": true,
+    "call_latency_seconds": 13.82143100000394,
+    "estimated_cost_usd": null,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "error_count": 0
+  },
+  "request_spec": {
+    "schema_version": "1.0.0",
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+    "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+    "decoding_config": {
+      "temperature": 0.2,
+      "seed": 42
+    },
+    "prompt_version": "1.0.0",
+    "parser_version": "1.0.0"
+  }
+}

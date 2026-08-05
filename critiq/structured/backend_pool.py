@@ -60,8 +60,8 @@ class BackendPoolSpec:
                 or self.global_request_concurrency < 1):
             raise ValueError("global_request_concurrency must be a positive integer")
         endpoints = tuple(self.endpoints)
-        if len(endpoints) < 2 or any(not isinstance(item, BackendEndpointSpec) for item in endpoints):
-            raise ValueError("backend pool requires at least two endpoint specs")
+        if not endpoints or any(not isinstance(item, BackendEndpointSpec) for item in endpoints):
+            raise ValueError("backend pool requires at least one endpoint spec")
         endpoint_ids = [item.endpoint_id for item in endpoints]
         base_urls = [item.base_url for item in endpoints]
         if len(set(endpoint_ids)) != len(endpoint_ids) or len(set(base_urls)) != len(base_urls):

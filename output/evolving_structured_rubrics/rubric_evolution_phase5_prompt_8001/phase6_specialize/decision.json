@@ -1,0 +1,12 @@
+{
+  "decision": "reject",
+  "reasons": [
+    "accuracy_delta_below_threshold"
+  ],
+  "mechanism_risks": [
+    "child_fitness_below_parent",
+    "subtree_local_regression"
+  ],
+  "candidate_id": "specialize_94b7440e6cb9",
+  "accepted_rubric": null
+}

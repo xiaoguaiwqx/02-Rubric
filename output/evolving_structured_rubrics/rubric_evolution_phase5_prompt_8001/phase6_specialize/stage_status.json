@@ -1,0 +1,62 @@
+{
+  "freeze": {
+    "status": "passed",
+    "details": {
+      "parent_node_id": "init_02_visual_grounding_and_details",
+      "wrong_samples": 27,
+      "remaining_capacity": 5
+    }
+  },
+  "signatures": {
+    "status": "passed",
+    "details": {
+      "count": 27
+    }
+  },
+  "cluster": {
+    "status": "passed",
+    "details": {
+      "clusters": 5,
+      "unclustered": 0,
+      "proposal_source": "model_call"
+    }
+  },
+  "propose": {
+    "status": "passed",
+    "details": {
+      "candidate_id": "specialize_94b7440e6cb9",
+      "children": 5,
+      "rubric_sha256": "bc79063de7e38a1777f5f271318ed813545ef7bf5712771a55e40abe4a2e1c47"
+    }
+  },
+  "evaluate": {
+    "status": "passed",
+    "details": {
+      "decision": "reject",
+      "reasons": [
+        "accuracy_delta_below_threshold"
+      ],
+      "mechanism_risks": [
+        "child_fitness_below_parent",
+        "subtree_local_regression"
+      ],
+      "candidate_id": "specialize_94b7440e6cb9",
+      "accepted_rubric": null
+    }
+  },
+  "report": {
+    "status": "passed",
+    "details": {
+      "decision": "reject",
+      "reasons": [
+        "accuracy_delta_below_threshold"
+      ],
+      "mechanism_risks": [
+        "child_fitness_below_parent",
+        "subtree_local_regression"
+      ],
+      "candidate_id": "specialize_94b7440e6cb9",
+      "accepted_rubric": null
+    }
+  }
+}

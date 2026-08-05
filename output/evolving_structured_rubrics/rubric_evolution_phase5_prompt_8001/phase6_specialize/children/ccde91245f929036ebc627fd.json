@@ -1,0 +1,47 @@
+{
+  "input_sha256": "c3caa348588d8a86f206eaf22ae51b7e5d61765af3775ec7d14360066e53a35c",
+  "proposal": {
+    "schema_version": "1.0.0",
+    "cluster_id": "ambiguity_evidence_standards",
+    "criterion_name": "evidence_uncertainty_handling",
+    "description": "Criterion focus: Evaluates how candidates handle ambiguous, missing, or symbolic visual evidence, distinguishing between appropriately cautious interpretations and overconfident speculation beyond what is visually verifiable.\n\nApplicable only when: Candidates differ in their treatment of uncertain visual elements (e.g., claiming visibility of ambiguous features, interpreting symbolic representations as literal objects, or drawing inferences from absent/unclear evidence).\n\nNot applicable when: Visual evidence is clear and unambiguous, differences are purely about object counts/colors already covered by sibling criteria, or both candidates exhibit equal levels of appropriate uncertainty or speculation.\n\nDecision rule: Prefer the candidate that appropriately acknowledges uncertainty when visual evidence is ambiguous or absent, avoids overconfident claims about unverifiable elements, and correctly interprets symbolic/contextual representations without treating them as literal objects. If both candidates handle uncertainty equally well or poorly, or if the image quality prevents reliable assessment of evidence ambiguity, return None.",
+    "rationale": "This criterion is narrower than the parent 'visual_grounding_and_details' because it specifically targets how candidates handle uncertainty and ambiguity in visual evidence, rather than general visual referencing. It addresses the cluster's shared failure where the parent rewards mere mention of visual elements without evaluating whether those claims are appropriately cautious given evidence quality. The criterion distinguishes grounded inference from unsupported speculation, which is the core distinction in this error cluster.",
+    "representative_sample_ids": [
+      "rlhfv-001052",
+      "rlhfv-000150",
+      "rlhfv-000449"
+    ],
+    "raw_response": "{\n  \"criterion_name\": \"evidence_uncertainty_handling\",\n  \"description\": \"Criterion focus: Evaluates how candidates handle ambiguous, missing, or symbolic visual evidence, distinguishing between appropriately cautious interpretations and overconfident speculation beyond what is visually verifiable.\\n\\nApplicable only when: Candidates differ in their treatment of uncertain visual elements (e.g., claiming visibility of ambiguous features, interpreting symbolic representations as literal objects, or drawing inferences from absent/unclear evidence).\\n\\nNot applicable when: Visual evidence is clear and unambiguous, differences are purely about object counts/colors already covered by sibling criteria, or both candidates exhibit equal levels of appropriate uncertainty or speculation.\\n\\nDecision rule: Prefer the candidate that appropriately acknowledges uncertainty when visual evidence is ambiguous or absent, avoids overconfident claims about unverifiable elements, and correctly interprets symbolic/contextual representations without treating them as literal objects. If both candidates handle uncertainty equally well or poorly, or if the image quality prevents reliable assessment of evidence ambiguity, return None.\",\n  \"rationale\": \"This criterion is narrower than the parent 'visual_grounding_and_details' because it specifically targets how candidates handle uncertainty and ambiguity in visual evidence, rather than general visual referencing. It addresses the cluster's shared failure where the parent rewards mere mention of visual elements without evaluating whether those claims are appropriately cautious given evidence quality. The criterion distinguishes grounded inference from unsupported speculation, which is the core distinction in this error cluster.\",\n  \"representative_sample_ids\": [\"rlhfv-001052\", \"rlhfv-000150\", \"rlhfv-000449\"]\n}",
+    "attempt_count": 1,
+    "metrics": {
+      "logical_evaluations": 1,
+      "api_attempts": 1,
+      "parse_retries": 0,
+      "input_tokens": 2930,
+      "output_tokens": 959,
+      "total_tokens": 3889,
+      "usage_complete": true,
+      "call_latency_seconds": 8.37214110000059,
+      "estimated_cost_usd": null,
+      "cache_hits": 0,
+      "cache_misses": 0,
+      "error_count": 0
+    },
+    "request_spec": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+      "prompt_sha256": "2f23e5681e90d3bf345c4af7a895ac4294053f07d4965018ab542af9d3b47cbd",
+      "decoding_config": {
+        "temperature": 0.7,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 8192
+        }
+      },
+      "prompt_version": "2.0.0",
+      "parser_version": "1.0.0"
+    }
+  }
+}

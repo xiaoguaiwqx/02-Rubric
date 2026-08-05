@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "signature": {
+    "sample_id": "rlhfv-000740",
+    "task_pattern": "Overcounting due to misinterpreting blurred or indistinct figures as distinct individuals.",
+    "visual_focus": "Background figures behind the chain-link fence, particularly the blurred shapes on the left and right.",
+    "candidate_difference": "Candidate A identifies three men, while Candidate B identifies one man — the latter correctly recognizes only the clearly visible figure on the right, ignoring the ambiguous shapes on the left.",
+    "parent_failure": "The parent criterion failed to prioritize visual clarity and avoid overcounting ambiguous figures, instead rewarding detailed but inaccurate enumeration, which contradicts human preference for accuracy over verbosity.",
+    "suggested_subdomain": "visual_accuracy_and_clarity"
+  },
+  "raw_response": "{\n  \"sample_id\": \"rlhfv-000740\",\n  \"task_pattern\": \"Overcounting due to misinterpreting blurred or indistinct figures as distinct individuals.\",\n  \"visual_focus\": \"Background figures behind the chain-link fence, particularly the blurred shapes on the left and right.\",\n  \"candidate_difference\": \"Candidate A identifies three men, while Candidate B identifies one man — the latter correctly recognizes only the clearly visible figure on the right, ignoring the ambiguous shapes on the left.\",\n  \"parent_failure\": \"The parent criterion failed to prioritize visual clarity and avoid overcounting ambiguous figures, instead rewarding detailed but inaccurate enumeration, which contradicts human preference for accuracy over verbosity.\",\n  \"suggested_subdomain\": \"visual_accuracy_and_clarity\"\n}",
+  "parse_error": null,
+  "attempt_count": 1,
+  "metrics": {
+    "logical_evaluations": 1,
+    "api_attempts": 1,
+    "parse_retries": 0,
+    "input_tokens": 570,
+    "output_tokens": 161,
+    "total_tokens": 731,
+    "usage_complete": true,
+    "call_latency_seconds": 2.7120952999976,
+    "estimated_cost_usd": null,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "error_count": 0
+  },
+  "request_spec": {
+    "schema_version": "1.0.0",
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "backend_id": "pool:qwen3vl8b-signature-pool-v1:b6bae3bb65264658c1309581f01abef630698172bdcfc89559f050914c5dca0b",
+    "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+    "decoding_config": {
+      "temperature": 0.2,
+      "seed": 42
+    },
+    "prompt_version": "1.0.0",
+    "parser_version": "1.0.0"
+  }
+}
