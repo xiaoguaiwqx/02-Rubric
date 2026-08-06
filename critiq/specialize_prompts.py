@@ -42,6 +42,11 @@ Maximum clusters allowed in this edit: {max_clusters}
 Error signatures:
 {signatures_json}
 
+Previous failed Split attempts for this parent (may be empty):
+{split_failure_history_json}
+Use this history only to avoid repeating failed semantic partitions or criterion descriptions.
+The current signatures remain authoritative.
+
 Every sample ID must occur exactly once, either in one cluster or in
 unclustered_sample_ids.
 
@@ -78,6 +83,10 @@ Description: {criterion_description}
 ## Existing sibling criteria
 {siblings_json}
 
+## Previous failed Split attempts for this parent
+{split_failure_history_json}
+Use this history only to avoid repeating failed criterion descriptions; the current cluster is authoritative.
+
 Representative sample IDs that you may cite: {representative_sample_ids}
 
 Representative sample text (image paths and image bytes are intentionally
@@ -112,6 +121,10 @@ Description: {criterion_description}
 
 ## Existing sibling criteria
 {siblings_json}
+
+## Previous failed Split attempts for this parent
+{split_failure_history_json}
+Use this history only to avoid repeating failed criterion descriptions; the current cluster is authoritative.
 
 Representative sample IDs that you may cite: {representative_sample_ids}
 

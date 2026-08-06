@@ -44,6 +44,7 @@ def _versioned(value: object, fields: set[str], label: str) -> Mapping[str, Any]
 class OperatorKind(str, Enum):
     MANUAL = "manual"
     REFINE = "refine"
+    SPLIT = "split"
     SPECIALIZE = "specialize"
     CREATE = "create"
 

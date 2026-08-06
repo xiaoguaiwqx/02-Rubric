@@ -186,14 +186,17 @@ class SpecializeManager:
                                     self._metrics(calls), spec)
 
     def cluster(self, signatures: Sequence[ErrorSignature], *, criterion_name: str,
-                min_cluster_size: int, max_clusters: int) -> ClusterProposal:
+                min_cluster_size: int, max_clusters: int,
+                prior_failures: Sequence[Mapping[str, Any]] = ()) -> ClusterProposal:
         if not signatures:
             raise ValueError("signatures must not be empty")
         prompt = SEMANTIC_CLUSTER_PROMPT.format(
             criterion_name=criterion_name, min_cluster_size=min_cluster_size,
             max_clusters=max_clusters,
             signatures_json=json.dumps([item.to_dict() for item in signatures],
-                                       indent=2, ensure_ascii=False))
+                                       indent=2, ensure_ascii=False),
+            split_failure_history_json=json.dumps(list(prior_failures), indent=2,
+                                                  ensure_ascii=False))
         spec = self.request_specs()["semantic_cluster"]
         calls = []; last_raw = None; last_error = "invalid cluster proposal"
         total = self.structured_max_retries + 1
@@ -215,7 +218,8 @@ class SpecializeManager:
 
     def generate_child(self, *, parent: RubricNode, cluster: SemanticCluster,
                        signatures: Sequence[ErrorSignature], representative_rows: Sequence[Mapping[str, Any]],
-                       siblings: Sequence[ChildCriterionProposal]) -> ChildCriterionProposal:
+                       siblings: Sequence[ChildCriterionProposal],
+                       prior_failures: Sequence[Mapping[str, Any]] = ()) -> ChildCriterionProposal:
         representative_ids = tuple(str(row["sample_id"]) for row in representative_rows)
         representative_samples = [
             {"sample_id": str(row["sample_id"]), "question": row["question"],
@@ -231,6 +235,8 @@ class SpecializeManager:
             siblings_json=json.dumps([
                 {"criterion_name": item.criterion_name, "description": item.description}
                 for item in siblings], indent=2, ensure_ascii=False),
+            split_failure_history_json=json.dumps(list(prior_failures), indent=2,
+                                                  ensure_ascii=False),
             representative_sample_ids=json.dumps(representative_ids, ensure_ascii=False),
             representative_samples_json=json.dumps(
                 representative_samples, indent=2, ensure_ascii=False))

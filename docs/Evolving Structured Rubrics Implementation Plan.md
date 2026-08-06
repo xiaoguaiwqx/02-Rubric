@@ -414,7 +414,29 @@ Gap 定义为：对样本 `s`，当前所有 node 都没有产生与 gold 相同
 - `cascade_failure`：M1 final 为 wrong/Tie；
 - `aggregation_conflict`：存在正确 decisive node，但 M1 final 仍为 wrong/Tie。
 
-Fitness 暂作为诊断指标，使用 `alpha=2.0`、`lambda=0.1`、`len_max=2000`。Phase 5 不用 Fitness 自动触发 operator。
+Fitness 使用 `alpha=2.0`、`lambda=0.1`、`len_max=2000`。Phase 5 不用 Fitness 自动触发 operator；Phase 6 Split 将 Fitness 作为候选竞争与接受依据。
+
+对父标准 `c` 产生的 `m` 个候选子标准 `C = {c_1, ..., c_m}`，第一版集体适应度定义为各子标准适应度的算术平均：
+
+$$
+\operatorname{Fitness}(C)
+= \frac{1}{m}\sum_{i=1}^{m}\operatorname{Fitness}(c_i).
+$$
+
+每个子标准的 accuracy 与 coverage 都限制在父标准适用域 $\mathcal{S}(c)$ 上计算：
+
+$$
+\operatorname{Acc}_{\mathcal{S}(c)}(c_i)
+= \frac{|\{s \in \mathcal{S}(c) : c_i(s) \neq \mathrm{NA} \land c_i(s)=p_s\}|}
+{|\{s \in \mathcal{S}(c) : c_i(s) \neq \mathrm{NA}\}|},
+$$
+
+$$
+\operatorname{Cov}_{\mathcal{S}(c)}(c_i)
+= \frac{|\{s \in \mathcal{S}(c) : c_i(s) \neq \mathrm{NA}\}|}{|\mathcal{S}(c)|}.
+$$
+
+若某个 child 在 $\mathcal{S}(c)$ 上 support 为0，则该 Split candidate 无法形成有效集体适应度并直接拒绝。第一版算术平均暂不校正 children 之间的 coverage 差异、适用域重叠或 vote 冲突；这些作为后续 collective-fitness 消融与改进项。
 
 ### 8.4 Patch 与 ArtifactRefreshPlan
 
@@ -449,15 +471,21 @@ N_min_cluster   = 5
 max_children    = 5
 ```
 
-这些数值只产生 operator 候选，不直接决定接受。Specialize 的统计候选需满足 `accuracy < 0.70`、`coverage >= 0.80`、`support >= 15`、`wrong >= 15`；Refine 候选需满足 `0.55 < accuracy < 0.80`、`coverage < 0.80`、`support >= 15`。Pairwise Worker 在第一轮继续使用 P05（`temperature=0.5`）。
+这些数值只产生 operator 候选，不直接决定接受。Split 的统计候选需满足 `accuracy < 0.70`、`coverage > 0.80`、`support >= 15`、`wrong >= 15`；Refine 候选需满足 `0.55 < accuracy < 0.80`、`coverage <= 0.80`、`support >= 15`。Pairwise Worker 在第一轮继续使用 P05（`temperature=0.5`）。
 
-单次 discovery-90 M1 接受规则只保留两个结果门槛：accuracy 至少净提升 `2/90`，final-valid rate 不低于 `0.95`。Rubric/Artifact 合法、数据隔离和 trace replay 属于工程有效性前提，不与结果门槛混合。Coverage、corrected/harmed、child correction/harm 和 subtree conflict 继续报告，但不作为硬拒绝条件。P05 每个候选只运行一次，不设置重复确认；B1/H1/G1/M2 仍不能覆盖 M1 的接受结论。
+接受规则按 operator 区分。Refine 与 Create 继续使用 discovery-90 M1 结果门槛；Split 的主要接受条件改为：
 
-trigger、acceptance 和单次 P05 execution 共同写入版本化 `phase5-v2` 配置及 frozen manifest；完整 discovery-90 M1 始终是接受依据。
+$$
+\operatorname{Fitness}(\{c_1,\ldots,c_m\}) > \operatorname{Fitness}(c).
+$$
+
+Split 竞争成功时保留 parent 并整体接纳当前 children；竞争失败时丢弃整组候选 children，Rubric 保持不变，并记录失败历史。完整 M1 accuracy、coverage、corrected/harmed、child correction/harm、sibling conflict 和 final-valid rate 继续报告，但第一版不参与 Split 硬接受判定。Rubric/Artifact 合法、数据隔离和 trace replay 仍是工程有效性前提。P05 每个候选只运行一次，不设置重复确认。
+
+trigger、operator-specific acceptance 和单次 P05 execution 共同写入版本化配置及 frozen manifest。Refine/Create 以 discovery-90 M1 为接受依据；Split 以 $\mathcal{S}(c)$ 上的集体 Fitness 为接受依据，完整 M1 仅作为诊断。
 
 ---
 
-## 9. Phase 6：逐个实现 Refine、Specialize、Create
+## 9. Phase 6：逐个实现 Refine、Split、Create
 
 每个算子必须单独实现、真实运行、review 和提交；一轮不能同时接受多个不可归因的修改。
 
@@ -468,7 +496,7 @@ trigger、acceptance 和单次 P05 execution 共同写入版本化 `phase5-v2` �
 - 只刷新目标 node Pairwise outputs；
 - discovery-90 完整 M1 before/after 是唯一接受依据。
 
-### 9.2 Specialize
+### 9.2 Split
 
 触发候选为低 accuracy、高 coverage、具有足够 decisive wrong 且错误能形成至少两个有效语义 cluster 的 parent。
 
@@ -477,18 +505,23 @@ decisive wrong samples
   → 逐样本 ErrorSignature
   → Manager 对 signatures 做 2–5 个语义 clusters
   → 每个有效 cluster 生成一个更窄的 child criterion
-  → parent + children subtree 与原 parent subtree 竞争
+  → 计算 children 的算术平均集体 Fitness
+  → 与 parent Fitness 竞争
 ```
 
-ErrorSignature 保存 task pattern、visual focus、candidate difference、parent failure 和 suggested subdomain。Cluster 必须引用完整且互斥的 sample IDs，每个 cluster 至少包含5条样本，并说明共同判断失败而不是共同图片主题；每条 wrong sample 必须进入一个 cluster 或显式进入 unclustered。由于 Specialize 保留 parent，不要求有效 clusters 覆盖固定比例的 wrong samples。
+ErrorSignature 保存 task pattern、visual focus、candidate difference、parent failure 和 suggested subdomain。Cluster 必须引用完整且互斥的 sample IDs，每个 cluster 至少包含5条样本，并说明共同判断失败而不是共同图片主题；每条 wrong sample 必须进入一个 cluster 或显式进入 unclustered。由于 Split 保留 parent，不要求有效 clusters 覆盖固定比例的 wrong samples。
 
 三个 Manager 阶段分别冻结 model、backend pool、输入模态和 request identity。第一轮由本地 Qwen3-VL-8B 生成多模态 ErrorSignature；语义聚类与 child 生成使用硅基流动 Qwen3.5-397B-A17B 的思考模式。后两个阶段使用文本输入，child 阶段读取代表样本的 question/A/B/gold 与 signatures，不发送图片。聚类采用 v1 的一次完整 partition 输出（temperature=0.2），不做事后 repair、自动合并或小簇降级；child 生成使用 temperature=0.7。这样聚类失败保持可见，同时允许仅通过配置替换 Manager，而不改变算子语义。
 
-Specialize 保留 parent，children 数量严格等于有效 cluster 数量，不设置目标数量：有效 cluster 少于2个则不触发 Specialize，存在2–5个则分别生成2–5个 children。`max_children=5` 只是结构上限，不允许为了达到上限强行拆分；超出上限的模式进入 unclustered。第一版所有新 edges 固定为 `ALWAYS`，不同时优化 Gate/Child Router；examples 只供 Manager、lineage 和审计，不进入 Pairwise prompt。无论 children 数量多少，整棵 root subtree 仍最多贡献一票。接受报告包含 cluster support、child accuracy、非目标 abstain、sibling agreement、child correction/harm 和完整 M1。
+Split 保留 parent，children 数量严格等于有效 cluster 数量，不设置目标数量：有效 cluster 少于2个则不触发 Split，存在2–5个则分别生成2–5个 children。`max_children=5` 只是结构上限，不允许为了达到上限强行拆分；超出上限的模式进入 unclustered。每个 child 包含 criterion name、description、1–3个对应 cluster 的代表 examples，以及 cluster lineage；examples 只供 Manager、lineage 和审计，Pairwise Worker 不读取 examples。第一版所有新 edges 固定为 `ALWAYS`，不同时优化 Gate/Child Router。无论 children 数量多少，整棵 root subtree 仍最多贡献一票。
+
+Split 竞争时，每个 child 的 accuracy、coverage 和 Fitness 都在 parent 的 $\mathcal{S}(c)$ 上计算，再对所有 child Fitness 求算术平均。集体 Fitness 严格高于 parent Fitness 时，保留 parent 并整体接纳 children；否则整体回退。children 之间 coverage 不均、适用域重叠和 vote 冲突只进入诊断报告，暂不改变第一版算术平均公式。
+
+每次 Split 无论成功或失败都写入版本化 history。记录至少包含 parent ID 与 Rubric hash、trigger statistics、cluster 与 child identities、各 child 的 support/accuracy/coverage/Fitness、集体 Fitness、parent Fitness、decision 和 reasons。失败记录中的原因、cluster 划分和 child 描述作为同一 parent 下一次 Split 的 Manager 参考输入，使重新 Split 能避开已验证失败的划分或描述；历史只提供上下文，不覆盖当前数据上的竞争结果。
 
 首个单算子验证对象固定为 `visual_grounding_and_details`。它在 discovery-90 上的 accuracy/coverage/support/wrong 为 `0.6966/0.9889/89/27`，满足触发条件，并且已有实验观察表明视觉 grounding 错误可以形成多个可解释子域。具体 children 仍必须从这27条真实 wrong samples 的 ErrorSignatures 中归纳，不能预先硬编码类别。
 
-当前已实现 Specialize v1 的严格 Manager 协议、trigger、ErrorSignature/cluster/child schema、确定性 Patch、局部 Pairwise artifact 拼装、机制诊断与完整 M1 接受逻辑。真实运行仍按 signatures → cluster review → child proposal → evaluate 分阶段进行；在完成 discovery-90 单算子实验前，不将本项标记为端到端通过。
+当前已实现的旧 Specialize v1 结果保留为历史基线，其 Manager 协议、trigger、ErrorSignature/cluster/child schema、确定性 Patch、局部 Pairwise artifact 拼装和机制诊断继续复用。下一版将术语统一为 Split，并把旧的完整 M1 accuracy-delta 接受逻辑改为上述 $\mathcal{S}(c)$ 上的算术平均集体 Fitness 竞争。真实运行仍按 signatures → cluster review → child proposal → evaluate 分阶段进行；在新的 discovery-90 Split 实验完成前，不将本项标记为端到端通过。
 
 ### 9.3 Create
 
@@ -498,13 +531,13 @@ Specialize 保留 parent，children 数量严格等于有效 cluster 数量，�
 - 只增加 root，不修改已有 node，也不创建 child；
 - M1 接受阶段只补 Pairwise，Router 标记 stale，最终 M2 诊断前再刷新。
 
-Merge、Drop、SplitReplace、Child Router、DAG、example-conditioned Worker 和 learned EdgeCondition 均不属于第一版 Phase 6。
+Merge、Drop、删除 parent 的 Split 消融、Child Router、DAG、example-conditioned Worker 和 learned EdgeCondition 均不属于第一版 Phase 6。
 
 ---
 
 ## 10. Phase 7：接入完整 Evolution Workflow
 
-只有 Refine、Specialize、Create 分别通过后，才根据三者的触发频率、合法率、接受率、收益、失败模式和调用成本冻结调度顺序。
+只有 Refine、Split、Create 分别通过后，才根据三者的触发频率、合法率、接受率、收益、失败模式和调用成本冻结调度顺序。
 
 ```text
 加载当前 Rubric 与 discovery-90 artifacts
@@ -519,12 +552,98 @@ Merge、Drop、SplitReplace、Child Router、DAG、example-conditioned Worker �
 
 最终报告比较 Init Rubric 与 Evolved Rubric。B1/H1/G1/M1/M2 可在 discovery-90 上诊断；heldout-500 只允许 `init-baseline` 和 `final-evaluation` 两个阶段读取。
 
+当前 R007 将 `split-signature-qwen35-heldout-visual` 视为一次性 `final-evaluation`：运行前冻结 parent-only、全部 children 与 discovery 预选的 spatial+direct 三个 Visual 版本，四个新 children 仅通过 8001 推理；报告生成后禁止依据 heldout 选择、改写或调参。
+
+### 10.1 R007：Visual Grounding Split heldout-500 结果
+
+本实验评估由 Qwen/Qwen3.5-397B-A17B Manager 生成的完整 Visual Grounding children 集合能否泛化到 heldout-500。ErrorSignature、语义聚类和 child generation 三个 Manager 阶段统一使用 Qwen/Qwen3.5-397B-A17B；Pairwise Worker 固定为 Qwen3-VL-8B-Instruct、P05（temperature=0.5），所有 heldout 推理仅路由到 8001。四个冻结的 children 为 `visual_factuality_verification`、`spatial_geometric_grounding_accuracy`、`direct_answer_visual_accuracy` 和 `fine_grained_attribute_verification`。
+
+这里的 **Parent only** 特指只保留父准则 `visual_grounding_and_details`，并将它作为唯一 root 独立执行；不挂载任何 children，也不参与原始 M1 中其他四个 root 的投票。父准则输出 A/B 时直接作为该版本的最终判断，输出 abstain 时最终记为 Tie。因而 Parent only 与“全部四个 children”版本的核心差异仅在于：后者在同一个父准则下挂载四个 children，先聚合 children 的多数票，children 平票或全部 abstain 时再回退父准则。
+
+#### 全部 heldout-500 结果
+
+| 版本 | 正确数 | Accuracy | Coverage | Covered Accuracy |
+|---|---:|---:|---:|---:|
+| Parent only（仅 `visual_grounding_and_details`） | 313 / 500 | 0.626 | 0.940 | 0.6660 |
+| 全部四个 children + parent fallback | **352 / 500** | **0.704** | **0.976** | **0.7213** |
+| Discovery 预选 Spatial + Direct | 327 / 500 | 0.654 | 0.966 | 0.6770 |
+| 原始完整 M1 | 325 / 500 | 0.650 | 0.972 | 0.6687 |
+
+完整 children 集合相对 Parent only 提升 `+7.8` percentage points，相对原始完整 M1 提升 `+5.4` percentage points。配对比较如下：
+
+| 配对比较 | Corrected | Harmed | Net corrected | McNemar exact p |
+|---|---:|---:|---:|---:|
+| Parent → 全部 children | 66 | 27 | +39 | **0.0000647** |
+| Parent → Spatial + Direct | 45 | 31 | +14 | 0.1354 |
+| 原始完整 M1 → 全部 children | 72 | 45 | +27 | **0.0159** |
+| 原始完整 M1 → Spatial + Direct | 50 | 48 | +2 | 0.9196 |
+
+完整四-child 集合的提升具有统计显著性；discovery-90 预选的 Spatial + Direct 子集没有产生显著提升，说明四个 children 的互补作用不能由 discovery 上的局部筛选稳定替代。
+
+#### 父准则固定覆盖区域上的 Specialized Accuracy
+
+heldout-500 中，父准则 `visual_grounding_and_details` 在 470 个样本上产生有效 A/B，因此 Split 的正式竞争区域固定为：
+
+$$
+\mathcal{S}(c_p)=\{x\mid c_p(x)\in\{A,B\}\},\qquad |\mathcal{S}(c_p)|=470.
+$$
+
+在该区域内，children 先进行多数投票；children 平票或全部 abstain 时回退父准则。统一分母后的结果如下：
+
+| 版本 | 正确数（父区域） | Specialized Accuracy | 相对 Parent | Corrected / Harmed | McNemar exact p |
+|---|---:|---:|---:|---:|---:|
+| Parent only | 313 / 470 | 0.6660 | — | — | — |
+| 全部四个 children + parent fallback | **340 / 470** | **0.7234** | **+5.74 pp** | 54 / 27 | **0.0036** |
+| Spatial + Direct + parent fallback | 319 / 470 | 0.6787 | +1.28 pp | 37 / 31 | 0.5446 |
+
+完整 children 集合满足修正后的 Split 接受条件：
+
+$$
+\operatorname{Acc}_{\mathrm{spec}}(c_p,\mathcal{C};\mathcal{S}(c_p))
+\ge
+\operatorname{Acc}_{\mathrm{parent}}(c_p;\mathcal{S}(c_p)),
+$$
+
+因此应当整体保留。旧实现使用 child Fitness 算术平均并加入长度、coverage 惩罚，曾将该候选判为 reject；heldout 结果说明旧规则对本次有效 Split 产生了 false negative，并为“Split 只以局部 Specialized Accuracy 作为优化目标”的修正提供了直接证据。
+
+父准则区域外还有 30 个样本。完整 children 对其中 18 个样本给出有效判断并正确 12 个（covered accuracy `0.6667`）。该覆盖扩张只作为诊断，不进入 Split 的局部接受条件。
+
+#### Child 质量与适用性诊断
+
+| Child | 父区域 Support | 父区域 Coverage | 覆盖内 Accuracy |
+|---|---:|---:|---:|
+| Visual factuality | 418 | 0.889 | 0.7225 |
+| Spatial grounding | 289 | 0.615 | 0.6990 |
+| Direct answer | 368 | 0.783 | **0.7283** |
+| Fine-grained attributes | 423 | 0.900 | 0.6927 |
+
+| 激活与冲突指标（父区域） | 数量 | 比例 |
+|---|---:|---:|
+| 至少两个 children 投票 | 433 / 470 | 92.1% |
+| 四个 children 全部投票 | 210 / 470 | 44.7% |
+| Sibling A/B 冲突 | 137 / 470 | 29.1% |
+
+当前 children 更接近多个高度重叠的视觉评审器，而不是边界清晰、互斥的语义子区域；Pairwise Worker 对 `Applicable only when` 的执行仍然偏宽。该问题不在 Split 阶段通过删除较弱 child 解决，而交由后续 `define` 算子收紧描述和适用性。重叠也产生了有效 ensemble 收益：在 137 个 sibling 冲突样本上，Parent Accuracy 为 `0.526`，完整 children 子树为 `0.642`。
+
+#### 结论与边界
+
+> 在 heldout-500 上，由 397B Manager 生成的完整 Visual Grounding children 集合，将父准则固定覆盖区域的准确率从 66.60% 提高到 72.34%（`+5.74 pp`，McNemar exact `p=0.0036`），满足修正后的 Split 接受条件，应整体保留。
+
+需要保留以下结论边界：
+
+- `all_children=0.704` 是“Visual 子树作为唯一 root”的独立结果，不等价于“将 children 接入完整 M1 后”的系统结果；
+- 结果说明视觉子树具有较强判别能力，但尚不能单独证明“先判断 Visual Grounding、再执行其他 roots”的层级因果机制；
+- children 仍有适用范围过宽和输出偏向 B 的风险，需要在新开发集上由 `define` 与位置交换诊断继续验证；
+- heldout-500 已作为一次性 final evaluation 使用，不得再依据该报告选择、删除或改写 children；后续完整 M1 集成实验必须使用新的验证划分。
+
+实验 artifact：`output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_signature_qwen35_397b/heldout_visual_only/report.json`。
+
 ---
 
 ## 11. 后续候选
 
 - **Merge / Drop**：在前三个算子稳定后再处理节点重挂接和历史生存状态；
-- **SplitReplace**：作为“删除 parent”消融，与保留 parent 的 Specialize 分开；
+- **删除 parent 的 Split 消融**：与正式的“保留 parent 并挂载 children”Split 分开；
 - **Child Router**：替代固定 EdgeCondition 选择 children，但不得改变 Pairwise 权威 vote；
 - **DAG / learned edge / examples 进入 Worker**：分别作为后续独立扩展，不与第一版演化闭环混合。
 
@@ -538,11 +657,14 @@ Merge、Drop、SplitReplace、Child Router、DAG、example-conditioned Worker �
 - [x] discovery-90 用于反馈、筛选和接受；heldout-500 只用于 Init/Final
 - [x] Init Rubric 使用 Multi-Crit Open-ended 五条原文，结构为 5 roots / 0 edges
 - [x] Gap 从 all-node Pairwise artifact 计算，不受 traversal 隐藏节点影响
-- [x] Specialize 使用 ErrorSignature → Cluster → Child，并保留 parent
-- [x] 第一版 Specialize edges 全部使用 `ALWAYS`
-- [x] Refine、Specialize、Create 单独通过后才组合 workflow
+- [x] Split 使用 ErrorSignature → Cluster → Child，并保留 parent
+- [x] 第一版 Split edges 全部使用 `ALWAYS`
+- [x] Split children examples 不进入 Pairwise Worker
+- [x] 第一版 Split 集体 Fitness 使用 child Fitness 算术平均
+- [x] Refine、Split、Create 单独通过后才组合 workflow
 - [x] Phase 5 Init baseline 与 feedback report 完成
 - [x] 根据 Phase 5 实测分布冻结 trigger 与结构阈值
 - [x] 冻结精简的 candidate acceptance 与单次 P05 execution 规则
+- [ ] Split 竞争成功时整体接纳 children，失败时完整回退并记录可供下一轮参考的 history
 - [ ] 三个单算子分别完成端到端验证
 - [ ] Phase 7 调度顺序完成 review 并冻结

@@ -13,6 +13,15 @@ from critiq.specialize_prompts import (
 )
 
 from critiq.agent import AgentCallMetrics
+from experiments.evolving_structured_rubrics.run_rubric_evolution import (
+    _activation_summary,
+    _heldout_vote_metrics,
+    _paired_heldout_comparison,
+    _visual_variant_rubric,
+    _multimodal_child_config,
+    _qwen35_signature_config,
+    _split_set_summary,
+)
 from critiq.structured import (
     CandidateAcceptancePolicy,
     ClusterProposal,
@@ -334,7 +343,120 @@ class SpecializeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             assemble_specialized_pairwise_prediction(base, base, rubric)
 
-    def test_full_m1_controls_acceptance_and_low_fitness_is_only_risk(self):
+    def test_multimodal_child_ablation_changes_only_input_mode(self):
+        control = {
+            "specialize_managers": {
+                "child_generation": {
+                    "model": "Qwen/Qwen3.5-397B-A17B",
+                    "backend_pool": {"pool_id": "same-pool"},
+                    "api_key_env": "GUIJI_API_KEY",
+                    "input_mode": "text",
+                    "request_kwargs": {"temperature": 0.7, "seed": 42},
+                    "vllm_identity": None,
+                }
+            },
+            "sentinel": ["unchanged"],
+        }
+        treatment = _multimodal_child_config(control)
+        self.assertEqual(control["specialize_managers"]["child_generation"]["input_mode"],
+                         "text")
+        self.assertEqual(treatment["specialize_managers"]["child_generation"]["input_mode"],
+                         "multimodal")
+        left = dict(control["specialize_managers"]["child_generation"])
+        right = dict(treatment["specialize_managers"]["child_generation"])
+        left.pop("input_mode"); right.pop("input_mode")
+        self.assertEqual(left, right)
+        self.assertEqual(control["sentinel"], treatment["sentinel"])
+        with self.assertRaises(ValueError):
+            _multimodal_child_config({})
+        with self.assertRaises(ValueError):
+            _multimodal_child_config(treatment)
+    def test_qwen35_signature_ablation_changes_only_model_identity(self):
+        error_profile = {
+            "model": "Qwen/Qwen3-VL-8B-Instruct",
+            "backend_pool": {"pool_id": "local-8b"},
+            "api_key_env": None,
+            "input_mode": "multimodal",
+            "request_kwargs": {"temperature": 0.2, "seed": 42},
+            "vllm_identity": {"version": "0.11.0", "max_model_len": 25800},
+        }
+        child_profile = {
+            "model": "Qwen/Qwen3.5-397B-A17B",
+            "backend_pool": {"pool_id": "remote-397b"},
+            "api_key_env": "GUIJI_API_KEY",
+            "input_mode": "text",
+            "request_kwargs": {"temperature": 0.7, "seed": 42},
+            "vllm_identity": None,
+        }
+        control = {"specialize_managers": {
+            "error_signature": error_profile,
+            "semantic_cluster": {"sentinel": "unchanged"},
+            "child_generation": child_profile,
+        }, "sentinel": ["unchanged"]}
+        treatment = _qwen35_signature_config(control)
+        result = treatment["specialize_managers"]["error_signature"]
+        self.assertEqual(result["model"], child_profile["model"])
+        self.assertEqual(result["backend_pool"], child_profile["backend_pool"])
+        self.assertEqual(result["api_key_env"], child_profile["api_key_env"])
+        self.assertEqual(result["vllm_identity"], child_profile["vllm_identity"])
+        self.assertEqual(result["input_mode"], error_profile["input_mode"])
+        self.assertEqual(result["request_kwargs"], error_profile["request_kwargs"])
+        self.assertEqual(control["specialize_managers"]["error_signature"], error_profile)
+        self.assertEqual(treatment["specialize_managers"]["semantic_cluster"],
+                         {"sentinel": "unchanged"})
+        self.assertEqual(treatment["sentinel"], control["sentinel"])
+        with self.assertRaises(ValueError):
+            _qwen35_signature_config({})
+    def test_split_set_summary_uses_weighted_target_accuracy(self):
+        diagnostic_a = type("Diagnostic", (), {
+            "cluster_support": 2, "cluster_accuracy": 0.5,
+            "accuracy": 0.6, "coverage": 0.7, "fitness": 0.4,
+            "non_target_decisive": 3, "non_target_wrong": 1})()
+        diagnostic_b = type("Diagnostic", (), {
+            "cluster_support": 3, "cluster_accuracy": 2 / 3,
+            "accuracy": 0.8, "coverage": 0.5, "fitness": 0.6,
+            "non_target_decisive": 4, "non_target_wrong": 2})()
+        candidate = type("CandidateEvaluation", (), {
+            "before_accuracy": 0.5, "after_accuracy": 0.6, "accuracy_delta": 0.1,
+            "corrected_count": 2, "harmed_count": 1})()
+        subtree = type("SubtreeDiagnostic", (), {
+            "specialized_accuracy": 0.7, "specialized_coverage": 0.8})()
+        evaluation = type("Evaluation", (), {
+            "child_diagnostics": (diagnostic_a, diagnostic_b),
+            "collective_fitness": 0.5, "parent_fitness": 0.7,
+            "fitness_delta": -0.2, "candidate_evaluation": candidate,
+            "subtree_diagnostic": subtree})()
+        summary = _split_set_summary(evaluation)
+        self.assertEqual(summary["target_cluster_support"], 5)
+        self.assertEqual(summary["target_cluster_correct"], 3)
+        self.assertAlmostEqual(summary["target_cluster_accuracy"], 0.6)
+        self.assertEqual(summary["non_target_wrong"], 3)
+        self.assertAlmostEqual(summary["mean_fitness"], 0.5)
+
+    def test_activation_summary_is_restricted_to_parent_domain(self):
+        base = {"samples": [
+            {"sample_id": "s1", "node_outputs": {"parent": {"vote": "A"}}},
+            {"sample_id": "s2", "node_outputs": {"parent": {"vote": "abstain"}}},
+            {"sample_id": "s3", "node_outputs": {"parent": {"vote": "B"}}},
+        ]}
+        child = {"criteria": [{"name": "c1"}, {"name": "c2"}], "samples": [
+            {"sample_id": "s1", "node_outputs": {
+                "c1": {"vote": "A"}, "c2": {"vote": "B"}}},
+            {"sample_id": "s2", "node_outputs": {
+                "c1": {"vote": "A"}, "c2": {"vote": "A"}}},
+            {"sample_id": "s3", "node_outputs": {
+                "c1": {"vote": "abstain"}, "c2": {"vote": "B"}}},
+        ]}
+        with patch(
+                "experiments.evolving_structured_rubrics.run_rubric_evolution.load_json",
+                side_effect=(base, child)):
+            summary = _activation_summary("base.json", "child.json", "parent")
+        self.assertEqual(summary["parent_domain"], 2)
+        self.assertEqual(summary["activation_distribution"], {"1": 1, "2": 1})
+        self.assertAlmostEqual(summary["mean_active_children"], 1.5)
+        self.assertEqual(summary["samples_with_all_children_active"], 1)
+        self.assertEqual(summary["sibling_conflict_samples"], 1)
+    def test_collective_fitness_controls_split_acceptance(self):
         dataset = (
             {"sample_id": "s0", "image_path": "http://image/0", "question": "q",
              "A": "a", "B": "b", "answer": "A"},
@@ -358,15 +480,6 @@ class SpecializeTests(unittest.TestCase):
         base = PairwisePredictionOutput(("s0", "s1"), fingerprints,
             (StructuredCriterionSnapshot("parent", "Parent criterion"),), base_rows,
             tuple(aggregate_flat_votes(item.vote for item in row.values()) for row in base_rows), spec)
-        child_rows = (
-            {"child_a": _vote(Vote.A), "child_b": _vote(Vote.A)},
-            {"child_a": _vote(Vote.A), "child_b": _vote(Vote.A)},
-        )
-        child_prediction = PairwisePredictionOutput(("s0", "s1"), fingerprints, (
-            StructuredCriterionSnapshot("child_a", "A child"),
-            StructuredCriterionSnapshot("child_b", "B child")), child_rows,
-            tuple(aggregate_flat_votes(item.vote for item in row.values()) for row in child_rows), spec)
-        combined = assemble_specialized_pairwise_prediction(base, child_prediction, after)
         clusters = ClusterProposal((
             SemanticCluster("a", "A", "fa", "da", ("s0",)),
             SemanticCluster("b", "B", "fb", "db", ("s1",))), (), "raw", 1,
@@ -380,24 +493,77 @@ class SpecializeTests(unittest.TestCase):
         patch = RubricPatch(before.rubric_sha256, upsert_nodes=tuple(children_nodes.values()),
             add_edges=after.edges, root_ids=before.root_ids)
         candidate = SpecializeCandidate("parent",
-            EditCandidate("candidate", OperatorKind.SPECIALIZE, "specialize", patch),
+            EditCandidate("candidate", OperatorKind.SPLIT, "split", patch),
             clusters, child_proposals, {"a": "child_a", "b": "child_b"})
-        result, _, _ = evaluate_specialize_candidate(
-            before_rubric=before, after_rubric=after, combined_prediction=combined,
-            child_prediction=child_prediction, dataset=dataset, parent_node_id="parent",
-            cluster_proposal=clusters, candidate=candidate,
-            policy=CandidateAcceptancePolicy(.4, .95), parent_fitness=2.0)
-        self.assertEqual(result.candidate_evaluation.decision.value, "accept")
-        self.assertIn("child_fitness_below_parent", result.subtree_diagnostic.mechanism_risks)
-        self.assertEqual(SpecializeEvaluation.from_dict(result.to_dict()), result)
 
-        rejected, _, _ = evaluate_specialize_candidate(
-            before_rubric=before, after_rubric=after, combined_prediction=combined,
-            child_prediction=child_prediction, dataset=dataset, parent_node_id="parent",
-            cluster_proposal=clusters, candidate=candidate,
-            policy=CandidateAcceptancePolicy(.6, .95), parent_fitness=0.0)
+        def evaluate_rows(child_rows):
+            child_prediction = PairwisePredictionOutput(("s0", "s1"), fingerprints, (
+                StructuredCriterionSnapshot("child_a", "A child"),
+                StructuredCriterionSnapshot("child_b", "B child")), child_rows,
+                tuple(aggregate_flat_votes(item.vote for item in row.values())
+                      for row in child_rows), spec)
+            combined = assemble_specialized_pairwise_prediction(base, child_prediction, after)
+            return evaluate_specialize_candidate(
+                before_rubric=before, after_rubric=after, combined_prediction=combined,
+                child_prediction=child_prediction, dataset=dataset, parent_node_id="parent",
+                cluster_proposal=clusters, candidate=candidate,
+                policy=CandidateAcceptancePolicy(.6, .95))[0]
+
+        accepted = evaluate_rows((
+            {"child_a": _vote(Vote.A), "child_b": _vote(Vote.A)},
+            {"child_a": _vote(Vote.A), "child_b": _vote(Vote.A)},
+        ))
+        self.assertEqual(accepted.candidate_evaluation.decision.value, "accept")
+        self.assertGreater(accepted.collective_fitness, accepted.parent_fitness)
+        self.assertIn("full_m1_guardrail_failed", accepted.subtree_diagnostic.mechanism_risks)
+        self.assertEqual(SpecializeEvaluation.from_dict(accepted.to_dict()), accepted)
+
+        rejected = evaluate_rows((
+            {"child_a": _vote(Vote.B), "child_b": _vote(Vote.B)},
+            {"child_a": _vote(Vote.B), "child_b": _vote(Vote.B)},
+        ))
         self.assertEqual(rejected.candidate_evaluation.decision.value, "reject")
+        self.assertIn("collective_fitness_not_above_parent",
+                      rejected.candidate_evaluation.reasons)
 
+        unsupported = evaluate_rows((
+            {"child_a": _vote(Vote.ABSTAIN), "child_b": _vote(Vote.ABSTAIN)},
+            {"child_a": _vote(Vote.ABSTAIN), "child_b": _vote(Vote.ABSTAIN)},
+        ))
+        self.assertEqual(unsupported.candidate_evaluation.decision.value, "reject")
+        self.assertIn("child_zero_support_in_parent_scope",
+                      unsupported.candidate_evaluation.reasons)
 
+class HeldoutVisualStageTest(unittest.TestCase):
+    def test_vote_metrics_and_paired_comparison_use_gold(self):
+        rows = (
+            {"sample_id": "s0", "answer": "A"},
+            {"sample_id": "s1", "answer": "B"},
+            {"sample_id": "s2", "answer": "A"},
+        )
+        baseline = (FinalPreference.B, FinalPreference.B, FinalPreference.TIE)
+        treatment = (FinalPreference.A, FinalPreference.A, FinalPreference.TIE)
+        metrics = _heldout_vote_metrics(treatment, rows)
+        self.assertEqual(metrics["correct_count"], 1)
+        self.assertEqual(metrics["coverage_count"], 2)
+        paired = _paired_heldout_comparison(baseline, treatment, rows)
+        self.assertEqual(paired["corrected_sample_ids"], ["s0"])
+        self.assertEqual(paired["harmed_sample_ids"], ["s1"])
+        self.assertEqual(paired["mcnemar_exact_two_sided_p"], 1.0)
+
+    def test_visual_variant_excludes_other_roots_and_unselected_children(self):
+        nodes = {
+            name: RubricNode(name, RubricCriterionSnapshot(name, name, 1.0))
+            for name in ("parent", "child_a", "child_b", "other_root")
+        }
+        rubric = StructuredRubric(nodes, (
+            RubricEdge("parent", "child_a", EdgeCondition.ALWAYS),
+            RubricEdge("parent", "child_b", EdgeCondition.ALWAYS),
+        ), ("parent", "other_root"))
+        selected = _visual_variant_rubric(rubric, "parent", ("child_a",))
+        self.assertEqual(set(selected.nodes), {"parent", "child_a"})
+        self.assertEqual(selected.root_ids, ("parent",))
+        self.assertEqual(selected.edges, (
+            RubricEdge("parent", "child_a", EdgeCondition.ALWAYS),))
 if __name__ == "__main__":
     unittest.main()

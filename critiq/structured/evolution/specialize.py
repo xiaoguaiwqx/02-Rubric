@@ -37,8 +37,10 @@ from .specialize_types import (
 )
 from .types import (
     CandidateAcceptancePolicy,
+    CandidateEvaluation,
     EditCandidate,
     EvolutionContext,
+    EvolutionDecision,
     OperatorKind,
     RubricPatch,
     evaluate_candidate,
@@ -259,28 +261,28 @@ def build_specialize_candidate(
             criterion=RubricCriterionSnapshot(child.criterion_name, child.description,
                                                parent.criterion.score),
             examples=tuple(examples),
-            lineage={"operator": "specialize", "parent_node_id": parent_node_id,
+            lineage={"operator": "split", "parent_node_id": parent_node_id,
                      "cluster": cluster.to_dict(), "rationale": child.rationale,
-                     "specialize_version": "1.0.0"},
+                     "split_version": "1.0.0"},
         ))
         edges.append(RubricEdge(parent_node_id, node_id, EdgeCondition.ALWAYS))
     patch = RubricPatch(context.rubric.rubric_sha256, upsert_nodes=tuple(upserts),
                         add_edges=tuple(edges), root_ids=context.rubric.root_ids)
     payload = json.dumps(patch.to_dict(), sort_keys=True, ensure_ascii=False).encode("utf-8")
-    edit = EditCandidate(f"specialize_{hashlib.sha256(payload).hexdigest()[:12]}",
-                         OperatorKind.SPECIALIZE,
-                         f"Specialize {parent.criterion.name} into {len(children)} error subdomains",
+    edit = EditCandidate(f"split_{hashlib.sha256(payload).hexdigest()[:12]}",
+                         OperatorKind.SPLIT,
+                         f"Split {parent.criterion.name} into {len(children)} error subdomains",
                          patch)
     candidate = SpecializeCandidate(parent_node_id, edit, cluster_proposal, children, mapping)
     after = apply_rubric_patch(context.rubric, patch)
     diff = diff_rubrics(context.rubric, after)
     if diff.modified_node_ids or diff.removed_node_ids or diff.removed_edges or diff.root_ids_changed:
-        raise ValueError("Specialize patch may only add children and edges")
+        raise ValueError("Split patch may only add children and edges")
     if any(edge.condition is not EdgeCondition.ALWAYS for edge in diff.added_edges):
-        raise ValueError("Specialize v1 edges must be ALWAYS")
+        raise ValueError("Split v1 edges must be ALWAYS")
     refresh = plan_artifact_refresh(context.rubric, after)
     if refresh.refresh_gate_node_ids or refresh.remove_gate_criterion_names or refresh.router_stale:
-        raise ValueError("Specialize v1 must not refresh Gate or Router")
+        raise ValueError("Split v1 must not refresh Gate or Router")
     return candidate
 
 
@@ -367,7 +369,6 @@ def evaluate_specialize_candidate(
     cluster_proposal: ClusterProposal,
     candidate: SpecializeCandidate,
     policy: CandidateAcceptancePolicy,
-    parent_fitness: float,
 ) -> tuple[SpecializeEvaluation, Any, Any]:
     before_prediction = project_pairwise_prediction(combined_prediction, before_rubric)
     before_execution, before_answers = execute_offline_m1(before_rubric, before_prediction, dataset)
@@ -378,35 +379,58 @@ def evaluate_specialize_candidate(
     base_valid = sum(output.parse_ok and output.answer_valid
                      for row in before_prediction.node_outputs for output in row.values()) / (
                          len(before_prediction.node_outputs) * len(before_prediction.criteria))
-    paired = evaluate_candidate(before_answers, after_answers, gold,
-                                before_valid_rate=base_valid,
-                                final_valid_rate=valid_rate, policy=policy)
+    m1_diagnostic = evaluate_candidate(
+        before_answers, after_answers, gold, before_valid_rate=base_valid,
+        final_valid_rate=valid_rate, policy=policy)
+
+    parent = before_rubric.get_node(parent_node_id)
+    parent_name = parent.criterion.name
+    parent_outputs = tuple(row[parent_name] for row in combined_prediction.node_outputs)
+    parent_scope = tuple(
+        output.parse_ok and output.answer_valid and output.vote in {Vote.A, Vote.B}
+        for output in parent_outputs)
+    parent_support = sum(parent_scope)
+    if parent_support == 0:
+        raise ValueError("Split parent has zero support and no applicability domain")
+    parent_correct = tuple(
+        parent_scope[index] and output.vote.value == gold[index]
+        for index, output in enumerate(parent_outputs))
+    parent_accuracy = sum(parent_correct) / parent_support
+    parent_fitness = criterion_fitness(
+        parent_accuracy, 1.0, len(parent.criterion.description))
 
     cluster_by_name = {}
     for child in candidate.children:
         cluster_by_name[child.criterion_name] = next(
             cluster for cluster in cluster_proposal.clusters if cluster.cluster_id == child.cluster_id)
     child_diagnostics: list[ChildDiagnostic] = []
-    child_fitness_below = False
     row_index = {str(row["sample_id"]): index for index, row in enumerate(dataset)}
     for child in candidate.children:
         outputs = tuple(row[child.criterion_name] for row in combined_prediction.node_outputs)
-        decisive = [output.parse_ok and output.answer_valid and output.vote in {Vote.A, Vote.B}
-                    for output in outputs]
-        correct = [decisive[index] and output.vote.value == gold[index]
-                   for index, output in enumerate(outputs)]
-        support = sum(decisive); accuracy = sum(correct) / support if support else 0.0
-        coverage = support / len(dataset)
+        decisive = [
+            parent_scope[index] and output.parse_ok and output.answer_valid
+            and output.vote in {Vote.A, Vote.B}
+            for index, output in enumerate(outputs)]
+        correct = [
+            decisive[index] and output.vote.value == gold[index]
+            for index, output in enumerate(outputs)]
+        support = sum(decisive)
+        accuracy = sum(correct) / support if support else 0.0
+        coverage = support / parent_support
         child_valid = sum(output.parse_ok and output.answer_valid for output in outputs) / len(outputs)
         cluster = cluster_by_name[child.criterion_name]
-        cluster_indices = [row_index[sample_id] for sample_id in cluster.sample_ids]
+        cluster_indices = [row_index[sample_id] for sample_id in cluster.sample_ids
+                           if parent_scope[row_index[sample_id]]]
         cluster_support = sum(decisive[index] for index in cluster_indices)
         cluster_correct = sum(correct[index] for index in cluster_indices)
-        non_target = [index for index in range(len(dataset)) if index not in set(cluster_indices)]
+        cluster_index_set = set(cluster_indices)
+        non_target = [index for index, applicable in enumerate(parent_scope)
+                      if applicable and index not in cluster_index_set]
         non_target_decisive = sum(decisive[index] for index in non_target)
         non_target_wrong = sum(decisive[index] and not correct[index] for index in non_target)
-        non_target_abstain = sum(outputs[index].parse_ok and outputs[index].answer_valid
-                                 and outputs[index].vote is Vote.ABSTAIN for index in non_target)
+        non_target_abstain = sum(
+            outputs[index].parse_ok and outputs[index].answer_valid
+            and outputs[index].vote is Vote.ABSTAIN for index in non_target)
         node_id = candidate.node_id_by_cluster[child.cluster_id]
         child_rubric = apply_rubric_patch(after_rubric, RubricPatch(
             after_rubric.rubric_sha256, remove_node_ids=(node_id,), root_ids=after_rubric.root_ids))
@@ -415,7 +439,6 @@ def evaluate_specialize_candidate(
         after_correct = [value.value == target for value, target in zip(after_answers, gold)]
         leave_correct = [value.value == target for value, target in zip(leave_answers, gold)]
         fitness = criterion_fitness(accuracy, coverage, len(child.description))
-        child_fitness_below = child_fitness_below or fitness < parent_fitness
         child_diagnostics.append(ChildDiagnostic(
             node_id=node_id, criterion_name=child.criterion_name, support=support,
             accuracy=accuracy, coverage=coverage, valid_rate=child_valid, fitness=fitness,
@@ -428,8 +451,23 @@ def evaluate_specialize_candidate(
             leave_one_out_m1_delta=_accuracy(after_answers, gold) - _accuracy(leave_answers, gold),
         ))
 
-    parent_name = before_rubric.get_node(parent_node_id).criterion.name
-    parent_votes = tuple(row[parent_name].vote for row in combined_prediction.node_outputs)
+    collective_fitness = sum(item.fitness for item in child_diagnostics) / len(child_diagnostics)
+    fitness_delta = collective_fitness - parent_fitness
+    reasons: list[str] = []
+    if any(item.support == 0 for item in child_diagnostics):
+        reasons.append("child_zero_support_in_parent_scope")
+    if collective_fitness <= parent_fitness:
+        reasons.append("collective_fitness_not_above_parent")
+    paired = CandidateEvaluation(
+        m1_diagnostic.before_accuracy, m1_diagnostic.after_accuracy,
+        m1_diagnostic.accuracy_delta, m1_diagnostic.before_coverage,
+        m1_diagnostic.after_coverage, m1_diagnostic.corrected_count,
+        m1_diagnostic.harmed_count, m1_diagnostic.before_valid_rate,
+        m1_diagnostic.final_valid_rate,
+        EvolutionDecision.REJECT if reasons else EvolutionDecision.ACCEPT,
+        tuple(reasons))
+
+    parent_votes = tuple(output.vote for output in parent_outputs)
     after_trace_by_sample = {trace.sample_id: trace for trace in after_execution.traces}
     subtree_votes = []
     subtree_conflicts = 0
@@ -440,31 +478,37 @@ def evaluate_specialize_candidate(
         if (node_trace.local_vote in {Vote.A, Vote.B} and node_trace.subtree_vote in {Vote.A, Vote.B}
                 and node_trace.local_vote is not node_trace.subtree_vote):
             subtree_conflicts += 1
-    parent_correct = [vote.value == target for vote, target in zip(parent_votes, gold)]
     subtree_correct = [vote.value == target for vote, target in zip(subtree_votes, gold)]
-    corrected = tuple(str(row["sample_id"]) for row, old, new in zip(dataset, parent_correct, subtree_correct)
-                      if not old and new)
-    harmed = tuple(str(row["sample_id"]) for row, old, new in zip(dataset, parent_correct, subtree_correct)
-                   if old and not new)
+    corrected = tuple(str(row["sample_id"]) for row, old, new
+                      in zip(dataset, parent_correct, subtree_correct) if not old and new)
+    harmed = tuple(str(row["sample_id"]) for row, old, new
+                   in zip(dataset, parent_correct, subtree_correct) if old and not new)
     sibling_pairs = list(combinations(candidate.children, 2))
     agreements = []
     conflict_samples: set[int] = set()
     for left, right in sibling_pairs:
         for index, row in enumerate(combined_prediction.node_outputs):
+            if not parent_scope[index]:
+                continue
             a, b = row[left.criterion_name], row[right.criterion_name]
-            if a.parse_ok and a.answer_valid and a.vote in {Vote.A, Vote.B} and b.parse_ok and b.answer_valid and b.vote in {Vote.A, Vote.B}:
+            if (a.parse_ok and a.answer_valid and a.vote in {Vote.A, Vote.B}
+                    and b.parse_ok and b.answer_valid and b.vote in {Vote.A, Vote.B}):
                 agreements.append(a.vote is b.vote)
                 if a.vote is not b.vote:
                     conflict_samples.add(index)
     risks = []
-    if child_fitness_below:
+    if any(item.fitness < parent_fitness for item in child_diagnostics):
         risks.append("child_fitness_below_parent")
     parent_acc, subtree_acc = _accuracy(parent_votes, gold), _accuracy(subtree_votes, gold)
     if subtree_acc < parent_acc:
         risks.append("subtree_local_regression")
+    if m1_diagnostic.decision is EvolutionDecision.REJECT:
+        risks.append("full_m1_guardrail_failed")
     subtree = SubtreeDiagnostic(
         parent_acc, _coverage(parent_votes), subtree_acc, _coverage(subtree_votes), corrected, harmed,
         sum(agreements) / len(agreements) if agreements else 0.0,
         len(conflict_samples), subtree_conflicts, tuple(risks),
     )
-    return SpecializeEvaluation(paired, tuple(child_diagnostics), subtree, valid_rate), before_execution, after_execution
+    return SpecializeEvaluation(
+        paired, tuple(child_diagnostics), subtree, valid_rate, parent_fitness,
+        collective_fitness, fitness_delta), before_execution, after_execution

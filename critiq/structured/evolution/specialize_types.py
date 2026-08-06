@@ -468,6 +468,9 @@ class SpecializeEvaluation:
     child_diagnostics: tuple[ChildDiagnostic, ...]
     subtree_diagnostic: SubtreeDiagnostic
     new_children_final_valid_rate: float
+    parent_fitness: float
+    collective_fitness: float
+    fitness_delta: float
 
     def __post_init__(self) -> None:
         if not isinstance(self.candidate_evaluation, CandidateEvaluation):
@@ -479,22 +482,34 @@ class SpecializeEvaluation:
             raise TypeError("subtree_diagnostic must be SubtreeDiagnostic")
         if not math.isfinite(self.new_children_final_valid_rate) or not 0 <= self.new_children_final_valid_rate <= 1:
             raise ValueError("new_children_final_valid_rate must be in [0, 1]")
+        for name in ("parent_fitness", "collective_fitness", "fitness_delta"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                raise ValueError(f"{name} must be finite")
+        if not math.isclose(self.fitness_delta, self.collective_fitness - self.parent_fitness,
+                            abs_tol=1e-12):
+            raise ValueError("fitness_delta does not match collective-parent fitness")
 
     def to_dict(self) -> dict[str, Any]:
         return {"schema_version": SPECIALIZE_SCHEMA_VERSION,
                 "candidate_evaluation": self.candidate_evaluation.to_dict(),
                 "child_diagnostics": [item.to_dict() for item in self.child_diagnostics],
                 "subtree_diagnostic": self.subtree_diagnostic.to_dict(),
-                "new_children_final_valid_rate": self.new_children_final_valid_rate}
+                "new_children_final_valid_rate": self.new_children_final_valid_rate,
+                "parent_fitness": self.parent_fitness,
+                "collective_fitness": self.collective_fitness,
+                "fitness_delta": self.fitness_delta}
 
     @classmethod
     def from_dict(cls, value: object) -> "SpecializeEvaluation":
         value = _versioned(value, {"candidate_evaluation", "child_diagnostics",
-                                   "subtree_diagnostic", "new_children_final_valid_rate"},
+                                   "subtree_diagnostic", "new_children_final_valid_rate",
+                                   "parent_fitness", "collective_fitness", "fitness_delta"},
                            "specialize evaluation")
         if not isinstance(value["child_diagnostics"], list):
             raise ValueError("child_diagnostics must be a list")
         return cls(CandidateEvaluation.from_dict(value["candidate_evaluation"]),
                    tuple(ChildDiagnostic.from_dict(item) for item in value["child_diagnostics"]),
                    SubtreeDiagnostic.from_dict(value["subtree_diagnostic"]),
-                   value["new_children_final_valid_rate"])
+                   value["new_children_final_valid_rate"], value["parent_fitness"],
+                   value["collective_fitness"], value["fitness_delta"])

@@ -124,6 +124,26 @@ def make_progress_callback(
     lock = threading.Lock()
     log_path = output / f"logs/{stage}.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    initial_line = f"{stage}: 0/{total} started"
+    print(initial_line, flush=True)
+    with log_path.open("a", encoding="utf-8") as handle:
+        handle.write(initial_line + "\n")
+    atomic_write_json(output / "progress.json", {
+        "stage": stage,
+        "completed": 0,
+        "total": total,
+        "percent": 0.0,
+        "current_sample_id": None,
+        "elapsed_seconds": 0.0,
+        "eta_seconds": None,
+        "rolling_mean_seconds": None,
+        "current_sample_api_attempts": 0,
+        "current_sample_errors": 0,
+        "pool_api_attempts": 0,
+        "pool_errors": 0,
+        "pool_usage_complete": True,
+        "endpoint_call_counts": {},
+    })
 
     def callback(index: int, sample_id: str, metrics: ModelCallMetrics) -> None:
         nonlocal completed
