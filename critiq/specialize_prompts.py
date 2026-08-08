@@ -65,6 +65,44 @@ Return exactly one JSON object:
 }}
 Do not output Markdown or additional fields."""
 
+SPLIT_FAILURE_ATTRIBUTION_PROMPT = """## Task
+Diagnose why the complete child set from a failed Split reduced accuracy on the
+parent criterion's frozen applicability domain. Attribute the operator failure,
+not the overall response quality. Use the supplied corrected/harmed cases and
+metrics. Do not propose deleting one child from the current set; the next Split
+must regenerate a coherent complete set.
+
+## Parent criterion
+Name: {criterion_name}
+Description: {criterion_description}
+
+## Error signatures used by this Split
+{signatures_json}
+
+## Cluster proposal
+{cluster_json}
+
+## Generated children
+{children_json}
+
+## Local Split metrics
+{metrics_json}
+
+## Changed parent-domain predictions
+{changed_predictions_json}
+
+Return exactly one JSON object:
+{{
+  "summary": "a concise natural-language explanation of why this Split failed",
+  "failure_categories": ["lower_snake_case_category"],
+  "details": ["specific evidence-backed failure detail"],
+  "avoid_next_time": ["concrete instruction for the next Split attempt"]
+}}
+Use categories such as cluster_semantically_mixed, child_too_broad,
+visual_fact_incorrect, preference_direction_reversed, duplicate_children, or
+unrelated_scene_activation when supported by the evidence. Do not output
+Markdown or additional fields."""
+
 CHILD_GENERATION_PROMPT_V1 = """## Task
 Create one child criterion that specializes the parent for exactly the supplied
 error cluster. The child must be narrower than the parent and should help a

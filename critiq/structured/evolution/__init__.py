@@ -13,6 +13,7 @@ from .specialize import (
     parse_child_proposal_response,
     parse_cluster_proposal_response,
     parse_error_signature_response,
+    parse_split_failure_attribution_response,
     project_pairwise_prediction,
 )
 from .specialize_types import (
@@ -87,5 +88,6 @@ __all__ = [
     "parse_child_proposal_response",
     "parse_cluster_proposal_response",
     "parse_error_signature_response",
+    "parse_split_failure_attribution_response",
     "project_pairwise_prediction",
 ]

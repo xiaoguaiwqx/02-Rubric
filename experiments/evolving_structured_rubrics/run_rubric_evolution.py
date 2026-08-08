@@ -1,11 +1,36 @@
-r"""Evolving Structured Rubrics 的 Phase 5 与 Phase 6B 实验入口。
-
-当前 Split 算子完整运行脚本（双本地服务器 API：8000 + 8001）：
+r"""
+Five-root Split-only evolution (397B Manager, Pairwise only on 8001):
 
     $ErrorActionPreference = "Stop"
     $python = "C:\Users\wenqx\miniconda3\envs\critiq\python.exe"
     $module = "experiments.evolving_structured_rubrics.run_rubric_evolution"
-    $config = "experiments/evolving_structured_rubrics/configs/local/rubric_evolution_phase5.json"
+    $config = "experiments/evolving_structured_rubrics/configs/local/rubric_evolution_phase5_8001.json"
+    $output = "output/evolving_structured_rubrics/rubric_evolution_phase5"
+
+    function Invoke-EvolutionStage([string]$stage) {
+        & $python -m $module --config $config --output-dir $output $stage
+        if ($LASTEXITCODE -ne 0) { throw "$stage failed: $LASTEXITCODE" }
+    }
+
+    Invoke-EvolutionStage "split-evolution-repair-audit"
+    Invoke-EvolutionStage "split-evolution-freeze"
+    Invoke-EvolutionStage "split-evolution-smoke"
+    Invoke-RestMethod "http://localhost:8001/v1/models" | Out-Null
+    Invoke-EvolutionStage "split-evolution-run"
+    Invoke-EvolutionStage "split-evolution-report"
+    Invoke-EvolutionStage "split-evolution-heldout"
+    Invoke-EvolutionStage "split-evolution-final-report"
+
+Artifacts are isolated under ``$output/phase6_split_only_evolution_v2``; v1 is read-only.
+Evolving Structured Rubrics 的 Phase 5 与 Phase 6B 实验入口。
+
+当前 Split v2 完整运行脚本（397B Manager；Pairwise Worker 仅使用本地 8001）：
+
+    $ErrorActionPreference = "Stop"
+    $python = "C:\Users\wenqx\miniconda3\envs\critiq\python.exe"
+    $module = "experiments.evolving_structured_rubrics.run_rubric_evolution"
+    $config = "experiments/evolving_structured_rubrics/configs/local/rubric_evolution_phase5_8001.json"
+    # 使用已完成 Phase 5、但尚未运行旧 Split 的新实验目录。
     $output = "output/evolving_structured_rubrics/rubric_evolution_phase5"
     $parent = "init_02_visual_grounding_and_details"
 
@@ -17,7 +42,6 @@ r"""Evolving Structured Rubrics 的 Phase 5 与 Phase 6B 实验入口。
         }
     }
 
-    Invoke-RestMethod "http://localhost:8000/v1/models" | Out-Null
     Invoke-RestMethod "http://localhost:8001/v1/models" | Out-Null
     Invoke-SplitStage "split-freeze" @("--parent-node-id", $parent)
     Invoke-SplitStage "split-signatures"
@@ -71,12 +95,13 @@ parent、ErrorSignatures、cluster、representative IDs、sibling context、模�
 PowerShell 公共变量：
 
     $module = "experiments.evolving_structured_rubrics.run_rubric_evolution"
-    $config = "experiments/evolving_structured_rubrics/configs/local/rubric_evolution_phase5.json"
+    $config = "experiments/evolving_structured_rubrics/configs/local/rubric_evolution_phase5_8001.json"
+    # 使用已完成 Phase 5、但尚未运行旧 Split 的新实验目录。
     $output = "output/evolving_structured_rubrics/rubric_evolution_phase5"
 
     $module = "experiments.evolving_structured_rubrics.run_rubric_evolution"
     $config = "experiments/evolving_structured_rubrics/configs/local/rubric_evolution_phase5_8001.json"
-    $output = "output/evolving_structured_rubrics/rubric_evolution_phase5_prompt_8001"
+    $output = "output/evolving_structured_rubrics/rubric_evolution_phase5"
 
 Phase 5：构建 Multi-Crit Init Rubric、生成 baseline、提取反馈并冻结阈值：
 
@@ -112,9 +137,9 @@ Pairwise 推理，并通过 discovery-90 完整 M1 before/after 决定是否接�
 artifacts，但 gold answer 不进入模型请求；accuracy 只由随后同一阶段的 offline
 B1/M1 replay 计算。Specialize 中间阶段只读取 discovery-90，禁止访问 heldout-500。
 三个 Manager 阶段的模型与 backend pool 都由 ``specialize_managers`` 独立配置。
-当前 ErrorSignature 使用本地 Qwen3-VL-8B；Semantic Clustering 与 Child
-Generation 使用硅基流动的 Qwen3.5-397B-A17B 并开启思考模式。后两个阶段
-使用文本输入，Child Generation 接收代表样本的 question/A/B/gold 而不发送图片。
+ErrorSignature、Semantic Clustering 与 Child Generation 统一使用
+Qwen/Qwen3.5-397B-A17B。ErrorSignature 为多模态输入；后两个阶段使用文本输入，
+Child Generation 接收代表样本的 question/A/B/gold 而不发送图片。
 Clustering 使用 prompt v1.0 的一次完整 partition 输出，temperature=0.2。
 """
 
@@ -255,7 +280,7 @@ def _config(path: Path) -> dict[str, Any]:
         "heldout_dataset_sha256", "backend_pool", "worker_request_kwargs",
         "structured_max_retries", "api_retry_attempts", "evolution_policy",
     }
-    optional_fields = {"specialize_managers"}
+    optional_fields = {"specialize_managers", "split_evolution"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -279,7 +304,30 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
 
     value = dict(config)
     value.pop("specialize_managers", None)
+    value.pop("split_evolution", None)
     return value
+
+
+def _validate_phase6_config_against_manifest(
+        config: Mapping[str, Any], manifest: Mapping[str, Any]) -> None:
+    """Validate frozen scientific identity while allowing Phase-6 execution routing.
+
+    Phase 5 was originally frozen with a two-endpoint execution pool.  Later
+    Phase-6 experiments may execute the same frozen Pairwise request identity on
+    only vllm-8001, so the mutable runtime ``backend_pool`` must not be compared
+    through the old whole-config hash.  Dataset hashes, model/decoding identity,
+    evolution policy, and stored prediction identity remain strictly checked.
+    """
+
+    expected_spec = DualWorkerRequestSpec.from_dict(manifest["pairwise_request_spec"])
+    if config["experiment_id"] != manifest["experiment_id"]:
+        raise RuntimeError("Phase 5 experiment identity changed before Specialize")
+    if config["model"] != expected_spec.model:
+        raise RuntimeError("Phase 5 Pairwise model changed before Specialize")
+    if config["worker_request_kwargs"] != expected_spec.decoding_config:
+        raise RuntimeError("Phase 5 Pairwise decoding changed before Specialize")
+    if config["evolution_policy"] != manifest["evolution_policy"]:
+        raise RuntimeError("Phase 5 evolution policy changed before Specialize")
 
 
 def _specialize_profiles(config: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
@@ -954,31 +1002,148 @@ def _specialize_log(output: Path, message: str) -> None:
         handle.write(message + "\n")
 
 
+def _split_parent_scope_predictions(
+    *,
+    context: EvolutionContext,
+    candidate: SpecializeCandidate,
+    combined_prediction: PairwisePredictionOutput,
+    after_execution: Any,
+    rows: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Freeze paired parent/subtree predictions on the parent's applicability domain."""
+
+    parent_name = context.rubric.get_node(candidate.parent_node_id).criterion.name
+    trace_by_id = {trace.sample_id: trace for trace in after_execution.traces}
+    records = []
+    for row, outputs in zip(rows, combined_prediction.node_outputs):
+        parent_output = outputs[parent_name]
+        if (not parent_output.parse_ok or not parent_output.answer_valid
+                or parent_output.vote.value not in {"A", "B"}):
+            continue
+        sample_id = str(row["sample_id"])
+        trace = trace_by_id[sample_id]
+        node_trace = next(
+            node for node in trace.nodes if node.node_id == candidate.parent_node_id)
+        parent_vote = parent_output.vote.value
+        specialized_vote = node_trace.subtree_vote.value
+        gold = str(row["answer"])
+        parent_correct = parent_vote == gold
+        specialized_correct = specialized_vote == gold
+        outcome = (
+            "corrected" if not parent_correct and specialized_correct
+            else "harmed" if parent_correct and not specialized_correct
+            else "unchanged_correct" if parent_correct and specialized_correct
+            else "unchanged_wrong")
+        records.append({
+            "sample_id": sample_id,
+            "gold": gold,
+            "parent_vote": parent_vote,
+            "specialized_vote": specialized_vote,
+            "parent_correct": parent_correct,
+            "specialized_correct": specialized_correct,
+            "outcome": outcome,
+        })
+    return records
+
+
+def _generate_split_failure_attribution(
+    config: Mapping[str, Any],
+    output: Path,
+    context: EvolutionContext,
+    candidate: SpecializeCandidate,
+    evaluation: SpecializeEvaluation,
+    prediction_records: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Ask the 397B Manager to diagnose a rejected complete child set."""
+
+    manager, pool, profile, identities = _manager_runtime(config, "semantic_cluster")
+    if profile["model"] != "Qwen/Qwen3.5-397B-A17B":
+        raise RuntimeError("Split failure attribution must use Qwen/Qwen3.5-397B-A17B")
+    signatures = tuple(
+        output_value.signature for output_value in _load_signatures(output)
+        if output_value.signature is not None)
+    changed = [record for record in prediction_records
+               if record["outcome"] in {"corrected", "harmed"}]
+    local_metrics = {
+        "parent_scope_size": len(prediction_records),
+        "parent_accuracy": evaluation.parent_accuracy,
+        "specialized_accuracy": evaluation.specialized_accuracy,
+        "accuracy_delta": evaluation.accuracy_delta,
+        "corrected_count": len(evaluation.subtree_diagnostic.corrected_sample_ids),
+        "harmed_count": len(evaluation.subtree_diagnostic.harmed_sample_ids),
+        "sibling_conflict_count": evaluation.subtree_diagnostic.sibling_conflict_count,
+        "children": [
+            {"criterion_name": item.criterion_name,
+             "support": item.support,
+             "accuracy": item.accuracy,
+             "coverage": item.coverage}
+            for item in evaluation.child_diagnostics],
+    }
+    artifact = manager.attribute_split_failure(
+        parent=context.rubric.get_node(candidate.parent_node_id),
+        signatures=signatures,
+        cluster_proposal=candidate.cluster_proposal.to_dict(),
+        children=candidate.children,
+        local_metrics=local_metrics,
+        changed_predictions=changed)
+    target = _specialize_output(output)
+    atomic_write_json(target / "failure_attribution.json", artifact)
+    atomic_write_json(target / "provenance/failure_attribution.json", {
+        "manager_profile": profile,
+        "endpoint_identities": identities,
+        "backend_pool": pool.provenance_dict(),
+    })
+    return artifact
+
 def _record_split_history(
     output: Path,
     context: EvolutionContext,
     candidate: SpecializeCandidate,
     decision: Mapping[str, Any],
     evaluation: Any | None,
+    *,
+    prediction_records: Sequence[Mapping[str, Any]] = (),
+    failure_attribution: Mapping[str, Any] | None = None,
 ) -> None:
     path = output / "split_history.json"
-    history = load_json(path) if path.exists() else {"schema_version": "1.0.0", "entries": []}
-    if (history.get("schema_version") != "1.0.0"
+    history = load_json(path) if path.exists() else {"schema_version": "2.0.0", "entries": []}
+    if (history.get("schema_version") not in {"1.0.0", "2.0.0"}
             or not isinstance(history.get("entries"), list)):
         raise RuntimeError("split_history.json has an unsupported schema")
+    history["schema_version"] = "2.0.0"
+    parent = context.rubric.get_node(candidate.parent_node_id)
+    signature_outputs = _load_signatures(output)
+    signatures = [item.signature.to_dict() for item in signature_outputs
+                  if item.signature is not None]
     entry = {
         "attempt_index": len(history["entries"]) + 1,
         "parent_node_id": candidate.parent_node_id,
         "parent_rubric_sha256": context.rubric.rubric_sha256,
+        "parent_criterion": {
+            "name": parent.criterion.name,
+            "description": parent.criterion.description,
+        },
         "candidate_id": candidate.edit_candidate.candidate_id,
         "trigger": load_json(_specialize_output(output) / "trigger.json"),
+        "error_signatures": signatures,
         "clusters": candidate.cluster_proposal.to_dict(),
         "children": [item.to_dict() for item in candidate.children],
         "child_diagnostics": ([] if evaluation is None else
                               [item.to_dict() for item in evaluation.child_diagnostics]),
-        "parent_fitness": None if evaluation is None else evaluation.parent_fitness,
-        "collective_fitness": None if evaluation is None else evaluation.collective_fitness,
-        "fitness_delta": None if evaluation is None else evaluation.fitness_delta,
+        "parent_accuracy": None if evaluation is None else evaluation.parent_accuracy,
+        "specialized_accuracy": None if evaluation is None else evaluation.specialized_accuracy,
+        "accuracy_delta": None if evaluation is None else evaluation.accuracy_delta,
+        "parent_scope_predictions": [dict(item) for item in prediction_records],
+        "corrected_sample_ids": ([] if evaluation is None else
+                                 list(evaluation.subtree_diagnostic.corrected_sample_ids)),
+        "harmed_sample_ids": ([] if evaluation is None else
+                              list(evaluation.subtree_diagnostic.harmed_sample_ids)),
+        "structured_failure": {
+            "decision": decision["decision"],
+            "reasons": list(decision.get("reasons", [])),
+            "mechanism_risks": list(decision.get("mechanism_risks", [])),
+        },
+        "failure_attribution": None if failure_attribution is None else dict(failure_attribution),
         "decision": decision["decision"],
         "reasons": list(decision.get("reasons", [])),
     }
@@ -991,7 +1156,7 @@ def _prior_split_failures(output: Path, parent_node_id: str) -> list[dict[str, A
     if not path.exists():
         return []
     history = load_json(path)
-    if (history.get("schema_version") != "1.0.0"
+    if (history.get("schema_version") not in {"1.0.0", "2.0.0"}
             or not isinstance(history.get("entries"), list)):
         raise RuntimeError("split_history.json has an unsupported schema")
     summaries = []
@@ -1000,9 +1165,18 @@ def _prior_split_failures(output: Path, parent_node_id: str) -> list[dict[str, A
                 or entry.get("decision") == "accept"):
             continue
         clusters = entry.get("clusters", {}).get("clusters", [])
+        attribution_artifact = entry.get("failure_attribution")
+        attribution = (
+            attribution_artifact.get("attribution")
+            if isinstance(attribution_artifact, Mapping) else None)
         summaries.append({
             "attempt_index": entry.get("attempt_index"),
-            "reasons": entry.get("reasons", []),
+            "structured_failure": entry.get("structured_failure", {
+                "decision": entry.get("decision"),
+                "reasons": entry.get("reasons", []),
+                "mechanism_risks": [],
+            }),
+            "failure_attribution": attribution,
             "clusters": [{key: cluster.get(key) for key in
                           ("cluster_id", "label", "shared_failure", "distinction")}
                          for cluster in clusters],
@@ -1010,10 +1184,14 @@ def _prior_split_failures(output: Path, parent_node_id: str) -> list[dict[str, A
                           ("cluster_id", "criterion_name", "description", "rationale")}
                          for child in entry.get("children", [])],
             "child_diagnostics": [{key: diagnostic.get(key) for key in
-                                   ("criterion_name", "support", "accuracy", "coverage", "fitness")}
+                                   ("criterion_name", "support", "accuracy", "coverage")}
                                   for diagnostic in entry.get("child_diagnostics", [])],
-            "parent_fitness": entry.get("parent_fitness"),
-            "collective_fitness": entry.get("collective_fitness"),
+            "parent_accuracy": entry.get("parent_accuracy", entry.get("parent_fitness")),
+            "specialized_accuracy": entry.get(
+                "specialized_accuracy", entry.get("collective_fitness")),
+            "accuracy_delta": entry.get("accuracy_delta", entry.get("fitness_delta")),
+            "corrected_sample_ids": entry.get("corrected_sample_ids", []),
+            "harmed_sample_ids": entry.get("harmed_sample_ids", []),
         })
     return summaries
 
@@ -1028,8 +1206,7 @@ def _phase6_inputs(config: Mapping[str, Any], output: Path):
     manifest = load_json(output / "frozen_manifest.json")
     if not manifest.get("phase6_allowed"):
         raise RuntimeError("Phase 5 manifest has not enabled Phase 6")
-    if manifest.get("config_sha256") != canonical_sha256(_phase5_config_view(config)):
-        raise RuntimeError("Phase 5 config changed before Specialize")
+    _validate_phase6_config_against_manifest(config, manifest)
     discovery_path = _path(config["discovery_dataset"])
     if file_sha256(discovery_path).lower() != manifest["discovery_dataset_sha256"].lower():
         raise RuntimeError("discovery-90 changed before Specialize")
@@ -1054,6 +1231,10 @@ def specialize_freeze(config: Mapping[str, Any], output: Path, parent_node_id: s
         raise ValueError("specialize-freeze requires --parent-node-id")
     if _specialize_already_passed(output, "freeze"):
         existing = load_json(_specialize_output(output) / "frozen_manifest.json")
+        if existing.get("stage") != "phase6_split_v2_local_specialized_accuracy":
+            raise RuntimeError(
+                "Existing phase6_split artifacts use legacy Split semantics; "
+                "use a fresh Phase-5 output copy for Split v2")
         if existing["parent_node_id"] != parent_node_id:
             raise RuntimeError("Specialize is already frozen for a different parent")
         print("specialize-freeze already passed; reusing frozen manifest")
@@ -1067,6 +1248,11 @@ def specialize_freeze(config: Mapping[str, Any], output: Path, parent_node_id: s
         manager_profiles[stage] = profile
         manager_request_specs[stage] = manager.request_specs()[stage].to_dict()
         endpoint_identities[stage] = identities
+    manager_models = {profile["model"] for profile in manager_profiles.values()}
+    if manager_models != {"Qwen/Qwen3.5-397B-A17B"}:
+        raise RuntimeError(
+            "Split requires Qwen/Qwen3.5-397B-A17B for ErrorSignature, "
+            "semantic clustering, and child generation")
     context = EvolutionContext(rubric, feedback_value)
     thresholds = config["evolution_policy"]["trigger_thresholds"]
     trigger = detect_specialize_trigger(context, parent_node_id, thresholds)
@@ -1075,7 +1261,7 @@ def specialize_freeze(config: Mapping[str, Any], output: Path, parent_node_id: s
     atomic_write_json(target / "trigger.json", trigger.to_dict())
     rubric.save_json(target / "rubric_before.json")
     manifest = {
-        "stage": "phase6_split_v1", "phase5_manifest_sha256": canonical_sha256(phase5),
+        "stage": "phase6_split_v2_local_specialized_accuracy", "phase5_manifest_sha256": canonical_sha256(phase5),
         "discovery_dataset_sha256": phase5["discovery_dataset_sha256"],
         "rubric_before_sha256": rubric.rubric_sha256,
         "base_pairwise_artifact_sha256": canonical_sha256(prediction.to_dict()),
@@ -1084,6 +1270,13 @@ def specialize_freeze(config: Mapping[str, Any], output: Path, parent_node_id: s
         "prior_split_failures": _prior_split_failures(output, parent_node_id),
         "thresholds": thresholds,
         "candidate_acceptance": config["evolution_policy"]["candidate_acceptance"],
+        "split_acceptance": {
+            "metric": "local_specialized_accuracy",
+            "scope": "parent_valid_decisive_ab",
+            "comparator": ">=",
+            "fallback": "children_tie_or_all_none_uses_parent",
+            "children_unit": "complete_set",
+        },
         "manager_policy": SPECIALIZE_MANAGER_POLICY,
         "manager_request_specs": manager_request_specs,
         "manager_profiles": manager_profiles,
@@ -1108,6 +1301,8 @@ def _load_specialize_context(config: Mapping[str, Any], output: Path):
     phase5, rubric, rows, prediction, feedback_value = _phase6_inputs(config, output)
     target = _specialize_output(output)
     manifest = load_json(target / "frozen_manifest.json")
+    if manifest.get("stage") != "phase6_split_v2_local_specialized_accuracy":
+        raise RuntimeError("Specialize manifest does not use Split v2 semantics")
     if manifest["phase5_manifest_sha256"] != canonical_sha256(phase5):
         raise RuntimeError("Phase 5 manifest changed after Specialize freeze")
     if manifest["rubric_before_sha256"] != rubric.rubric_sha256:
@@ -1419,17 +1614,53 @@ def specialize_evaluate(config: Mapping[str, Any], output: Path) -> None:
         atomic_write_json(target / "local_diagnostics.json", {
             "child_diagnostics": [item.to_dict() for item in evaluation.child_diagnostics],
             "subtree_diagnostic": evaluation.subtree_diagnostic.to_dict()})
-        decision = {"decision": evaluation.candidate_evaluation.decision.value,
-                    "reasons": list(evaluation.candidate_evaluation.reasons),
-                    "parent_fitness": evaluation.parent_fitness,
-                    "collective_fitness": evaluation.collective_fitness,
-                    "fitness_delta": evaluation.fitness_delta,
-                    "mechanism_risks": list(evaluation.subtree_diagnostic.mechanism_risks),
-                    "candidate_id": candidate.edit_candidate.candidate_id,
-                    "accepted_rubric": (str(target / "rubric_candidate.json")
-                                        if evaluation.candidate_evaluation.decision.value == "accept" else None)}
+        prediction_records = _split_parent_scope_predictions(
+            context=context, candidate=candidate, combined_prediction=combined,
+            after_execution=after_execution, rows=rows)
+        decision = {
+            "decision": evaluation.candidate_evaluation.decision.value,
+            "reasons": list(evaluation.candidate_evaluation.reasons),
+            "parent_scope_size": len(prediction_records),
+            "parent_accuracy": evaluation.parent_accuracy,
+            "specialized_accuracy": evaluation.specialized_accuracy,
+            "accuracy_delta": evaluation.accuracy_delta,
+            "local_corrected_count": len(
+                evaluation.subtree_diagnostic.corrected_sample_ids),
+            "local_harmed_count": len(
+                evaluation.subtree_diagnostic.harmed_sample_ids),
+            "global_m1_before_accuracy": evaluation.candidate_evaluation.before_accuracy,
+            "global_m1_after_accuracy": evaluation.candidate_evaluation.after_accuracy,
+            "global_m1_accuracy_delta": evaluation.candidate_evaluation.accuracy_delta,
+            "global_m1_corrected_count": (
+                evaluation.candidate_evaluation.corrected_count),
+            "global_m1_harmed_count": (
+                evaluation.candidate_evaluation.harmed_count),
+            "parent_global_coverage": evaluation.subtree_diagnostic.parent_coverage,
+            "specialized_global_coverage": evaluation.subtree_diagnostic.specialized_coverage,
+            "mechanism_risks": list(evaluation.subtree_diagnostic.mechanism_risks),
+            "candidate_id": candidate.edit_candidate.candidate_id,
+            "accepted_rubric": (str(target / "rubric_candidate.json")
+                                if evaluation.candidate_evaluation.decision.value == "accept"
+                                else None),
+        }
+        failure_attribution = None
+        if decision["decision"] == "reject":
+            announce("requesting 397B failure attribution for rejected Split")
+            try:
+                failure_attribution = _generate_split_failure_attribution(
+                    config, output, context, candidate, evaluation, prediction_records)
+            except SpecializeManagerFailure as attribution_error:
+                failure_attribution = {
+                    "schema_version": "1.0.0",
+                    "attribution": None,
+                    "generation_failure": attribution_error.to_dict(),
+                }
+                atomic_write_json(target / "failure_attribution.json", failure_attribution)
         atomic_write_json(target / "decision.json", decision)
-        _record_split_history(output, context, candidate, decision, evaluation)
+        _record_split_history(
+            output, context, candidate, decision, evaluation,
+            prediction_records=prediction_records,
+            failure_attribution=failure_attribution)
     except Exception as exc:
         decision = {"decision": "invalid", "reasons": [str(exc)],
                     "mechanism_risks": [], "candidate_id": candidate.edit_candidate.candidate_id,
@@ -1458,6 +1689,8 @@ def specialize_report(config: Mapping[str, Any], output: Path) -> None:
         "refresh_plan": load_json(target / "artifact_refresh_plan.json"),
         "evaluation": load_json(target / "evaluation.json"),
         "decision": load_json(target / "decision.json"),
+        "failure_attribution": (load_json(target / "failure_attribution.json")
+                                if (target / "failure_attribution.json").exists() else None),
         "heldout_accessed": False,
     }
     atomic_write_json(target / "split_report.json", report)
@@ -1936,9 +2169,9 @@ def split_signature_qwen35_evaluate(config: Mapping[str, Any], output: Path) -> 
     decision = {
         "decision": evaluation.candidate_evaluation.decision.value,
         "reasons": list(evaluation.candidate_evaluation.reasons),
-        "parent_fitness": evaluation.parent_fitness,
-        "collective_fitness": evaluation.collective_fitness,
-        "fitness_delta": evaluation.fitness_delta,
+        "parent_fitness": evaluation.parent_accuracy,
+        "collective_fitness": evaluation.specialized_accuracy,
+        "fitness_delta": evaluation.accuracy_delta,
         "mechanism_risks": list(evaluation.subtree_diagnostic.mechanism_risks),
         "candidate_id": candidate.edit_candidate.candidate_id,
         "pairwise_artifact": str(artifact),
@@ -1953,6 +2186,13 @@ def split_signature_qwen35_evaluate(config: Mapping[str, Any], output: Path) -> 
 
 def _split_set_summary(evaluation: SpecializeEvaluation) -> dict[str, Any]:
     diagnostics = evaluation.child_diagnostics
+    parent_accuracy = (evaluation.parent_accuracy if hasattr(evaluation, "parent_accuracy")
+                       else evaluation.parent_fitness)
+    specialized_accuracy = (
+        evaluation.specialized_accuracy if hasattr(evaluation, "specialized_accuracy")
+        else evaluation.collective_fitness)
+    accuracy_delta = (evaluation.accuracy_delta if hasattr(evaluation, "accuracy_delta")
+                      else evaluation.fitness_delta)
     target_support = sum(item.cluster_support for item in diagnostics)
     target_correct = sum(round(item.cluster_support * item.cluster_accuracy)
                          for item in diagnostics)
@@ -1966,9 +2206,9 @@ def _split_set_summary(evaluation: SpecializeEvaluation) -> dict[str, Any]:
         "target_cluster_accuracy": target_correct / target_support if target_support else 0.0,
         "non_target_decisive": sum(item.non_target_decisive for item in diagnostics),
         "non_target_wrong": sum(item.non_target_wrong for item in diagnostics),
-        "collective_fitness": evaluation.collective_fitness,
-        "parent_fitness": evaluation.parent_fitness,
-        "fitness_delta": evaluation.fitness_delta,
+        "collective_fitness": specialized_accuracy,
+        "parent_fitness": parent_accuracy,
+        "fitness_delta": accuracy_delta,
         "m1_before_accuracy": evaluation.candidate_evaluation.before_accuracy,
         "m1_after_accuracy": evaluation.candidate_evaluation.after_accuracy,
         "m1_accuracy_delta": evaluation.candidate_evaluation.accuracy_delta,
@@ -2251,9 +2491,9 @@ def split_multimodal_evaluate(config: Mapping[str, Any], output: Path) -> None:
     decision = {
         "decision": evaluation.candidate_evaluation.decision.value,
         "reasons": list(evaluation.candidate_evaluation.reasons),
-        "parent_fitness": evaluation.parent_fitness,
-        "collective_fitness": evaluation.collective_fitness,
-        "fitness_delta": evaluation.fitness_delta,
+        "parent_fitness": evaluation.parent_accuracy,
+        "collective_fitness": evaluation.specialized_accuracy,
+        "fitness_delta": evaluation.accuracy_delta,
         "mechanism_risks": list(evaluation.subtree_diagnostic.mechanism_risks),
         "candidate_id": candidate.edit_candidate.candidate_id,
         "pairwise_artifact": str(artifact),
@@ -2302,7 +2542,7 @@ def split_multimodal_report(config: Mapping[str, Any], output: Path) -> None:
         "control": load_json(source / "decision.json"),
         "treatment": load_json(target / "decision.json"),
         "delta_collective_fitness": (
-            treatment_evaluation.collective_fitness - control_evaluation.collective_fitness),
+            treatment_evaluation.specialized_accuracy - control_evaluation.specialized_accuracy),
         "delta_m1_accuracy": (
             treatment_evaluation.candidate_evaluation.after_accuracy
             - control_evaluation.candidate_evaluation.after_accuracy),
@@ -2629,7 +2869,9 @@ def main() -> int:
         "split-signature-qwen35-evaluate", "split-signature-qwen35-compare",
         "split-signature-qwen35-heldout-visual",
         "specialize-freeze", "specialize-signatures", "specialize-cluster",
-        "specialize-propose", "specialize-evaluate", "specialize-report"))
+        "specialize-propose", "specialize-evaluate", "specialize-report",
+        "split-evolution-repair-audit", "split-evolution-freeze", "split-evolution-smoke", "split-evolution-run", "split-evolution-report",
+        "split-evolution-heldout", "split-evolution-final-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -2664,7 +2906,11 @@ def main() -> int:
         "specialize-evaluate": lambda: specialize_evaluate(config, output),
         "specialize-report": lambda: specialize_report(config, output),
     }
-    actions[args.stage]()
+    if args.stage.startswith("split-evolution-"):
+        from .split_evolution import run_stage
+        run_stage(config, output, args.stage)
+    else:
+        actions[args.stage]()
     return 0
 
 

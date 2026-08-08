@@ -160,6 +160,7 @@ from .version import (
     PAIRWISE_WORKER_SCHEMA_VERSION,
     SEMANTIC_CLUSTER_PROMPT_VERSION,
     SEMANTIC_CLUSTER_PARSER_VERSION,
+    SPLIT_FAILURE_ATTRIBUTION_PROMPT_VERSION,
     SPECIALIZE_PARSER_VERSION,
     SPECIALIZE_SCHEMA_VERSION,
     STRUCTURED_CACHE_SCHEMA_VERSION,
@@ -198,6 +199,7 @@ from .evolution import (
     parse_child_proposal_response,
     parse_cluster_proposal_response,
     parse_error_signature_response,
+    parse_split_failure_attribution_response,
     project_pairwise_prediction,
 )
 from .worker_output import (
@@ -309,6 +311,7 @@ __all__ = [
     "RubricValidationError",
     "SEMANTIC_CLUSTER_PROMPT_VERSION",
     "SEMANTIC_CLUSTER_PARSER_VERSION",
+    "SPLIT_FAILURE_ATTRIBUTION_PROMPT_VERSION",
     "SPECIALIZE_PARSER_VERSION",
     "SPECIALIZE_SCHEMA_VERSION",
     "STRUCTURED_CACHE_SCHEMA_VERSION",
@@ -382,6 +385,7 @@ __all__ = [
     "parse_child_proposal_response",
     "parse_cluster_proposal_response",
     "parse_error_signature_response",
+    "parse_split_failure_attribution_response",
     "project_pairwise_prediction",
     "replay_execution_trace",
     "replay_dual_execution_trace",

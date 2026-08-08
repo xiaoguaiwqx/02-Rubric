@@ -366,7 +366,7 @@ heldout_validation_500_pair.jsonl
 
 ### 8.2 Multi-Crit Init Rubric
 
-初始 Rubric 使用 [Multi-Crit](https://arxiv.org/abs/2511.21662) 为 Open-ended Generation 人工定义的五条准则原文。当前 RLHF-V discovery 数据主要是视觉问答、详细描述和图像内容解释，因此第一版不混入 Verifiable Reasoning 的另一套五条准则。
+初始 Rubric 使用 [Multi-Crit(CVPR2026)](https://arxiv.org/abs/2511.21662) 为 Open-ended Generation 人工定义的五条准则原文。当前 RLHF-V discovery 数据主要是视觉问答、详细描述和图像内容解释，因此第一版不混入 Verifiable Reasoning 的另一套五条准则。
 
 ```text
 Completeness and Coverage
@@ -414,29 +414,48 @@ Gap 定义为：对样本 `s`，当前所有 node 都没有产生与 gold 相同
 - `cascade_failure`：M1 final 为 wrong/Tie；
 - `aggregation_conflict`：存在正确 decisive node，但 M1 final 仍为 wrong/Tie。
 
-Fitness 使用 `alpha=2.0`、`lambda=0.1`、`len_max=2000`。Phase 5 不用 Fitness 自动触发 operator；Phase 6 Split 将 Fitness 作为候选竞争与接受依据。
+旧版 Fitness 的长度与 coverage 惩罚仅保留为历史诊断。当前 Split 的硬接受标准不再使用加权 Fitness，而是在父准则固定适用域上直接比较 parent 与完整 children 集合的 Specialized Accuracy。长度交给后续 `define` 算子优化；coverage 过低由生存条件中的最小支持数处理。
 
-对父标准 `c` 产生的 `m` 个候选子标准 `C = {c_1, ..., c_m}`，第一版集体适应度定义为各子标准适应度的算术平均：
-
-$$
-\operatorname{Fitness}(C)
-= \frac{1}{m}\sum_{i=1}^{m}\operatorname{Fitness}(c_i).
-$$
-
-每个子标准的 accuracy 与 coverage 都限制在父标准适用域 $\mathcal{S}(c)$ 上计算：
+父准则的固定适用域定义为其产生有效 decisive A/B 的样本集合：
 
 $$
-\operatorname{Acc}_{\mathcal{S}(c)}(c_i)
-= \frac{|\{s \in \mathcal{S}(c) : c_i(s) \neq \mathrm{NA} \land c_i(s)=p_s\}|}
-{|\{s \in \mathcal{S}(c) : c_i(s) \neq \mathrm{NA}\}|},
+\mathcal S(c_p)=\{x:c_p(x)\in\{A,B\}\}.
+$$
+
+对每个 $x\in\mathcal S(c_p)$，children 先投票，`None` 不参与。A/B 不平票时采用 children 多数结果；平票或全部输出 `None` 时回退父准则：
+
+$$
+\hat y_{\mathrm{spec}}(x)=
+\begin{cases}
+A,&N_A(x)>N_B(x),\\
+B,&N_B(x)>N_A(x),\\
+c_p(x),&N_A(x)=N_B(x).
+\end{cases}
+$$
+
+parent 与 specialized 必须使用同一个分母 $|\mathcal S(c_p)|$：
+
+$$
+\operatorname{Acc}_{\mathrm{parent}}
+=
+\frac{\sum_{x\in\mathcal S(c_p)}\mathbf 1[c_p(x)=y(x)]}
+{|\mathcal S(c_p)|},
 $$
 
 $$
-\operatorname{Cov}_{\mathcal{S}(c)}(c_i)
-= \frac{|\{s \in \mathcal{S}(c) : c_i(s) \neq \mathrm{NA}\}|}{|\mathcal{S}(c)|}.
+\operatorname{Acc}_{\mathrm{spec}}
+=
+\frac{\sum_{x\in\mathcal S(c_p)}\mathbf 1[\hat y_{\mathrm{spec}}(x)=y(x)]}
+{|\mathcal S(c_p)|}.
 $$
 
-若某个 child 在 $\mathcal{S}(c)$ 上 support 为0，则该 Split candidate 无法形成有效集体适应度并直接拒绝。第一版算术平均暂不校正 children 之间的 coverage 差异、适用域重叠或 vote 冲突；这些作为后续 collective-fitness 消融与改进项。
+children 是一次共同生成的完整拆分方案，不逐个筛除。接受条件为
+
+$$
+\boxed{\operatorname{Acc}_{\mathrm{spec}}\ge\operatorname{Acc}_{\mathrm{parent}}}.
+$$
+
+每个 child 的 support、accuracy、coverage、cluster accuracy、非目标激活和 leave-one-out 影响继续记录，但只用于诊断与后续 `define`；全部 discovery 样本上的 M1 ACC、Coverage 也不参与 Split 的硬接受判定。
 
 ### 8.4 Patch 与 ArtifactRefreshPlan
 
@@ -473,15 +492,15 @@ max_children    = 5
 
 这些数值只产生 operator 候选，不直接决定接受。Split 的统计候选需满足 `accuracy < 0.70`、`coverage > 0.80`、`support >= 15`、`wrong >= 15`；Refine 候选需满足 `0.55 < accuracy < 0.80`、`coverage <= 0.80`、`support >= 15`。Pairwise Worker 在第一轮继续使用 P05（`temperature=0.5`）。
 
-接受规则按 operator 区分。Refine 与 Create 继续使用 discovery-90 M1 结果门槛；Split 的主要接受条件改为：
+接受规则按 operator 区分。Refine 与 Create 继续使用 discovery-90 M1 结果门槛；Split 仅比较同一父准则区域上的局部准确率：
 
 $$
-\operatorname{Fitness}(\{c_1,\ldots,c_m\}) > \operatorname{Fitness}(c).
+\operatorname{Acc}_{\mathrm{spec}}\ge\operatorname{Acc}_{\mathrm{parent}}.
 $$
 
-Split 竞争成功时保留 parent 并整体接纳当前 children；竞争失败时丢弃整组候选 children，Rubric 保持不变，并记录失败历史。完整 M1 accuracy、coverage、corrected/harmed、child correction/harm、sibling conflict 和 final-valid rate 继续报告，但第一版不参与 Split 硬接受判定。Rubric/Artifact 合法、数据隔离和 trace replay 仍是工程有效性前提。P05 每个候选只运行一次，不设置重复确认。
+条件成立时保留 parent，并整体接纳本次共同生成的 children；条件不成立时丢弃整组 children，Rubric 保持不变。完整 M1 accuracy、全局 coverage、corrected/harmed、child correction/harm、sibling conflict 和 final-valid rate 继续报告，但不参与 Split 硬接受判定。Rubric/Artifact 合法、数据隔离和 trace replay 仍是工程有效性前提。P05 每个候选只运行一次，不设置重复确认。
 
-trigger、operator-specific acceptance 和单次 P05 execution 共同写入版本化配置及 frozen manifest。Refine/Create 以 discovery-90 M1 为接受依据；Split 以 $\mathcal{S}(c)$ 上的集体 Fitness 为接受依据，完整 M1 仅作为诊断。
+trigger、operator-specific acceptance 和单次 P05 execution 共同写入版本化配置及 frozen manifest。Refine/Create 以 discovery-90 M1 为接受依据；Split 以 $\mathcal S(c_p)$ 上的 Specialized Accuracy 为接受依据，完整 M1 仅作为诊断。
 
 ---
 
@@ -502,26 +521,26 @@ trigger、operator-specific acceptance 和单次 P05 execution 共同写入版�
 
 ```text
 decisive wrong samples
-  → 逐样本 ErrorSignature
-  → Manager 对 signatures 做 2–5 个语义 clusters
-  → 每个有效 cluster 生成一个更窄的 child criterion
-  → 计算 children 的算术平均集体 Fitness
-  → 与 parent Fitness 竞争
+  → 397B 多模态 ErrorSignature
+  → 397B Manager 对 signatures 做 2–5 个语义 clusters
+  → 397B Manager 为每个有效 cluster 生成一个更窄的 child criterion
+  → children 多数投票，平票或全 None 时回退 parent
+  → 在固定 parent scope 上比较 Specialized Accuracy 与 Parent Accuracy
 ```
 
 ErrorSignature 保存 task pattern、visual focus、candidate difference、parent failure 和 suggested subdomain。Cluster 必须引用完整且互斥的 sample IDs，每个 cluster 至少包含5条样本，并说明共同判断失败而不是共同图片主题；每条 wrong sample 必须进入一个 cluster 或显式进入 unclustered。由于 Split 保留 parent，不要求有效 clusters 覆盖固定比例的 wrong samples。
 
-三个 Manager 阶段分别冻结 model、backend pool、输入模态和 request identity。第一轮由本地 Qwen3-VL-8B 生成多模态 ErrorSignature；语义聚类与 child 生成使用硅基流动 Qwen3.5-397B-A17B 的思考模式。后两个阶段使用文本输入，child 阶段读取代表样本的 question/A/B/gold 与 signatures，不发送图片。聚类采用 v1 的一次完整 partition 输出（temperature=0.2），不做事后 repair、自动合并或小簇降级；child 生成使用 temperature=0.7。这样聚类失败保持可见，同时允许仅通过配置替换 Manager，而不改变算子语义。
+三个 Manager 阶段统一使用 `Qwen/Qwen3.5-397B-A17B`，并分别冻结 backend pool、输入模态和 request identity。ErrorSignature 阶段发送图片并生成稳定的视觉错误签名；语义聚类与 child generation 使用文本输入。child generation 读取代表样本的 question/A/B/gold 与 signatures，但不发送图片；Pairwise Worker 及其 P05 设置保持不变。聚类采用一次完整 partition 输出（temperature=0.2），不做事后 repair、自动合并或小簇降级；child generation 使用 temperature=0.7。freeze 阶段会硬检查三个 Manager profile 的模型集合恰好为 `{Qwen/Qwen3.5-397B-A17B}`，防止实验身份漂移。
 
 Split 保留 parent，children 数量严格等于有效 cluster 数量，不设置目标数量：有效 cluster 少于2个则不触发 Split，存在2–5个则分别生成2–5个 children。`max_children=5` 只是结构上限，不允许为了达到上限强行拆分；超出上限的模式进入 unclustered。每个 child 包含 criterion name、description、1–3个对应 cluster 的代表 examples，以及 cluster lineage；examples 只供 Manager、lineage 和审计，Pairwise Worker 不读取 examples。第一版所有新 edges 固定为 `ALWAYS`，不同时优化 Gate/Child Router。无论 children 数量多少，整棵 root subtree 仍最多贡献一票。
 
-Split 竞争时，每个 child 的 accuracy、coverage 和 Fitness 都在 parent 的 $\mathcal{S}(c)$ 上计算，再对所有 child Fitness 求算术平均。集体 Fitness 严格高于 parent Fitness 时，保留 parent 并整体接纳 children；否则整体回退。children 之间 coverage 不均、适用域重叠和 vote 冲突只进入诊断报告，暂不改变第一版算术平均公式。
+Split 竞争时不再对 child Fitness 求算术平均。完整 children 集合先按 A/B 多数产生 specialized vote；`None` 不参与，children 平票或全部 `None` 时回退 parent vote。Parent Accuracy 与 Specialized Accuracy 都只在 freeze 时确定的父准则区域 $\mathcal{S}(c_p)$ 上计算，且使用相同分母。若 `specialized_accuracy >= parent_accuracy`，保留 parent 并整体接纳 children；否则整体回退。不能因为某个 child 较弱而单独删除它，较弱 child 留给后续 `define` 优化。
 
-每次 Split 无论成功或失败都写入版本化 history。记录至少包含 parent ID 与 Rubric hash、trigger statistics、cluster 与 child identities、各 child 的 support/accuracy/coverage/Fitness、集体 Fitness、parent Fitness、decision 和 reasons。失败记录中的原因、cluster 划分和 child 描述作为同一 parent 下一次 Split 的 Manager 参考输入，使重新 Split 能避开已验证失败的划分或描述；历史只提供上下文，不覆盖当前数据上的竞争结果。
+每次 Split 都写入版本化 history；失败项完整保存 parent、Error Signatures、聚类、children、局部 parent/specialized 指标、父区域逐样本预测、corrected/harmed IDs、结构化失败原因，以及 397B Manager 生成的自然语言失败归因。归因需要指出聚类混杂、child 太宽泛、视觉事实错误、偏好方向写反、children 重复或无关场景激活等具体问题，并给出下一次应避免的做法。同一 parent 下一次 Split 时，语义聚类和 child generation 都读取这些历史；历史只用于避免重复失败方案，不覆盖当前数据上的竞争结果。
 
 首个单算子验证对象固定为 `visual_grounding_and_details`。它在 discovery-90 上的 accuracy/coverage/support/wrong 为 `0.6966/0.9889/89/27`，满足触发条件，并且已有实验观察表明视觉 grounding 错误可以形成多个可解释子域。具体 children 仍必须从这27条真实 wrong samples 的 ErrorSignatures 中归纳，不能预先硬编码类别。
 
-当前已实现的旧 Specialize v1 结果保留为历史基线，其 Manager 协议、trigger、ErrorSignature/cluster/child schema、确定性 Patch、局部 Pairwise artifact 拼装和机制诊断继续复用。下一版将术语统一为 Split，并把旧的完整 M1 accuracy-delta 接受逻辑改为上述 $\mathcal{S}(c)$ 上的算术平均集体 Fitness 竞争。真实运行仍按 signatures → cluster review → child proposal → evaluate 分阶段进行；在新的 discovery-90 Split 实验完成前，不将本项标记为端到端通过。
+旧 Specialize v1 与既有 8B-signature / 397B-signature 实验结果继续保留为历史基线。当前代码已实现 Split v2 的局部 Specialized Accuracy 接受逻辑、失败归因与历史复用，并统一三个 Manager 阶段为 397B。真实运行仍按 freeze → signatures → cluster review → child proposal → evaluate → report 分阶段进行；在新的 discovery-90 Split v2 实验完成前，不将本项标记为端到端通过。
 
 ### 9.3 Create
 
@@ -638,6 +657,162 @@ $$
 
 实验 artifact：`output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_signature_qwen35_397b/heldout_visual_only/report.json`。
 
+
+
+## 10.2 Root、Split-only 多 Epoch 演化实验
+
+```mermaid
+flowchart TD
+    base["冻结基础实验<br/>rubric_evolution_phase5<br/>5个初始Root + discovery-90"]
+    endpoint["Pairwise Worker<br/>Qwen3-VL-8B · P05<br/>仅使用8001 · 并发20"]
+    manager["Split Manager<br/>Qwen3.5-397B-A17B"]
+    freeze["split-evolution-freeze<br/>冻结rubric、预测、数据hash、阈值与API身份"]
+    trigger{"逐个检查未锁定Root<br/>ACC < 0.70 且 Coverage > 0.80?"}
+    ineligible["not_eligible<br/>本轮不执行Split"]
+    signatures["ErrorSignature<br/>仅处理parent decisive-wrong样本<br/>多模态输入 · 同一Root最多并发8"]
+    reuse{"Parent预测及错误ID未变化?"}
+    cached["复用身份匹配的Error Signatures"]
+    generated["397B生成新的Error Signatures"]
+    history["读取该Root以前的失败历史<br/>聚类、children、指标、corrected/harmed、自然语言归因"]
+    cluster["397B语义聚类<br/>串行1 · 每轮必须重新生成"]
+    children["397B生成完整children集合<br/>Root内顺序生成并读取sibling context<br/>不同Root之间最多并发2"]
+    pairwise["8001评估全部children × discovery-90<br/>None不投票"]
+    specialize["固定parent覆盖区域上的Specialized预测<br/>children多数决<br/>平票或全None回退parent"]
+    compare{"Specialized ACC ≥ Parent ACC?"}
+    accept["接受完整children集合<br/>保留parent用于回退<br/>Root标记accepted_locked"]
+    attribution["397B生成自然语言失败归因<br/>rejection的必要收尾阶段"]
+    attr_ok{"归因成功且schema有效?"}
+    paused["网络失败：paused<br/>不提交历史、不增加attempt<br/>恢复后继续同一归因"]
+    invalid["连续schema-invalid：attribution_invalid<br/>不伪装成rejection<br/>不进入下一轮历史"]
+    reject["提交competition_rejected<br/>保存完整结构化历史与自然语言归因<br/>Root标记retryable或exhausted"]
+    sync["Epoch同步提交<br/>合并全部accepted patches<br/>重新生成rubric、M1与feedback"]
+    epoch{"已完成至少3轮<br/>且没有retryable Root?"}
+    maxepoch{"已达到第5轮?"}
+    retry["下一Epoch<br/>只调度未锁定且可重试Root"]
+    report["split-evolution-report<br/>Discovery演化轨迹与局部/全局指标"]
+    treatment{"至少有一个accepted Split?"}
+    noheldout["no_treatment<br/>禁止访问heldout"]
+    heldout["冻结最终rubric hash后<br/>一次性heldout-500评估<br/>仅为accepted children请求8001"]
+    final["最终报告<br/>Init vs Final M1<br/>各Root局部泛化、McNemar、成本与节点增长"]
+
+    base --> freeze
+    endpoint -. "评估配置" .-> freeze
+    manager -. "Manager配置" .-> freeze
+    freeze --> trigger
+    trigger -- "否" --> ineligible --> sync
+    trigger -- "是" --> reuse
+    reuse -- "是" --> cached --> history
+    reuse -- "否" --> generated --> history
+    generated --> signatures
+    cached --> signatures
+    signatures --> cluster
+    history --> cluster
+    cluster --> children --> pairwise --> specialize --> compare
+    compare -- "是" --> accept --> sync
+    compare -- "否" --> attribution --> attr_ok
+    attr_ok -- "网络失败" --> paused
+    attr_ok -- "schema无效" --> invalid
+    attr_ok -- "成功" --> reject --> sync
+    sync --> epoch
+    epoch -- "是" --> report
+    epoch -- "否" --> maxepoch
+    maxepoch -- "否" --> retry --> trigger
+    maxepoch -- "是" --> report
+    report --> treatment
+    treatment -- "否" --> noheldout
+    treatment -- "是" --> heldout --> final
+
+    classDef input fill:#ECFDF5,stroke:#10B981,color:#111827,stroke-width:2px;
+    classDef manager fill:#EEF2FF,stroke:#4F46E5,color:#111827,stroke-width:2px;
+    classDef worker fill:#EFF6FF,stroke:#2563EB,color:#111827,stroke-width:2px;
+    classDef decision fill:#FFF7ED,stroke:#EA580C,color:#111827,stroke-width:2px;
+    classDef success fill:#F0FDF4,stroke:#16A34A,color:#111827,stroke-width:2px;
+    classDef failure fill:#FEF2F2,stroke:#DC2626,color:#111827,stroke-width:2px;
+    classDef output fill:#FAF5FF,stroke:#7C3AED,color:#111827,stroke-width:2px;
+
+    class base,freeze input;
+    class manager,signatures,generated,cluster,children,history,attribution manager;
+    class endpoint,pairwise,specialize worker;
+    class trigger,reuse,compare,attr_ok,epoch,maxepoch,treatment decision;
+    class accept,reject,sync,retry,heldout success;
+    class paused,invalid,noheldout failure;
+    class report,final,cached,ineligible output;
+```
+
+```shell
+$ErrorActionPreference = "Stop"
+
+$python = "C:\Users\wenqx\miniconda3\envs\critiq\python.exe"
+$module = "experiments.evolving_structured_rubrics.run_rubric_evolution"
+$config = "experiments/evolving_structured_rubrics/configs/local/rubric_evolution_phase5_8001.json"
+$output = "output/evolving_structured_rubrics/rubric_evolution_phase5"
+
+function Invoke-EvolutionStage {
+    param([string]$Stage)
+
+    Write-Host ""
+    Write-Host "===== $Stage =====" -ForegroundColor Cyan
+
+    & $python -m $module `
+        --config $config `
+        --output-dir $output `
+        $Stage
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Stage failed with exit code $LASTEXITCODE"
+    }
+}
+
+# 确认本地 Pairwise API 的8001端口可用
+Invoke-RestMethod "http://localhost:8001/v1/models" | Out-Null
+Write-Host "Pairwise API 8001 is ready." -ForegroundColor Green
+
+# 冻结五个初始 roots、discovery-90、触发条件和实验协议
+Invoke-EvolutionStage "split-evolution-freeze"
+
+# 五-root、Split-only、多 Epoch 演化
+# 最少3轮、最多5轮；成功 root 锁定，失败 root 带归因历史重试
+Invoke-EvolutionStage "split-evolution-run"
+
+# 汇总 discovery-90 演化结果
+Invoke-EvolutionStage "split-evolution-report"
+
+# 仅在存在 accepted children 时访问一次 heldout-500
+Invoke-EvolutionStage "split-evolution-heldout"
+
+# 生成 discovery + heldout 最终报告
+Invoke-EvolutionStage "split-evolution-final-report"
+
+```
+
+### 本次实验结果（`phase6_split_only_evolution_v2`）
+
+实验完成 5 个 epoch、14 次 Split attempt：4/5 个 roots 接受完整 children 集合，`completeness_and_coverage` 连续 5 次局部竞争失败后保持 parent-only；最终 rubric 从 5 个节点增长至 19 个节点（新增 14 个 children）。
+
+| Root | 最终状态 | 接受轮次 | children 数 | discovery 局部 Parent → Specialized ACC |
+|---|---|---:|---:|---:|
+| Completeness | exhausted | — | 0 | 67.07% → 62.20%（最终失败） |
+| Visual Grounding | accepted | 5 | 2 | 69.66% → 69.66% |
+| Factuality | accepted | 1 | 5 | 60.24% → 61.45% |
+| Creativity | accepted | 1 | 3 | 62.79% → 65.12% |
+| Clarity | accepted | 2 | 4 | 56.32% → 64.37% |
+
+| 系统 | discovery-90 ACC / Coverage | heldout-500 ACC / Coverage |
+|---|---:|---:|
+| 初始五-root M1 | 65.56% / 96.67% | 65.00% / 97.20% |
+| 最终等权五-root M1 | 65.56% / 100.00% | 69.40% / 99.40% |
+| 最终重加权 M1（Visual Grounding=0.40；其余各=0.15） | — | **70.20% / 99.60%** |
+
+最终等权模型在 heldout-500 上增加 22 个净正确样本（corrected=52，harmed=30，exact McNemar `p=0.0198`）。Visual Grounding 父准则加其 children 单独投票也达到 69.40% ACC；将其权重提升至 0.40 后，冻结预测的后验重聚合达到 351/500（70.20%，较等权 +0.8 pp）。这支持该数据划分主要受视觉事实 grounding 驱动。
+
+需要严格区分：重加权结果是在 heldout 预测已产生后进行的诊断性重聚合，不是预注册的 confirmatory heldout 指标，不能据此再选择最终权重；后续应在新的 validation/test 划分上冻结该权重并复验。discovery 的全局 ACC 未提升，说明当前证据支持 Split 改善 heldout 泛化与覆盖，但尚不足以证明多轮局部优化稳定提升 discovery 全局 M1。
+
+实验产物：[最终报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_v2/final_report.md)、[discovery 报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_v2/final/discovery_report.json)、[heldout 报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_v2/heldout500/report.json)。
+
+
+
+
+
 ---
 
 ## 11. 后续候选
@@ -660,11 +835,11 @@ $$
 - [x] Split 使用 ErrorSignature → Cluster → Child，并保留 parent
 - [x] 第一版 Split edges 全部使用 `ALWAYS`
 - [x] Split children examples 不进入 Pairwise Worker
-- [x] 第一版 Split 集体 Fitness 使用 child Fitness 算术平均
+- [x] Split 使用固定 parent scope 上的 Specialized Accuracy，children 平票/全 None 回退 parent
 - [x] Refine、Split、Create 单独通过后才组合 workflow
 - [x] Phase 5 Init baseline 与 feedback report 完成
 - [x] 根据 Phase 5 实测分布冻结 trigger 与结构阈值
 - [x] 冻结精简的 candidate acceptance 与单次 P05 execution 规则
-- [ ] Split 竞争成功时整体接纳 children，失败时完整回退并记录可供下一轮参考的 history
+- [x] Split 竞争成功时整体接纳 children，失败时完整回退并记录结构化历史与自然语言归因
 - [ ] 三个单算子分别完成端到端验证
 - [ ] Phase 7 调度顺序完成 review 并冻结

@@ -44,7 +44,8 @@ def canonical_sha256(value: object) -> str:
 
 def atomic_write_json(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    # Keep atomic sibling names short for legacy Windows MAX_PATH.
+    temporary = path.with_name(f".tmp-{uuid.uuid4().hex[:12]}")
     try:
         temporary.write_text(
             json.dumps(value, indent=2, ensure_ascii=False, allow_nan=False),

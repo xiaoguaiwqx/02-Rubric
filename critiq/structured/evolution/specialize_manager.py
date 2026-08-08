@@ -13,6 +13,7 @@ from critiq.specialize_prompts import (
     CHILD_GENERATION_PROMPT,
     ERROR_SIGNATURE_PROMPT,
     SEMANTIC_CLUSTER_PROMPT,
+    SPLIT_FAILURE_ATTRIBUTION_PROMPT,
 )
 
 from ..backend_pool import AvailableSlotBackendPool
@@ -23,6 +24,7 @@ from ..version import (
     ERROR_SIGNATURE_PROMPT_VERSION,
     SEMANTIC_CLUSTER_PROMPT_VERSION,
     SEMANTIC_CLUSTER_PARSER_VERSION,
+    SPLIT_FAILURE_ATTRIBUTION_PROMPT_VERSION,
     SPECIALIZE_PARSER_VERSION,
 )
 from .specialize import (
@@ -30,6 +32,7 @@ from .specialize import (
     parse_child_proposal_response,
     parse_cluster_proposal_response,
     parse_error_signature_response,
+    parse_split_failure_attribution_response,
 )
 from .specialize_types import (
     ChildCriterionProposal,
@@ -118,6 +121,10 @@ class SpecializeManager:
                                             + f"\n[child_input_mode={self.child_input_mode}]",
                                             self.generation_request_kwargs,
                                             CHILD_GENERATION_PROMPT_VERSION),
+            "split_failure_attribution": self._spec(
+                                            SPLIT_FAILURE_ATTRIBUTION_PROMPT,
+                                            self.clustering_request_kwargs,
+                                            SPLIT_FAILURE_ATTRIBUTION_PROMPT_VERSION),
         }
 
     def _call(self, content: object, *, request_type: str, request_key: str,
@@ -258,3 +265,58 @@ class SpecializeManager:
                 last_error = str(exc)
         raise SpecializeManagerFailure("child_generation", last_raw, last_error, total,
                                        self._metrics(calls))
+
+    def attribute_split_failure(
+        self,
+        *,
+        parent: RubricNode,
+        signatures: Sequence[ErrorSignature],
+        cluster_proposal: Mapping[str, Any],
+        children: Sequence[ChildCriterionProposal],
+        local_metrics: Mapping[str, Any],
+        changed_predictions: Sequence[Mapping[str, Any]],
+    ) -> dict[str, Any]:
+        """Generate a structured natural-language diagnosis for a rejected Split."""
+
+        prompt = SPLIT_FAILURE_ATTRIBUTION_PROMPT.format(
+            criterion_name=parent.criterion.name,
+            criterion_description=parent.criterion.description,
+            signatures_json=json.dumps([item.to_dict() for item in signatures], indent=2,
+                                       ensure_ascii=False),
+            cluster_json=json.dumps(cluster_proposal, indent=2, ensure_ascii=False),
+            children_json=json.dumps([
+                {"cluster_id": item.cluster_id,
+                 "criterion_name": item.criterion_name,
+                 "description": item.description,
+                 "rationale": item.rationale}
+                for item in children], indent=2, ensure_ascii=False),
+            metrics_json=json.dumps(dict(local_metrics), indent=2, ensure_ascii=False),
+            changed_predictions_json=json.dumps(list(changed_predictions), indent=2,
+                                                ensure_ascii=False))
+        spec = self.request_specs()["split_failure_attribution"]
+        calls = []
+        last_raw = None
+        last_error = "invalid split failure attribution"
+        total = self.structured_max_retries + 1
+        for attempt in range(1, total + 1):
+            raw, metrics = self._call(
+                prompt, request_type="split_failure_attribution",
+                request_key=parent.node_id, structured_attempt=attempt,
+                request_kwargs=self.clustering_request_kwargs)
+            calls.append(metrics)
+            last_raw = raw if isinstance(raw, str) else None
+            try:
+                attribution = parse_split_failure_attribution_response(raw)
+                return {
+                    "schema_version": "1.0.0",
+                    "attribution": attribution,
+                    "raw_response": last_raw,
+                    "attempt_count": attempt,
+                    "metrics": self._metrics(calls).to_dict(),
+                    "request_spec": spec.to_dict(),
+                }
+            except SpecializeParseError as exc:
+                last_error = str(exc)
+        raise SpecializeManagerFailure(
+            "split_failure_attribution", last_raw, last_error, total,
+            self._metrics(calls))

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from critiq.specialize_prompts import (
@@ -17,6 +18,7 @@ from experiments.evolving_structured_rubrics.run_rubric_evolution import (
     _activation_summary,
     _heldout_vote_metrics,
     _paired_heldout_comparison,
+    _prior_split_failures,
     _visual_variant_rubric,
     _multimodal_child_config,
     _qwen35_signature_config,
@@ -59,6 +61,7 @@ from critiq.structured import (
     parse_child_proposal_response,
     parse_cluster_proposal_response,
     parse_error_signature_response,
+    parse_split_failure_attribution_response,
     plan_artifact_refresh,
     evaluate_specialize_candidate,
     structured_input_fingerprint,
@@ -210,6 +213,83 @@ class SpecializeTests(unittest.TestCase):
         self.assertTrue(agent_args["request_kwargs"]["extra_body"]["enable_thinking"])
         self.assertEqual(child.criterion_name, "spatial_accuracy")
 
+    def test_manager_attributes_rejected_split_with_clustering_identity(self):
+        response = json.dumps({
+            "summary": "Broad children harmed correct parent decisions.",
+            "failure_categories": ["child_too_broad"],
+            "details": ["A spatial child activated on an object-identity sample."],
+            "avoid_next_time": ["Use observable and disjoint applicability boundaries."],
+        })
+
+        class FakePool:
+            backend_id = "siliconflow"
+
+            def __init__(self):
+                self.calls = []
+
+            def call(self, *args, **kwargs):
+                self.calls.append((args, kwargs))
+                return response, AgentCallMetrics(api_attempts=1)
+
+        pool = FakePool()
+        manager = SpecializeManager(
+            model="Qwen/Qwen3.5-397B-A17B", backend_pool=pool,
+            clustering_request_kwargs={"temperature": .2, "seed": 42})
+        artifact = manager.attribute_split_failure(
+            parent=_rubric().get_node("parent"),
+            signatures=(ErrorSignature(
+                "s1", "task", "space", "difference", "failure", "spatial"),),
+            cluster_proposal={"clusters": [{"cluster_id": "spatial"}]},
+            children=(ChildCriterionProposal(
+                "spatial", "spatial_accuracy", "Judge spatial relations.",
+                "Targets spatial errors.", ("s1",), "raw", 1,
+                ModelCallMetrics(), _manager_spec()),),
+            local_metrics={"parent_accuracy": .7, "specialized_accuracy": .6},
+            changed_predictions=({"sample_id": "s1", "outcome": "harmed"},))
+        self.assertEqual(artifact["attribution"]["failure_categories"], ["child_too_broad"])
+        self.assertEqual(artifact["request_spec"]["model"], "Qwen/Qwen3.5-397B-A17B")
+        self.assertEqual(pool.calls[0][1]["request_type"], "split_failure_attribution")
+        self.assertEqual(
+            pool.calls[0][1]["agent_args"]["request_kwargs"]["temperature"], .2)
+
+    def test_prior_split_failures_exposes_structured_and_natural_history(self):
+        entry = {
+            "parent_node_id": "parent", "decision": "reject",
+            "parent_criterion": {"name": "parent", "description": "Parent criterion"},
+            "structured_failure": {
+                "reasons": ["specialized_accuracy_below_parent"],
+                "mechanism_risks": ["child_accuracy_below_parent"]},
+            "failure_attribution": {"attribution": {
+                "summary": "Children were too broad.",
+                "failure_categories": ["child_too_broad"],
+                "details": ["They harmed one parent-correct sample."],
+                "avoid_next_time": ["Tighten applicability."]}},
+            "clusters": {"clusters": [{"cluster_id": "spatial"}]},
+            "children": [{"criterion_name": "spatial_accuracy"}],
+            "child_diagnostics": [], "parent_accuracy": .7,
+            "specialized_accuracy": .6, "accuracy_delta": -.1,
+            "corrected_sample_ids": [], "harmed_sample_ids": ["s1"],
+        }
+        history = {"schema_version": "2.0.0", "entries": [entry]}
+        load_target = ("experiments.evolving_structured_rubrics."
+                       "run_rubric_evolution.load_json")
+        with patch.object(Path, "exists", return_value=True), \
+                patch(load_target, return_value=history):
+            prior = _prior_split_failures(Path("ignored"), "parent")
+        self.assertEqual(prior[0]["failure_attribution"]["summary"],
+                         "Children were too broad.")
+        self.assertEqual(prior[0]["structured_failure"]["reasons"],
+                         ["specialized_accuracy_below_parent"])
+        self.assertEqual(prior[0]["harmed_sample_ids"], ["s1"])
+
+    def test_example_config_unifies_all_split_manager_models(self):
+        path = (Path(__file__).resolve().parents[2] / "experiments" /
+                "evolving_structured_rubrics" / "configs" /
+                "rubric_evolution_phase5.example.json")
+        config = json.loads(path.read_text(encoding="utf-8"))
+        models = {profile["model"]
+                  for profile in config["specialize_managers"].values()}
+        self.assertEqual(models, {"Qwen/Qwen3.5-397B-A17B"})
     def test_trigger_selects_only_decisive_wrong(self):
         decision = detect_specialize_trigger(_context(), "parent", _thresholds())
         self.assertTrue(decision.triggered)
@@ -248,6 +328,20 @@ class SpecializeTests(unittest.TestCase):
         with self.assertRaises(SpecializeParseError):
             parse_error_signature_response(json.dumps(payload), expected_sample_id="s2")
 
+    def test_split_failure_attribution_strict_parser(self):
+        payload = {
+            "summary": "The children overrode correct parent votes outside their clusters.",
+            "failure_categories": ["child_too_broad", "unrelated_scene_activation"],
+            "details": ["Two broad children harmed three parent-correct samples."],
+            "avoid_next_time": ["Make applicability boundaries observable and disjoint."],
+        }
+        parsed = parse_split_failure_attribution_response(json.dumps(payload))
+        self.assertEqual(parsed, payload)
+        with self.assertRaises(SpecializeParseError):
+            parse_split_failure_attribution_response(json.dumps({**payload, "extra": []}))
+        with self.assertRaises(SpecializeParseError):
+            parse_split_failure_attribution_response(json.dumps({
+                **payload, "failure_categories": ["Not Snake Case"]}))
     def test_cluster_parser_validates_partition_and_capacity(self):
         ids = tuple(f"s{i}" for i in range(12))
         value = {"clusters": [
@@ -456,7 +550,7 @@ class SpecializeTests(unittest.TestCase):
         self.assertAlmostEqual(summary["mean_active_children"], 1.5)
         self.assertEqual(summary["samples_with_all_children_active"], 1)
         self.assertEqual(summary["sibling_conflict_samples"], 1)
-    def test_collective_fitness_controls_split_acceptance(self):
+    def test_local_specialized_accuracy_controls_split_acceptance(self):
         dataset = (
             {"sample_id": "s0", "image_path": "http://image/0", "question": "q",
              "A": "a", "B": "b", "answer": "A"},
@@ -514,25 +608,31 @@ class SpecializeTests(unittest.TestCase):
             {"child_a": _vote(Vote.A), "child_b": _vote(Vote.A)},
         ))
         self.assertEqual(accepted.candidate_evaluation.decision.value, "accept")
-        self.assertGreater(accepted.collective_fitness, accepted.parent_fitness)
+        self.assertGreater(accepted.specialized_accuracy, accepted.parent_accuracy)
         self.assertIn("full_m1_guardrail_failed", accepted.subtree_diagnostic.mechanism_risks)
         self.assertEqual(SpecializeEvaluation.from_dict(accepted.to_dict()), accepted)
+        artifact = accepted.to_dict()
+        legacy = dict(artifact)
+        legacy["parent_fitness"] = legacy.pop("parent_accuracy")
+        legacy["collective_fitness"] = legacy.pop("specialized_accuracy")
+        legacy["fitness_delta"] = legacy.pop("accuracy_delta")
+        self.assertEqual(SpecializeEvaluation.from_dict(legacy), accepted)
 
         rejected = evaluate_rows((
             {"child_a": _vote(Vote.B), "child_b": _vote(Vote.B)},
             {"child_a": _vote(Vote.B), "child_b": _vote(Vote.B)},
         ))
         self.assertEqual(rejected.candidate_evaluation.decision.value, "reject")
-        self.assertIn("collective_fitness_not_above_parent",
+        self.assertIn("specialized_accuracy_below_parent",
                       rejected.candidate_evaluation.reasons)
 
         unsupported = evaluate_rows((
             {"child_a": _vote(Vote.ABSTAIN), "child_b": _vote(Vote.ABSTAIN)},
             {"child_a": _vote(Vote.ABSTAIN), "child_b": _vote(Vote.ABSTAIN)},
         ))
-        self.assertEqual(unsupported.candidate_evaluation.decision.value, "reject")
-        self.assertIn("child_zero_support_in_parent_scope",
-                      unsupported.candidate_evaluation.reasons)
+        self.assertEqual(unsupported.candidate_evaluation.decision.value, "accept")
+        self.assertEqual(unsupported.specialized_accuracy, unsupported.parent_accuracy)
+        self.assertEqual(unsupported.candidate_evaluation.reasons, ())
 
 class HeldoutVisualStageTest(unittest.TestCase):
     def test_vote_metrics_and_paired_comparison_use_gold(self):
