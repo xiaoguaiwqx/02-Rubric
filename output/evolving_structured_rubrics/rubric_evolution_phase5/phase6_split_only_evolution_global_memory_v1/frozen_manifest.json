@@ -1,0 +1,407 @@
+{
+  "schema_version": "1.0.0",
+  "experiment": "phase6_split_only_evolution_global_memory_v1",
+  "policy": {
+    "candidate_scope": "initial_roots_only",
+    "lock_root_after_accept": true,
+    "min_epochs": 3,
+    "max_epochs": 5,
+    "retry_rejected_roots": true,
+    "synchronous_epoch_commit": true,
+    "reuse_signatures_if_parent_unchanged": true,
+    "heldout_access": "final_stage_only"
+  },
+  "manager_seed": 42,
+  "phase5_manifest_sha256": "040bcf41431142666104b8fe5070f0470c25761a2109a5856f49eb564a53b304",
+  "discovery_dataset_sha256": "7c3c5b399ac9826980c8b2d1f451f3b326ae0c575572c390864155d7f3b50ca7",
+  "initial_rubric_sha256": "88f831f700967c31d22941b2cc660d9b48034bb3310706fe3124781ba53a09c8",
+  "initial_root_ids": [
+    "init_01_completeness_and_coverage",
+    "init_02_visual_grounding_and_details",
+    "init_03_factuality_no_hallucination",
+    "init_04_creativity_and_expressiveness",
+    "init_05_clarity_and_coherence"
+  ],
+  "initial_triggers": {
+    "init_01_completeness_and_coverage": {
+      "schema_version": "1.0.0",
+      "parent_node_id": "init_01_completeness_and_coverage",
+      "triggered": true,
+      "reasons": [],
+      "decisive_wrong_sample_ids": [
+        "rlhfv-003046",
+        "rlhfv-002726",
+        "rlhfv-002699",
+        "rlhfv-000195",
+        "rlhfv-001571",
+        "rlhfv-003218",
+        "rlhfv-002050",
+        "rlhfv-004830",
+        "rlhfv-002821",
+        "rlhfv-000541",
+        "rlhfv-000042",
+        "rlhfv-004995",
+        "rlhfv-001052",
+        "rlhfv-002069",
+        "rlhfv-004571",
+        "rlhfv-002720",
+        "rlhfv-000628",
+        "rlhfv-001002",
+        "rlhfv-000764",
+        "rlhfv-000307",
+        "rlhfv-000287",
+        "rlhfv-001449",
+        "rlhfv-000478",
+        "rlhfv-000449",
+        "rlhfv-000837",
+        "rlhfv-001347",
+        "rlhfv-000740"
+      ],
+      "current_children": 0,
+      "remaining_capacity": 5
+    },
+    "init_02_visual_grounding_and_details": {
+      "schema_version": "1.0.0",
+      "parent_node_id": "init_02_visual_grounding_and_details",
+      "triggered": true,
+      "reasons": [],
+      "decisive_wrong_sample_ids": [
+        "rlhfv-002695",
+        "rlhfv-004979",
+        "rlhfv-000082",
+        "rlhfv-003046",
+        "rlhfv-002726",
+        "rlhfv-002699",
+        "rlhfv-000085",
+        "rlhfv-002806",
+        "rlhfv-000195",
+        "rlhfv-002829",
+        "rlhfv-003218",
+        "rlhfv-004830",
+        "rlhfv-000541",
+        "rlhfv-000042",
+        "rlhfv-004995",
+        "rlhfv-001052",
+        "rlhfv-001274",
+        "rlhfv-004571",
+        "rlhfv-000628",
+        "rlhfv-001002",
+        "rlhfv-000764",
+        "rlhfv-000307",
+        "rlhfv-001449",
+        "rlhfv-000449",
+        "rlhfv-000837",
+        "rlhfv-001347",
+        "rlhfv-000740"
+      ],
+      "current_children": 0,
+      "remaining_capacity": 5
+    },
+    "init_03_factuality_no_hallucination": {
+      "schema_version": "1.0.0",
+      "parent_node_id": "init_03_factuality_no_hallucination",
+      "triggered": true,
+      "reasons": [],
+      "decisive_wrong_sample_ids": [
+        "rlhfv-000769",
+        "rlhfv-002182",
+        "rlhfv-000360",
+        "rlhfv-004979",
+        "rlhfv-000082",
+        "rlhfv-003046",
+        "rlhfv-002726",
+        "rlhfv-002699",
+        "rlhfv-000079",
+        "rlhfv-003458",
+        "rlhfv-002829",
+        "rlhfv-003218",
+        "rlhfv-004830",
+        "rlhfv-002821",
+        "rlhfv-000042",
+        "rlhfv-004995",
+        "rlhfv-004694",
+        "rlhfv-000932",
+        "rlhfv-002069",
+        "rlhfv-001274",
+        "rlhfv-004571",
+        "rlhfv-002720",
+        "rlhfv-003450",
+        "rlhfv-004956",
+        "rlhfv-002802",
+        "rlhfv-000462",
+        "rlhfv-000969",
+        "rlhfv-000628",
+        "rlhfv-000764",
+        "rlhfv-001314",
+        "rlhfv-000449",
+        "rlhfv-001347",
+        "rlhfv-000457"
+      ],
+      "current_children": 0,
+      "remaining_capacity": 5
+    },
+    "init_04_creativity_and_expressiveness": {
+      "schema_version": "1.0.0",
+      "parent_node_id": "init_04_creativity_and_expressiveness",
+      "triggered": true,
+      "reasons": [],
+      "decisive_wrong_sample_ids": [
+        "rlhfv-002695",
+        "rlhfv-002761",
+        "rlhfv-000082",
+        "rlhfv-003046",
+        "rlhfv-002726",
+        "rlhfv-000196",
+        "rlhfv-002699",
+        "rlhfv-000277",
+        "rlhfv-001988",
+        "rlhfv-004635",
+        "rlhfv-003218",
+        "rlhfv-002821",
+        "rlhfv-000541",
+        "rlhfv-000042",
+        "rlhfv-004995",
+        "rlhfv-001052",
+        "rlhfv-000932",
+        "rlhfv-004571",
+        "rlhfv-002720",
+        "rlhfv-002080",
+        "rlhfv-000462",
+        "rlhfv-000628",
+        "rlhfv-001002",
+        "rlhfv-000764",
+        "rlhfv-001103",
+        "rlhfv-001528",
+        "rlhfv-000307",
+        "rlhfv-001449",
+        "rlhfv-000478",
+        "rlhfv-000449",
+        "rlhfv-000837",
+        "rlhfv-000740"
+      ],
+      "current_children": 0,
+      "remaining_capacity": 5
+    },
+    "init_05_clarity_and_coherence": {
+      "schema_version": "1.0.0",
+      "parent_node_id": "init_05_clarity_and_coherence",
+      "triggered": true,
+      "reasons": [],
+      "decisive_wrong_sample_ids": [
+        "rlhfv-002695",
+        "rlhfv-002182",
+        "rlhfv-000082",
+        "rlhfv-003046",
+        "rlhfv-002726",
+        "rlhfv-000196",
+        "rlhfv-002738",
+        "rlhfv-000510",
+        "rlhfv-002699",
+        "rlhfv-000277",
+        "rlhfv-002824",
+        "rlhfv-004635",
+        "rlhfv-002806",
+        "rlhfv-000195",
+        "rlhfv-003218",
+        "rlhfv-004830",
+        "rlhfv-002821",
+        "rlhfv-000541",
+        "rlhfv-000042",
+        "rlhfv-004995",
+        "rlhfv-001052",
+        "rlhfv-000932",
+        "rlhfv-002069",
+        "rlhfv-004571",
+        "rlhfv-002080",
+        "rlhfv-003560",
+        "rlhfv-002802",
+        "rlhfv-000628",
+        "rlhfv-001002",
+        "rlhfv-001103",
+        "rlhfv-001528",
+        "rlhfv-000307",
+        "rlhfv-000287",
+        "rlhfv-001449",
+        "rlhfv-000478",
+        "rlhfv-000449",
+        "rlhfv-001347",
+        "rlhfv-000740"
+      ],
+      "current_children": 0,
+      "remaining_capacity": 5
+    }
+  },
+  "initial_eligible_root_ids": [
+    "init_01_completeness_and_coverage",
+    "init_02_visual_grounding_and_details",
+    "init_03_factuality_no_hallucination",
+    "init_04_creativity_and_expressiveness",
+    "init_05_clarity_and_coherence"
+  ],
+  "initial_eligible_root_count": 5,
+  "pairwise_request_spec": {
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "backend_id": "pool:qwen3vl8b-vllm-pool-v1:18e69e72502b9e8eba34fad78dcd68728d5b3dd342c06ca65c3ca163e980bb31",
+    "prompt_sha256": "198dcc0a3086456c14da4cb090676853448829465302edc7fcd2f37c8e39a2cb",
+    "max_data_chars": null,
+    "encode_local_image": true,
+    "image_field": "image_path",
+    "question_field": "question",
+    "sample_id_field": "sample_id",
+    "decoding_config": {
+      "temperature": 0.5
+    }
+  },
+  "pairwise_endpoint": "vllm-8001",
+  "manager_profiles": {
+    "error_signature": {
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_pool": {
+        "pool_id": "siliconflow-qwen35-397b-manager-v1",
+        "common_checkpoint_id": "Qwen/Qwen3.5-397B-A17B",
+        "global_request_concurrency": 32,
+        "endpoints": [
+          {
+            "endpoint_id": "siliconflow-cn",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "checkpoint_root": "provider:Qwen/Qwen3.5-397B-A17B",
+            "max_concurrency": 32
+          }
+        ]
+      },
+      "api_key_env": "GUIJI_API_KEY",
+      "input_mode": "multimodal",
+      "request_kwargs": {
+        "temperature": 0.2,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 8192
+        }
+      },
+      "vllm_identity": null
+    },
+    "semantic_cluster": {
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_pool": {
+        "pool_id": "siliconflow-qwen35-397b-manager-v1",
+        "common_checkpoint_id": "Qwen/Qwen3.5-397B-A17B",
+        "global_request_concurrency": 1,
+        "endpoints": [
+          {
+            "endpoint_id": "siliconflow-cn",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "checkpoint_root": "provider:Qwen/Qwen3.5-397B-A17B",
+            "max_concurrency": 1
+          }
+        ]
+      },
+      "api_key_env": "GUIJI_API_KEY",
+      "input_mode": "text",
+      "request_kwargs": {
+        "temperature": 0.2,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 8192
+        }
+      },
+      "vllm_identity": null,
+      "rubric_memory_mode": "global_rubric_v1"
+    },
+    "child_generation": {
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_pool": {
+        "pool_id": "siliconflow-qwen35-397b-manager-v1",
+        "common_checkpoint_id": "Qwen/Qwen3.5-397B-A17B",
+        "global_request_concurrency": 2,
+        "endpoints": [
+          {
+            "endpoint_id": "siliconflow-cn",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "checkpoint_root": "provider:Qwen/Qwen3.5-397B-A17B",
+            "max_concurrency": 2
+          }
+        ]
+      },
+      "api_key_env": "GUIJI_API_KEY",
+      "input_mode": "text",
+      "request_kwargs": {
+        "temperature": 0.7,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 8192
+        }
+      },
+      "vllm_identity": null,
+      "rubric_memory_mode": "global_rubric_v1"
+    }
+  },
+  "manager_request_specs": {
+    "error_signature": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:e63720e0f13a63822dde14ec57fab55661a35a020704f8bf81cf215667245df9",
+      "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+      "decoding_config": {
+        "temperature": 0.2,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 8192
+        }
+      },
+      "prompt_version": "1.0.0",
+      "parser_version": "1.0.0"
+    },
+    "semantic_cluster": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+      "prompt_sha256": "a9a9342e8b8a5c8361a922c987959251b86209d5c6032d40fa5d005d31cfced6",
+      "decoding_config": {
+        "temperature": 0.2,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 8192
+        }
+      },
+      "prompt_version": "1.0.0",
+      "parser_version": "1.0.0"
+    },
+    "child_generation": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:88c1e6a503687d4b3cab3745b81d2d82bcbda57805b5fff3296cfe6268dce256",
+      "prompt_sha256": "f37f6eb16ed97dde9f86150e8caa1ae73028ba81aa6adc5fe6160928179211d2",
+      "decoding_config": {
+        "temperature": 0.7,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 8192
+        }
+      },
+      "prompt_version": "1.0.0",
+      "parser_version": "1.0.0"
+    }
+  },
+  "manager_endpoint_identities": {
+    "error_signature": [],
+    "semantic_cluster": [],
+    "child_generation": []
+  },
+  "heldout_access": "forbidden_until_heldout_stage",
+  "heldout_protocol": {
+    "decision": "reuse_control_heldout500_exploratory",
+    "control_experiment": "phase6_split_only_evolution_v2",
+    "confirmatory": false,
+    "selection_after_heldout_forbidden": true
+  },
+  "rubric_memory_mode": "global_rubric_v1",
+  "control_experiment": "phase6_split_only_evolution_v2",
+  "control_signature_reuse_manifest_sha256": "4335aad1f28db7d03e826a415520ac52a56d0bedd131fc7a4eb9b330d113b8f1",
+  "epoch_00_rubric_memory_sha256": "5595171b72d9ceca41fa4b4529ae7e46e06293632110018eae1af06c87cf41c2"
+}

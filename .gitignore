@@ -42,3 +42,4 @@ experiments/evolving_structured_rubrics/configs/local/
 
 # Phase 5 evolution runtime artifacts; summarize reviewed findings in docs only.
 output/evolving_structured_rubrics/rubric_evolution_phase5/
+output/evolving_structured_rubrics/rubric_evolution_phase5_prompt_8001

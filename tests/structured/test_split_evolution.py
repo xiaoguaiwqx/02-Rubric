@@ -1,3 +1,4 @@
+import tempfile
 import unittest
 from unittest.mock import patch
 import experiments.evolving_structured_rubrics.split_evolution as split_module
@@ -7,11 +8,14 @@ from types import SimpleNamespace
 from experiments.evolving_structured_rubrics.split_evolution import (
  ACCEPTED, ATTRIBUTION_INVALID, COMPETITION_REJECTED, POLICY_V1, PROPOSAL_INVALID,
  SCIENTIFIC_ATTEMPT_OUTCOMES, TRANSPORT_FAILED, AttributionInvalid, TransportFailed,
+ MEMORY_CONFIG_V1, MEMORY_PROTOCOL,
  _abort_program, _history_projection, _manager_failure_kind, _pause_transport, colliding_roots, merge_accepted_rubrics,
+ _signatures, freeze_rubric_memory, rubric_memory_snapshot, root_shard,
  _required_failure_attribution, non_degenerate_acceptance_check, require_heldout_treatment, retryable_roots,
  runtime_acceptance_policy, should_stop_after_epoch, signature_identity, validate_phase5_lineage, validate_policy)
-from critiq.structured import (EdgeCondition, RubricCriterionSnapshot,
- RubricEdge, RubricNode, RubricPatch, StructuredRubric)
+from critiq.structured import (EdgeCondition, ErrorSignature, ErrorSignatureOutput,
+ RubricCriterionSnapshot, RubricEdge, RubricNode, RubricPatch,
+ SpecializeManagerRequestSpec, StructuredRubric)
 from critiq.structured.evolution.specialize_manager import SpecializeManagerFailure
 from critiq.structured.telemetry import ModelCallMetrics
 
@@ -35,6 +39,43 @@ class SplitEvolutionStateTests(unittest.TestCase):
  def test_exact_policy(self):
   config={'split_evolution':dict(POLICY_V1),'evolution_policy':{'trigger_thresholds':{'tau_split':.7,'tau_cov_high':.8}}};self.assertEqual(validate_policy(config),POLICY_V1);config['split_evolution']['max_epochs']=6
   with self.assertRaises(ValueError):validate_policy(config)
+ def test_memory_policy_is_explicit_and_does_not_change_control_validation(self):
+  config={'split_evolution':dict(POLICY_V1),'evolution_policy':{'trigger_thresholds':{'tau_split':.7,'tau_cov_high':.8}}}
+  self.assertEqual(validate_policy(config),POLICY_V1)
+  with self.assertRaisesRegex(ValueError,'memory_ablation'):
+   validate_policy(config,MEMORY_PROTOCOL)
+  config['split_manager_memory_ablation']=dict(MEMORY_CONFIG_V1)
+  self.assertEqual(validate_policy(config,MEMORY_PROTOCOL),POLICY_V1)
+ def test_rubric_memory_snapshot_is_minimal_deterministic_and_resume_safe(self):
+  parent=RubricNode('parent',RubricCriterionSnapshot('parent','Parent description',1.0),examples=({'sample_id':'secret'},))
+  child=RubricNode('child',RubricCriterionSnapshot('child','Child description',.5),lineage={'gold':'secret'})
+  rubric=StructuredRubric({'child':child,'parent':parent},(RubricEdge('parent','child',EdgeCondition.ALWAYS),),('parent',))
+  memory=rubric_memory_snapshot(rubric)
+  self.assertEqual([x['node_id'] for x in memory['nodes']],['parent','child'])
+  self.assertEqual(set(memory),{'schema_version','rubric_sha256','root_ids','nodes','edges'})
+  self.assertEqual(set(memory['nodes'][0]),{'node_id','criterion_name','description'})
+  self.assertNotIn('secret',str(memory))
+  with tempfile.TemporaryDirectory() as tmp:
+   path=Path(tmp);first,first_hash=freeze_rubric_memory(path,rubric);second,second_hash=freeze_rubric_memory(path,rubric)
+   self.assertEqual((first,first_hash),(second,second_hash))
+   changed=StructuredRubric({'parent':RubricNode('parent',RubricCriterionSnapshot('parent','Changed',1.0))},(),('parent',))
+   with self.assertRaisesRegex(RuntimeError,'memory drift'):freeze_rubric_memory(path,changed)
+ def test_memory_treatment_reuses_exact_control_signatures_without_generation(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   phase=Path(tmp);target=phase/MEMORY_PROTOCOL.experiment_dir;parent=RubricNode('init_01_parent',RubricCriterionSnapshot('parent','Parent',1.0));sid='s1';identity='a'*64
+   spec=SpecializeManagerRequestSpec.from_prompt(model='model',backend_id='pool',prompt='prompt',decoding_config={'temperature':0},prompt_version='1.0.0',parser_version='1.0.0')
+   value=ErrorSignatureOutput(ErrorSignature(sid,'task','focus','diff','failure','sub'),'{}',None,1,ModelCallMetrics(),spec)
+   source=phase/'phase6_split_only_evolution_v2'/'signature_cache'/root_shard(parent.node_id)/identity[:16]/split_module.base._safe_artifact_name(sid)
+   split_module._write(source,value.to_dict())
+   manager=SimpleNamespace(backend_pool=SimpleNamespace(spec=SimpleNamespace(global_request_concurrency=8)),infer_signature=lambda *args:(_ for _ in ()).throw(AssertionError('must not generate')))
+   trigger=SimpleNamespace(decisive_wrong_sample_ids=(sid,));feedback=SimpleNamespace(errors=(SimpleNamespace(sample_id=sid,outcome='wrong'),))
+   outputs,_,reuse=_signatures(target,manager,parent,trigger,feedback,{sid:{}},identity,spec.to_dict(),MEMORY_PROTOCOL)
+   self.assertEqual(outputs[sid].signature.sample_id,sid);self.assertEqual(reuse['generated'],0);self.assertEqual(reuse['control_v2_exact_identity'],1)
+   copied=target/'signature_cache'/root_shard(parent.node_id)/identity[:16]/split_module.base._safe_artifact_name(sid)
+   source_meta=split_module.load_json(copied.with_suffix('.source.json'))
+   self.assertEqual(source_meta['source'],'control_v2_exact_identity')
+   with self.assertRaisesRegex(RuntimeError,'Control signature missing'):
+    _signatures(phase/'another_treatment',manager,parent,trigger,feedback,{sid:{}},'b'*64,spec.to_dict(),MEMORY_PROTOCOL)
  def test_phase5_lineage_guard_separates_output_from_endpoint(self):
   validate_phase5_lineage(Path('output/evolving_structured_rubrics/rubric_evolution_phase5'))
   with self.assertRaisesRegex(ValueError,'frozen rubric_evolution_phase5'):

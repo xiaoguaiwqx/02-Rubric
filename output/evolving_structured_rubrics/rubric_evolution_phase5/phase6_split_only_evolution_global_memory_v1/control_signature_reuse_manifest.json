@@ -1,0 +1,1216 @@
+{
+  "schema_version": "1.0.0",
+  "control_experiment": "phase6_split_only_evolution_v2",
+  "generated": 0,
+  "reused": 157,
+  "entries": [
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-003046",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\14dbd755d569246f5633e24b.json",
+      "source_sha256": "16b41c7f02a97454766f459deab211bc23169d20d37cc685cb9305d83a2384d3"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-002726",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\bb626adfc2de78fd8c2beeed.json",
+      "source_sha256": "0113a8a03a04b0590167cac64b8464de1e97936dc8d84eb8bf578c301da33d9e"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-002699",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\807d6eb7a667ed2821a5a39e.json",
+      "source_sha256": "3841f2106bc6868c141370eb777d895ebd2860c286333b3c9a63cdea5b892c6a"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-000195",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\ffb352d5b7603023b1c8f77d.json",
+      "source_sha256": "690ad0a74722679713d4848a0119aa9d8a92f24ab1fbab4346bb2f1bceb68d53"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-001571",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\a111aef8822ebe6ebf4521fd.json",
+      "source_sha256": "b8dc43484fb48ca9048626ea71edb035a8b78034bc4596f59ee527572f27fb5d"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-003218",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\097396aa26eb0595faa7a1ee.json",
+      "source_sha256": "185ea9fdf56fa043d1dd8d29efd4cdfecde242a262223ee2900a2486ae254eaf"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-002050",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\24d89b2f9ccca1b358c93f10.json",
+      "source_sha256": "7bae6ec466cd78622e4a30429b21a268f97f4f51b2166b4f8633f5f54967b53d"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-004830",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\2e651b8abf649e74b4d026f9.json",
+      "source_sha256": "5c09d27a6853acfc909cf6219fe528d7375c77af129c1402c9d7afe5dc79fb17"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-002821",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\00afc26521df685ca4aac847.json",
+      "source_sha256": "7adc07655114600db03e11e9a6b1b222d9d99b9e0fbf44135ea2cb4c1dd1c9ba"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-000541",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\569e654cb4cce146fa02f47b.json",
+      "source_sha256": "3fa6f127a4501826582fa939d966ce5a07304b096d8bedabbff2359f4436d884"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-000042",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\25d9cb5515bf4df930d586cd.json",
+      "source_sha256": "293680b4fa96bf3dcc2d8ea12908bdd5948b53a634cde8b28d1e7b135e0eb945"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-004995",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\b0003fee17d2b9a286148172.json",
+      "source_sha256": "a518333e9ded2e6bdc1817646f839bc49c9ce49829a91146f0b58dbf12e3ffe3"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-001052",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\bcab8bee68585a2a044a8188.json",
+      "source_sha256": "41ab38b816228fd3521590e58f6e8b40796188e2ffb1403894eaf11216aeb4d3"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-002069",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\3f632289cd13f611822b8ef4.json",
+      "source_sha256": "11549500d05cf65fb20b6c5eb680c4a99d105b4a4bbb4ca4b76b6d24d7d62bc5"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-004571",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\eca1d053c22e6a94316fb45a.json",
+      "source_sha256": "4a48697bac3038154007cea5a6ef11e4ffadd045160a86a30eff6e868e4fc127"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-002720",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\4512db3b2da59985c3119d8b.json",
+      "source_sha256": "b8dcbe3e3b890a5dead96729798121be986de944051b0cb501777632e41b2ad0"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-000628",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\5c3f42c247553251bb41192e.json",
+      "source_sha256": "8af731cc32344d4166223ee09ffdcef7b17434fcc681cfcc4550a6e813d5e944"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-001002",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\57c9b442755c0101dee86cb3.json",
+      "source_sha256": "48bd3d6f77b7e00ed8d098c45228e587e1a179ff468f0d712c383470c27d8ef6"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-000764",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\78a5904faee57edc50b1f4a7.json",
+      "source_sha256": "59d61344eff519f99691ea23c9f7227e5c2a8252b6b020ad0263fb699c0e15f5"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-000307",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\c575b0978a5add44ff6cd449.json",
+      "source_sha256": "bb4308e6bdf2d2301a88cc04e52f4f2bf8f024197c0492db7f5da9c5c5e996f6"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-000287",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\6cec3b8c6867131de138c369.json",
+      "source_sha256": "2f9a2bf9fe98e83a438a2462879441cb332254cab836a4cb95bf9efaae46ec4d"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-001449",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\8ef609bf7c10538fe27a4819.json",
+      "source_sha256": "bc6536bbce77516d61afd58b44b97f41342bdc5572d9e02c7f1b5271380fdfd5"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-000478",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\fd3f4295dd42384b279f9fdb.json",
+      "source_sha256": "6ee6e6bad28e66d775063ef1d1d245d737c280e60ee0c6fb1bb3ba69b573a99c"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-000449",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\9e61a0ee7d34f609b947081d.json",
+      "source_sha256": "c963cff9142f38fd013b2bf54ccdd3b94bf148587bc3806b74633c0ba9c4b37f"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-000837",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\8a469000dd6c9eafce5e9f94.json",
+      "source_sha256": "e519b26aca2f0a9dc711cb1125ca61393def9321aff5d1f39283d18f616d4baf"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-001347",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\e413dd9c02627aa97bbde0d2.json",
+      "source_sha256": "f01db7cfcf0224b0b78afa8e2f47564d7efe4f7d4dd849761c140fe2600cc9fd"
+    },
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "sample_id": "rlhfv-000740",
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r01\\548b877f41b575ba\\2967dcde69dfcb182bb07727.json",
+      "source_sha256": "f064f0a6dba6a550aac410b1eb4fbcfc7589d805dae20fe410ae1080cad6d8f1"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-002695",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\84c81e115cc91b7b11a94da0.json",
+      "source_sha256": "963a1b38de210bd903d181328b85327f488dbe33a4fdf88d4bf8cea185224e5c"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-004979",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\272dfa205f680b2c4eeb9b83.json",
+      "source_sha256": "15f92df627e8f9bf5eca5d3a0ade74466e40c62179fc95105cf160e36fb75c8e"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-000082",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\115fc694be987881417f7af5.json",
+      "source_sha256": "0683fbfc847c8d817cf2682196ce0f6dad7273d469129faa27e9a1381df331e5"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-003046",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\14dbd755d569246f5633e24b.json",
+      "source_sha256": "916ecc1454600eff246b58590a7cde4c4d22da9ca2609b1a86532a7ca21a133a"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-002726",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\bb626adfc2de78fd8c2beeed.json",
+      "source_sha256": "5d2f90c5aee7e1533c512c018c12e2b869a18e81a1b8e1900dfd8f6f388fbfd0"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-002699",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\807d6eb7a667ed2821a5a39e.json",
+      "source_sha256": "bdca18f66ff620ac0621e0094614710ddbf780198bd230658ee6f9bf4d5f0ca4"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-000085",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\a808bf2811301d7b5dc1279b.json",
+      "source_sha256": "8ab1833e8bdc673ade0c2869bd95e73248a3c40ebcc633f525da3e06a5a5e461"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-002806",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\df8bb4efcee9c83b4573a8a4.json",
+      "source_sha256": "ee0842cec67d9923cff231395b423b0e519b3cda1e82f953bde57d432aac767a"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-000195",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\ffb352d5b7603023b1c8f77d.json",
+      "source_sha256": "94f3adbb6748e91f6701594bec4a4465ef15e64127b81e6eb47d47f448768ce8"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-002829",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\51278008238a250dffbe5f8f.json",
+      "source_sha256": "aebea82d3c6eb18ef247a9a17b88bb7c8f1b70063eecaf62fb1afa806927bd87"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-003218",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\097396aa26eb0595faa7a1ee.json",
+      "source_sha256": "cc3848a25445166e3440885ac34495043774f19b70e694cbac8ade255f57b9a7"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-004830",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\2e651b8abf649e74b4d026f9.json",
+      "source_sha256": "d3ca775c8a9147b51033c7fd9a53eb828df112397120385aedd32ec8b32ff176"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-000541",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\569e654cb4cce146fa02f47b.json",
+      "source_sha256": "ba2e4aa519af5cc5ca08283bb5c5f2a8ccadfd9e4275b19a3f056ac184473f87"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-000042",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\25d9cb5515bf4df930d586cd.json",
+      "source_sha256": "21d77d866d524c09db300ead6e89e102fef4dfc88471ecf5a8a871fd14c223ab"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-004995",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\b0003fee17d2b9a286148172.json",
+      "source_sha256": "a75fa92c8d705b33328f1d8bef8683f0dca95edb7bbf6d18240a5bfcc4a83c8a"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-001052",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\bcab8bee68585a2a044a8188.json",
+      "source_sha256": "eba2e8433ca1ce491d81bace5c716f0bea6803239960442ad1d77bdc5f14a29b"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-001274",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\794caeb475909c08c054aeeb.json",
+      "source_sha256": "aaf8d6dca67372e7947b27965b22e892a10ddf43eaae040214b8c7699b5639dc"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-004571",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\eca1d053c22e6a94316fb45a.json",
+      "source_sha256": "cfea27204f85d389577caeaeff46c4f9631d75ff29ccbee4a2f017250ea5d66c"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-000628",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\5c3f42c247553251bb41192e.json",
+      "source_sha256": "e633a15c4115cb46fdb9aa016dceae4dcccd4849169642bae4a4d503538e1959"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-001002",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\57c9b442755c0101dee86cb3.json",
+      "source_sha256": "88fe39b72c6549cd1d9b0a18622df68a63313d59fbb9292afd51c2154ff1e770"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-000764",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\78a5904faee57edc50b1f4a7.json",
+      "source_sha256": "e02958f8e6a7424361a0821ba899e8ca994eb3ba615b6c4f5fc59222f9be490a"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-000307",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\c575b0978a5add44ff6cd449.json",
+      "source_sha256": "832c18771e58ffcbc6b5aa7750481700bfa439f4191fa4b5041a9ae1f17cc602"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-001449",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\8ef609bf7c10538fe27a4819.json",
+      "source_sha256": "7e3c5fec9df65eecb9056ec2847d457c3408f9fb07fd042cc160828cb495aecc"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-000449",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\9e61a0ee7d34f609b947081d.json",
+      "source_sha256": "8554a335be7cd09ef7fbd01f1f3b11337ba95e627692143cd554ef11be536bde"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-000837",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\8a469000dd6c9eafce5e9f94.json",
+      "source_sha256": "b2197901b734e321396cc1fb2d44cdf6c192fae7e3819aa4e314916140e29565"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-001347",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\e413dd9c02627aa97bbde0d2.json",
+      "source_sha256": "dd25eae14ffd649b86e60f3341adcb222a9a3263033bde46aea4156343a62260"
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "sample_id": "rlhfv-000740",
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r02\\2d3e176b32f4a5e1\\2967dcde69dfcb182bb07727.json",
+      "source_sha256": "6c29517971f7eba3bcaee3133660fc2b6f539a2dd6e3ce5d23c3c04c71c71af0"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-000769",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\142fc83dcce0f03a3ad58c06.json",
+      "source_sha256": "1ebc58c1b3a9092c3d0781d5132bb8a21cdea15da5dcf9e1d6e99491fa540e7f"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-002182",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\fb081d661e3489f4c26d1173.json",
+      "source_sha256": "4ecac378847da27c0ecdfaa8a42a254543ef7128d85f8c4ae4a2a8e5d63e3cd6"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-000360",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\de40da8fa63e95851c0713ca.json",
+      "source_sha256": "407a24a2a438320ae69bf7ed96c1a20d75cfa0cf597e2ca806bb32e4d59e7e47"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-004979",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\272dfa205f680b2c4eeb9b83.json",
+      "source_sha256": "83c5433d123812d6d450d6dc93eae314fccb5f98ea6feb9de3ceefed314fd9e3"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-000082",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\115fc694be987881417f7af5.json",
+      "source_sha256": "e5b1cc56b5256a89714f34c1332ea24c9e539504f5e80430d5aa72183b1d7200"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-003046",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\14dbd755d569246f5633e24b.json",
+      "source_sha256": "7c51364d4107e906993e95f187625203c18fb9c7e006812efaaaf88d6cec1343"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-002726",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\bb626adfc2de78fd8c2beeed.json",
+      "source_sha256": "b20b6b6805a084c3fdca7306637f0ed7a81e1228d7bbbd69bb27e8a951538631"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-002699",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\807d6eb7a667ed2821a5a39e.json",
+      "source_sha256": "a854d0a1f0afa65365cb70c1ea121ae21bc881ca7df14072aa5230ac56138ec0"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-000079",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\20a7a5deb2e60015496983e4.json",
+      "source_sha256": "619cde469b044d7df8b0b4e41cdbf54b7bb33f242b34679e81cf16dce00bd441"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-003458",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\eee0ce64d85ec232026f8318.json",
+      "source_sha256": "f8650f61655b5fff8cd19ceabf042a58df76771e3ee01d09533330b6d08709bd"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-002829",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\51278008238a250dffbe5f8f.json",
+      "source_sha256": "76ab6803e04704a89f7a30f2731f55d4e2eca513b62ac710836752bc679d8982"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-003218",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\097396aa26eb0595faa7a1ee.json",
+      "source_sha256": "fbb6d22504443de42c2aeba200c614c2b8ea87928f97f37ae5b7be131bbb85ba"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-004830",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\2e651b8abf649e74b4d026f9.json",
+      "source_sha256": "b95da248d5edab7522100554da701254ac7c35c19ef6741a4d7963e9588850c2"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-002821",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\00afc26521df685ca4aac847.json",
+      "source_sha256": "ceb18b2d4560fc7bb42ce90e5d6f188115e21faa4ec954a0bfbd298f576583f0"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-000042",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\25d9cb5515bf4df930d586cd.json",
+      "source_sha256": "0bdaa13bc26d30f4dc4c819c83538a2b69fbc3831b925ea88a4d45103afad23b"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-004995",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\b0003fee17d2b9a286148172.json",
+      "source_sha256": "d9d9059577cf047074aee6b0103f3810cc5cbeaa8ccbc151a0c7b13f38945d73"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-004694",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\e2a7603a54f967c5f4af3ce2.json",
+      "source_sha256": "2d414ef40af45ce8772b3a597fb79a22fc5fb05dcb453f4368f0f0fd74ac3432"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-000932",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\58c039c16fddfe9f5872c39c.json",
+      "source_sha256": "330ebd879c2176a31c0ad0cc7463efd70cd3027bd246d49d1997203924d010f4"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-002069",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\3f632289cd13f611822b8ef4.json",
+      "source_sha256": "b9b6d30ab678f87ab3ecdedf79b49d4ed2ac3b62fb5759e5dca48af8d1433aaa"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-001274",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\794caeb475909c08c054aeeb.json",
+      "source_sha256": "0101e02c16313bf5b47db433baca44e0a453ae68dce3de6da5cb0c00511cc471"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-004571",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\eca1d053c22e6a94316fb45a.json",
+      "source_sha256": "09f7278f853f57bcea8c672a888e1655617d91a08499448dc8d7cad839cd8a7e"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-002720",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\4512db3b2da59985c3119d8b.json",
+      "source_sha256": "ac9a5b0e228c6007588251ba2c7f5f6b4586cf87dd5a6e195d58d898de7f6981"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-003450",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\46a4c59cac3c7398c759c851.json",
+      "source_sha256": "caa9250ac9e877c45bc8b0037d7ebc8858de66181af1c0e4ecd3abb3369d344d"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-004956",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\cf3e996144690de9a335e713.json",
+      "source_sha256": "bc19ed817c11096412f7d84c5d4e289a4886607e36935bde4d2ff9e35fec4162"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-002802",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\595ea70663abca3097d6735c.json",
+      "source_sha256": "c1447c34ffefa781fbd274949457ba2045282c6b564655338475c6ce6111bef8"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-000462",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\dabfba998fee19eee421fb92.json",
+      "source_sha256": "0cee4af7762994d4a99d42eef00abc82975736f423456fa505bb1fcd4dd36f1f"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-000969",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\62faf3513a6a5981bb36083b.json",
+      "source_sha256": "563d85995fc7d056c329bfc620988239e850388159cefd2deba7b56de60c51e8"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-000628",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\5c3f42c247553251bb41192e.json",
+      "source_sha256": "4e0473a05617a88c76a4419f8a0838023ce88537dea7f5cd59985464aad06441"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-000764",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\78a5904faee57edc50b1f4a7.json",
+      "source_sha256": "32fcbcb30cae246020ed99eeaecf087f688d545fe746f845523473069cf10823"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-001314",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\882f13cf4c8d6ecb72ce1e8f.json",
+      "source_sha256": "7ab7df8ea3054edd794b6b560a649bf05f102fb7e0a4d97ca863de2d45bf90ef"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-000449",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\9e61a0ee7d34f609b947081d.json",
+      "source_sha256": "0135bf35523b59f9803d668bd7b114f75d7c5681b8a147f80973ea3302c69cdc"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-001347",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\e413dd9c02627aa97bbde0d2.json",
+      "source_sha256": "8e422fd6ca06ad717acfc18ef13b9f8b0085ad21f5a50760c2a9c86983cd8a1e"
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "sample_id": "rlhfv-000457",
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r03\\42c8e4854d992bb6\\6db6a6183316a5836e0a1b20.json",
+      "source_sha256": "33516130c3e9df2634f7c93255c8961d5b68938b15ae9dbe481d3c601ea4fc8e"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-002695",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\84c81e115cc91b7b11a94da0.json",
+      "source_sha256": "0a162654230b60a4acda3faafce78f82445cf32daa438cdd6dbba4dcb3435725"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-002761",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\4d59fa2019678406e04875aa.json",
+      "source_sha256": "1cdf56775261c6202dbea2dbb9e6a2129bc8d1fec3a58a01137216f7a9a27178"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000082",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\115fc694be987881417f7af5.json",
+      "source_sha256": "a62b8349b63003e56c8098af9cddda89cd059f02886ce15272266d9b02086b82"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-003046",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\14dbd755d569246f5633e24b.json",
+      "source_sha256": "c3aa4372072ebeeebd6640c705a581620160e12015a6c73c175e1dfa8fafb82b"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-002726",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\bb626adfc2de78fd8c2beeed.json",
+      "source_sha256": "8bc410b57211c35ff2279f68f16e59e8aa796cc37b0911889aab5b9161d15dd9"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000196",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\11bead0a23e67551590e01ee.json",
+      "source_sha256": "63fc912c7ebbb585b32c12ff50e6f883c6d0127309b265970fc537d78125f8b0"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-002699",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\807d6eb7a667ed2821a5a39e.json",
+      "source_sha256": "affbbbc9a79ea3066b7f3fb4d7de5ab1c8efb8436e70af4e2800a92de18869f9"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000277",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\e04c8f53bc20a41f68896f75.json",
+      "source_sha256": "4502f6c47e462c64fad7747db70d3853f6bf57704a845d6070489f6b0fe91cf0"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-001988",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\42d7f20de8565058760fa450.json",
+      "source_sha256": "61f028b7b90fb84d97f47ed1ffa780aec07c65b2347bc545724e9032c715f235"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-004635",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\4bd05b6454f293de6267c76d.json",
+      "source_sha256": "0368d075d8a47bf1240ebf8cd03972e5814466bb85f961115a294b4c43bbbb61"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-003218",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\097396aa26eb0595faa7a1ee.json",
+      "source_sha256": "571f33b57f0d862f8b1b5d1038023083645bb6163ba276086946e0820419a421"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-002821",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\00afc26521df685ca4aac847.json",
+      "source_sha256": "6bd913f4ea238125e145dd11c91d1d895cecf0aef59a540d96b88718c71c0366"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000541",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\569e654cb4cce146fa02f47b.json",
+      "source_sha256": "44a90d124873d979e814fc55172c4fefbb8dfee9fc7ac9f584a2fc2d40f07753"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000042",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\25d9cb5515bf4df930d586cd.json",
+      "source_sha256": "7c9f5db1df77a4dabaa62d21e869a622325dd2fe5150b2c3ba97d72354064f8d"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-004995",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\b0003fee17d2b9a286148172.json",
+      "source_sha256": "7e5424f3a6d0528727f3a6f423ffdcfa181a9e5625e32b312eda53843d42c2eb"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-001052",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\bcab8bee68585a2a044a8188.json",
+      "source_sha256": "893176bcc1660ada1a12a369b217b033ed3152d8c565e9adb4d86d7c1b24532f"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000932",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\58c039c16fddfe9f5872c39c.json",
+      "source_sha256": "252c6e53576500bc8c7edde24a79149f9c8b7565e2d7906c8751ce280f7742bd"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-004571",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\eca1d053c22e6a94316fb45a.json",
+      "source_sha256": "c2db393281795c76dd7394f0181775b603c1f088367f7d0c3571c9ac7cf3266d"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-002720",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\4512db3b2da59985c3119d8b.json",
+      "source_sha256": "e42a0f4972e78278764ce0a1b3a55f06b2863a4b872ff4c423189b5353421092"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-002080",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\ded5ee0be304697ca1d64074.json",
+      "source_sha256": "26633aadf9b34828e0793b5ce8b297d4eaf03371b5b7f76300369d818ca3bebb"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000462",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\dabfba998fee19eee421fb92.json",
+      "source_sha256": "c04cde8a327f089ce4ecf49ad9669ec7ed6f64ffa477d4406ae7ad8a3088c3c7"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000628",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\5c3f42c247553251bb41192e.json",
+      "source_sha256": "b42e0f8e29ec6da596105e77e6f36a46f13c9b53a33e0b85db8ec8d85bb082ad"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-001002",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\57c9b442755c0101dee86cb3.json",
+      "source_sha256": "dadc57e3dcd6113fa8062125ff9769827163bbf8d8fcdb22469a4e0d951c8d69"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000764",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\78a5904faee57edc50b1f4a7.json",
+      "source_sha256": "d8e40568fad811dc98d57d98c30d86d489aef80fb7921c0a49dce56d8feaf65a"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-001103",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\64862b9946111af139056a03.json",
+      "source_sha256": "7a2837f593ae75c48a33b8535dfbc4c6977b55eefebad9d2b1ea63d35ae5c660"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-001528",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\c6d168e27528480c63c3c980.json",
+      "source_sha256": "8be0660e2c7ee003473143b8900e69c24cf7eaa4f82e720821fdc4c440b61a8f"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000307",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\c575b0978a5add44ff6cd449.json",
+      "source_sha256": "ffda956077170a2a5bf00f670660aedcc722da941acfb6e39194f167f2259388"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-001449",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\8ef609bf7c10538fe27a4819.json",
+      "source_sha256": "e93516a9690e408bbd523aeb4bd1a3bcb8c5e594cee060d4deeb26d3fb9504d7"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000478",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\fd3f4295dd42384b279f9fdb.json",
+      "source_sha256": "efdc27df3c8b6748f0237021d4d7137256f6452511f1c7215f5beb0cec6a15cc"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000449",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\9e61a0ee7d34f609b947081d.json",
+      "source_sha256": "a7aa386da086a407188d0b2ba0c5ba272553167c2f0db58605ef5b7ce9574b05"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000837",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\8a469000dd6c9eafce5e9f94.json",
+      "source_sha256": "728ceb9a8cded1bfb117c38c70fb409b7407d900e5ecaf169d9aa1283ecbbb40"
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "sample_id": "rlhfv-000740",
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r04\\830b3da5181317e9\\2967dcde69dfcb182bb07727.json",
+      "source_sha256": "c081b4bb27384eee67aaf2e7a4d83659ace144a2311b33189a0cfc064f063c8c"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-002695",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\84c81e115cc91b7b11a94da0.json",
+      "source_sha256": "f2df79b9fb466363eff416cd93963f8619f539ec5cb0c10fb3e50c12b21c12c8"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-002182",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\fb081d661e3489f4c26d1173.json",
+      "source_sha256": "da609a0cd1a81d4bc6f44a8a5a3e209157601150706ef3d28aeddbc3c59a67a4"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000082",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\115fc694be987881417f7af5.json",
+      "source_sha256": "7d6343dcd64e5d51b3c62e83f647e13977f944a936505d85c6d0c4902a0a4020"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-003046",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\14dbd755d569246f5633e24b.json",
+      "source_sha256": "04769828ab7b0b57c1c019a35024cd5003220c638c0dc7a9d2c94b9597309deb"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-002726",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\bb626adfc2de78fd8c2beeed.json",
+      "source_sha256": "79aeb5f42b3e5526f735f57fc0a0e68003f883a41d2b88111eb320bc4894d796"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000196",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\11bead0a23e67551590e01ee.json",
+      "source_sha256": "be8ecc099d07f2407e8723b3af2712e2f1057bef8404fb60124975ea282031a0"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-002738",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\eb12a85a2d490e52f03e38c2.json",
+      "source_sha256": "697b8c3d520f997d26e6587f0cb9d575ab8768849c2cc28c641a05d65da1028f"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000510",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\1c6e657865c92880d5fa409a.json",
+      "source_sha256": "3a56ade683c1c5c7e67f2614e25b18cffc3911b068497eaf36c0252e6591dbd0"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-002699",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\807d6eb7a667ed2821a5a39e.json",
+      "source_sha256": "15c3938d814aaf46b7cc336fa17d26e420e3875501de2c9f5e500cd43ea625a0"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000277",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\e04c8f53bc20a41f68896f75.json",
+      "source_sha256": "e5a75b37bbb1af2a98f706bb267338a6b4d5df2b7f85a6b56a803b86c2409ed4"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-002824",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\b5ab7eb88f6974b1e062e0aa.json",
+      "source_sha256": "f13b1e811d119cee553f40b90cef1cb42ab359f1261e617a23c846081326d478"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-004635",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\4bd05b6454f293de6267c76d.json",
+      "source_sha256": "0c02bb373a2c42e43b2a191d65c6e73a10892baa84b6a565e83077c8637c52f7"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-002806",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\df8bb4efcee9c83b4573a8a4.json",
+      "source_sha256": "560c4046a96d6e97697df54aa1314b092977a85aa9de386411936f938e1d68d7"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000195",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\ffb352d5b7603023b1c8f77d.json",
+      "source_sha256": "dd878d079168341380a0aeb891226aad4d7f356d70d85a0277ab8b0f8c7a6824"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-003218",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\097396aa26eb0595faa7a1ee.json",
+      "source_sha256": "9c5ede0363cb7ca551018eed3a4a0f9ef3d3308e9ae55c054273824f53370f1e"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-004830",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\2e651b8abf649e74b4d026f9.json",
+      "source_sha256": "9b20a786def1780cba09a5a269da851db2970d7427800b09350baa5e9fcd4b36"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-002821",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\00afc26521df685ca4aac847.json",
+      "source_sha256": "f8a2bec692180baeaf1d57ab811a40bc5f4d7c103f1f578d993a9a79da7946dd"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000541",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\569e654cb4cce146fa02f47b.json",
+      "source_sha256": "586c2936b83c2dddcaf8448296c7d704c21bdfffff0bed5e8a2801a0ab218274"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000042",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\25d9cb5515bf4df930d586cd.json",
+      "source_sha256": "059084d92919c310f6316b6f759b6446e3765f37103ba158448b2c8e6280c33e"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-004995",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\b0003fee17d2b9a286148172.json",
+      "source_sha256": "0e10dcdefa12240161cf7e5ca7f4827dd2cc91bb2d4eea199e1c48bb728c02ac"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-001052",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\bcab8bee68585a2a044a8188.json",
+      "source_sha256": "3e851c39cee7de80e6e1047c91c95f6fe93fb6bfdc53a3969dcd45f7fb1cbef9"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000932",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\58c039c16fddfe9f5872c39c.json",
+      "source_sha256": "a9a8646dd06a96ccbdbf096ce6761ebe3a0fe571667ecb47296bce8a2127914d"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-002069",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\3f632289cd13f611822b8ef4.json",
+      "source_sha256": "b155a15fda3f85441e530f8451bc8b74411120a906fab04c5d60754429f99e0d"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-004571",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\eca1d053c22e6a94316fb45a.json",
+      "source_sha256": "be2286f0827831bccd7a95f69de00b6f7125b80baefea5bd52f29b61d70459aa"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-002080",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\ded5ee0be304697ca1d64074.json",
+      "source_sha256": "e5f5fd3eaf5bb2f3ff3d1b5fba003104d7256dc033440f7616f7d41bf3f353d9"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-003560",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\5dfb5bafd5136db7670f71ef.json",
+      "source_sha256": "93d70d9417f48f2e2cf389b7dc4883a80ef5b45934ad7c8622295d8824a7f85e"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-002802",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\595ea70663abca3097d6735c.json",
+      "source_sha256": "39927db2a8963f96690c3129fbcb616b92973e65a35f2e47c9f0546da08aa882"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000628",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\5c3f42c247553251bb41192e.json",
+      "source_sha256": "e6cab360dea88b56a0e1384a2ec8d214cb469dab0a6d7e1c1bc771d52362ba67"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-001002",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\57c9b442755c0101dee86cb3.json",
+      "source_sha256": "ddd4c527cf61d51a98ab3770bc8f90b32dc8b38559ab09edfb712ee1ff5ac3ff"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-001103",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\64862b9946111af139056a03.json",
+      "source_sha256": "7a7f7ec757b671f121bfce3629a4db6269e32c6508621934a334e107d1a65b27"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-001528",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\c6d168e27528480c63c3c980.json",
+      "source_sha256": "676e231bc15e77a891b24117d967826cc74f21850b5f965c634ae07756c23764"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000307",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\c575b0978a5add44ff6cd449.json",
+      "source_sha256": "42c394e7d261f55ee20e278a4341c598f3c6d817a7cd68643140b47fc4fc2a5a"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000287",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\6cec3b8c6867131de138c369.json",
+      "source_sha256": "63b3327339b1c5a8726037a83cbd9e4b997a29ef43be6fb064cb1b37a2517f5a"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-001449",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\8ef609bf7c10538fe27a4819.json",
+      "source_sha256": "ddfdcc16ca43afa1ddb1b94598561ee140c7b82df855988799b0cb4c53b4b4a7"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000478",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\fd3f4295dd42384b279f9fdb.json",
+      "source_sha256": "ad3ca35bc5480b6513e073fce4d747d278a665f392d9238bb4749a8109f4dc59"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000449",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\9e61a0ee7d34f609b947081d.json",
+      "source_sha256": "6ff2df663ebae1fb1d15cf489c25b0f4aaa3c7acad6b24a5fbe3d0871880534f"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-001347",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\e413dd9c02627aa97bbde0d2.json",
+      "source_sha256": "7b301b195c35877c884bea07293a868a16552d75d40c563d0cdb887908662f6f"
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "sample_id": "rlhfv-000740",
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "source_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\signature_cache\\r05\\8093f40e0513bf91\\2967dcde69dfcb182bb07727.json",
+      "source_sha256": "ad11d2b6dd93e72f135796b73d2f7076db7b66d4d9fe1dd19ff61d9dac9f640d"
+    }
+  ],
+  "root_sources": {
+    "init_01_completeness_and_coverage": {
+      "signature_identity": "548b877f41b575baddd95efa3a2ac6a13791a3044eb7d1510377a5955fa78ac6",
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3.5-397B-A17B",
+        "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:e63720e0f13a63822dde14ec57fab55661a35a020704f8bf81cf215667245df9",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42,
+          "extra_body": {
+            "enable_thinking": true,
+            "thinking_budget": 8192
+          }
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      },
+      "attempt_artifact": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\epochs\\epoch_01\\roots\\r01\\attempt_01\\error_signatures.json",
+      "attempt_artifact_sha256": "e797748a01fce0549afd59fa17ef95057d6cdc598bfebac81a672ff0bb0792a0"
+    },
+    "init_02_visual_grounding_and_details": {
+      "signature_identity": "2d3e176b32f4a5e1d5c5de13bc8c3cc63a306539ccb5776ef7f1b39d85daf39e",
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3.5-397B-A17B",
+        "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:e63720e0f13a63822dde14ec57fab55661a35a020704f8bf81cf215667245df9",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42,
+          "extra_body": {
+            "enable_thinking": true,
+            "thinking_budget": 8192
+          }
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      },
+      "attempt_artifact": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\epochs\\epoch_01\\roots\\r02\\attempt_01\\error_signatures.json",
+      "attempt_artifact_sha256": "c95ba8d5b84feaa1384ea9de4af9f9554b21707f9e35d4d82517ff760c954df3"
+    },
+    "init_03_factuality_no_hallucination": {
+      "signature_identity": "42c8e4854d992bb6d63aed655feb864721735e315672c304b90537aa327a3444",
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3.5-397B-A17B",
+        "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:e63720e0f13a63822dde14ec57fab55661a35a020704f8bf81cf215667245df9",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42,
+          "extra_body": {
+            "enable_thinking": true,
+            "thinking_budget": 8192
+          }
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      },
+      "attempt_artifact": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\epochs\\epoch_01\\roots\\r03\\attempt_01\\error_signatures.json",
+      "attempt_artifact_sha256": "cbcea0fdb5977bcf1f30c409bcf81bfc98e9e453145ea33cb234c0a081c7c2db"
+    },
+    "init_04_creativity_and_expressiveness": {
+      "signature_identity": "830b3da5181317e94f30cd6083ab76f61b8b02d8b335502113448357d31db9ff",
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3.5-397B-A17B",
+        "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:e63720e0f13a63822dde14ec57fab55661a35a020704f8bf81cf215667245df9",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42,
+          "extra_body": {
+            "enable_thinking": true,
+            "thinking_budget": 8192
+          }
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      },
+      "attempt_artifact": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\epochs\\epoch_01\\roots\\r04\\attempt_01\\error_signatures.json",
+      "attempt_artifact_sha256": "7e48100940d55ce830ad4092cf41f9e9966373d621ece3283849e6ee871992f0"
+    },
+    "init_05_clarity_and_coherence": {
+      "signature_identity": "8093f40e0513bf91838f33b48e671356b8814bbcf913f4a6bb61304d1870c067",
+      "request_spec": {
+        "schema_version": "1.0.0",
+        "model": "Qwen/Qwen3.5-397B-A17B",
+        "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:e63720e0f13a63822dde14ec57fab55661a35a020704f8bf81cf215667245df9",
+        "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+        "decoding_config": {
+          "temperature": 0.2,
+          "seed": 42,
+          "extra_body": {
+            "enable_thinking": true,
+            "thinking_budget": 8192
+          }
+        },
+        "prompt_version": "1.0.0",
+        "parser_version": "1.0.0"
+      },
+      "attempt_artifact": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_v2\\epochs\\epoch_01\\roots\\r05\\attempt_01\\error_signatures.json",
+      "attempt_artifact_sha256": "b7bca7bc9d92c339f3556bd65d7d125c8f03e3750957e9791661c9397687704f"
+    }
+  },
+  "manifest_sha256": "eaf43a0b34a0f518ffb281e9f3c492c3ae61847d0b9ae04243e808c99da7354a",
+  "history_sha256": "6b84de2cc2cc363d5c97afec62e7a5a15016d601072d212fff46d950fff3f0f6"
+}

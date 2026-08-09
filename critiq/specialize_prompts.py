@@ -189,3 +189,36 @@ Markdown or additional fields."""
 
 # Current prompt. V1 remains available for exact comparison and rollback.
 CHILD_GENERATION_PROMPT = CHILD_GENERATION_PROMPT_V2
+
+
+# Treatment-only prompt variants for the Manager global-Rubric memory ablation.
+# The Control constants above remain byte-for-byte unchanged so their request
+# identities and cached artifacts remain replayable.
+SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC = SEMANTIC_CLUSTER_PROMPT.replace(
+    "Every sample ID must occur exactly once, either in one cluster or in\n"
+    "unclustered_sample_ids.",
+    """## Current committed Rubric (global memory)
+{rubric_memory_json}
+
+Use the current error signatures as the authoritative evidence for clustering.
+Use the global Rubric only to locate meaningful boundaries with existing
+criteria and to avoid creating a renamed duplicate of an existing criterion.
+Do not force novelty, merge distinct failures merely to look different, or
+sacrifice the cluster's discriminability and expected accuracy.
+
+Every sample ID must occur exactly once, either in one cluster or in
+unclustered_sample_ids.""",
+)
+
+CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC = CHILD_GENERATION_PROMPT_V2.replace(
+    "Return exactly one JSON object:",
+    """## Current committed Rubric (global memory)
+{rubric_memory_json}
+
+The supplied cluster remains the authoritative target. Use the global Rubric
+to state a precise boundary between this child and existing criteria and to
+avoid merely renaming an existing criterion. Do not pursue novelty at the cost
+of applicability, reliable abstention, discriminability, or expected accuracy.
+
+Return exactly one JSON object:""",
+)

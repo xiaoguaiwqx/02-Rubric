@@ -129,6 +129,86 @@ class SpecializeTests(unittest.TestCase):
                         "Not applicable when:", "Decision rule:"):
             self.assertIn(section, CHILD_GENERATION_PROMPT_V2)
 
+    def test_global_rubric_memory_changes_only_cluster_and_child_request_identity(self):
+        class FakePool:
+            backend_id = "pool"
+
+        control = SpecializeManager(model="model", backend_pool=FakePool(),
+                                    child_input_mode="text")
+        treatment = SpecializeManager(
+            model="model", backend_pool=FakePool(), child_input_mode="text",
+            rubric_memory_mode="global_rubric_v1")
+        control_specs = control.request_specs()
+        treatment_specs = treatment.request_specs()
+        self.assertEqual(control_specs["error_signature"],
+                         treatment_specs["error_signature"])
+        self.assertEqual(control_specs["split_failure_attribution"],
+                         treatment_specs["split_failure_attribution"])
+        self.assertNotEqual(control_specs["semantic_cluster"],
+                            treatment_specs["semantic_cluster"])
+        self.assertNotEqual(control_specs["child_generation"],
+                            treatment_specs["child_generation"])
+        self.assertEqual(control_specs["semantic_cluster"].prompt_sha256,
+                         "45e02d5cf0819be93d7eff3ed1429f16d03837c99d1dbaf22d40f56abadde959")
+        self.assertEqual(control_specs["child_generation"].prompt_sha256,
+                         "51abc6ad70b657b1c3456e6c75f353dd34b08a18d0cca2c9590df23cbbc81f0c")
+
+    def test_global_rubric_memory_is_required_and_injected_with_failure_history(self):
+        ids = tuple(f"s{i}" for i in range(5))
+        valid = json.dumps({"clusters": [{
+            "cluster_id": "a", "label": "A", "shared_failure": "fa",
+            "distinction": "da", "sample_ids": list(ids)}],
+            "unclustered_sample_ids": []})
+
+        class FakePool:
+            backend_id = "pool"
+
+            def __init__(self):
+                self.content = None
+                self.responses = [valid]
+
+            def call(self, content, **kwargs):
+                self.content = content
+                return self.responses.pop(0), AgentCallMetrics(api_attempts=1)
+
+        pool = FakePool()
+        manager = SpecializeManager(
+            model="model", backend_pool=pool, child_input_mode="text",
+            rubric_memory_mode="global_rubric_v1")
+        signatures = tuple(ErrorSignature(
+            sample_id, "task", "focus", "diff", "failure", "sub")
+            for sample_id in ids)
+        with self.assertRaisesRegex(ValueError, "requires rubric_memory"):
+            manager.cluster(signatures, criterion_name="parent",
+                            min_cluster_size=5, max_clusters=1)
+        memory = {"schema_version": "1.0.0", "root_ids": ["parent"],
+                  "nodes": [{"node_id": "parent", "criterion_name": "parent",
+                             "description": "Parent criterion"}], "edges": []}
+        manager.cluster(signatures, criterion_name="parent", min_cluster_size=5,
+                        max_clusters=1, prior_failures=({"summary": "too broad"},),
+                        rubric_memory=memory)
+        self.assertIn("Current committed Rubric", pool.content)
+        self.assertIn("too broad", pool.content)
+        self.assertIn("Parent criterion", pool.content)
+        child_response = json.dumps({
+            "criterion_name": "focused_child",
+            "description": "Criterion focus: focus\n\nApplicable only when: visible\n\nNot applicable when: absent\n\nDecision rule: prefer grounded; otherwise return None",
+            "rationale": "Narrow cluster boundary.",
+            "representative_sample_ids": ["s0"],
+        })
+        pool.responses.append(child_response)
+        manager.generate_child(
+            parent=_rubric().get_node("parent"),
+            cluster=SemanticCluster("a", "A", "fa", "da", ids),
+            signatures=signatures,
+            representative_rows=({"sample_id": "s0", "question": "Q",
+                                  "A": "A", "B": "B", "answer": "A"},),
+            siblings=(), prior_failures=({"summary": "too broad"},),
+            rubric_memory=memory)
+        self.assertIn("Current committed Rubric", pool.content)
+        self.assertIn("too broad", pool.content)
+        self.assertIn("Parent criterion", pool.content)
+
     def test_manager_cluster_retries_and_request_spec_is_deeply_immutable(self):
         ids = tuple(f"s{i}" for i in range(10))
         valid = json.dumps({"clusters": [

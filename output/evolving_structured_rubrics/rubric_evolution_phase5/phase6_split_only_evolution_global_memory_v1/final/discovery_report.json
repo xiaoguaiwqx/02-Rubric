@@ -1,0 +1,2392 @@
+{
+  "schema_version": "1.0.0",
+  "validity_audit": {
+    "scheduled_attempts": 17,
+    "competition_completed": 16,
+    "accepted": 4,
+    "competition_rejected": 12,
+    "proposal_invalid": 1,
+    "treatment_nonempty": true,
+    "scientific_status": "valid",
+    "manager_memory_protocol": {
+      "attempts_checked": 17,
+      "error_signatures_generated": 0,
+      "control_signatures_reused": 157,
+      "epoch_memories_checked": 6
+    }
+  },
+  "trajectory": [
+    {
+      "epoch": 0,
+      "root_id": "init_01_completeness_and_coverage",
+      "attempt": null,
+      "decision": "eligible",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    },
+    {
+      "epoch": 0,
+      "root_id": "init_02_visual_grounding_and_details",
+      "attempt": null,
+      "decision": "eligible",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    },
+    {
+      "epoch": 0,
+      "root_id": "init_03_factuality_no_hallucination",
+      "attempt": null,
+      "decision": "eligible",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    },
+    {
+      "epoch": 0,
+      "root_id": "init_04_creativity_and_expressiveness",
+      "attempt": null,
+      "decision": "eligible",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    },
+    {
+      "epoch": 0,
+      "root_id": "init_05_clarity_and_coherence",
+      "attempt": null,
+      "decision": "eligible",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    },
+    {
+      "epoch": 1,
+      "root_id": "init_01_completeness_and_coverage",
+      "attempt": 1,
+      "decision": "competition_rejected",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_01\\roots\\r01\\attempt_01",
+      "parent_accuracy": 0.6707317073170732,
+      "specialized_accuracy": 0.6219512195121951,
+      "accuracy_delta": -0.04878048780487809,
+      "elapsed_seconds": 4208.859,
+      "history_payload": {
+        "structured_failure": {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        "cluster_summary": [
+          {
+            "cluster_id": "completeness_hallucination_reward",
+            "label": "Hallucination Rewarded as Completeness",
+            "sample_ids": [
+              "rlhfv-002699",
+              "rlhfv-000195",
+              "rlhfv-001571",
+              "rlhfv-002050",
+              "rlhfv-001052",
+              "rlhfv-000287",
+              "rlhfv-000449",
+              "rlhfv-000740",
+              "rlhfv-000628"
+            ]
+          },
+          {
+            "cluster_id": "worker_visual_verification_failure",
+            "label": "Worker Visual Verification Failures",
+            "sample_ids": [
+              "rlhfv-002069",
+              "rlhfv-001449",
+              "rlhfv-004571",
+              "rlhfv-001347",
+              "rlhfv-004995",
+              "rlhfv-000042",
+              "rlhfv-002821",
+              "rlhfv-002720"
+            ]
+          },
+          {
+            "cluster_id": "logic_instruction_priority_error",
+            "label": "Logical Consistency and Instruction Priority",
+            "sample_ids": [
+              "rlhfv-000764",
+              "rlhfv-000837",
+              "rlhfv-004830",
+              "rlhfv-000307",
+              "rlhfv-003218"
+            ]
+          },
+          {
+            "cluster_id": "stylistic_subjective_bias",
+            "label": "Specificity and Verbosity Bias Over Accuracy",
+            "sample_ids": [
+              "rlhfv-003046",
+              "rlhfv-000541",
+              "rlhfv-001002",
+              "rlhfv-000478",
+              "rlhfv-002726"
+            ]
+          }
+        ],
+        "children_summary": [
+          {
+            "cluster_id": "completeness_hallucination_reward",
+            "criterion_name": "verified_completeness_over_hallucination",
+            "description": "Criterion focus: Evaluates whether apparent completeness is achieved through accurate visual coverage rather than hallucinated details that inflate the response artificially.\n\nApplicable only when: Candidates differ in the quantity of visual details provided, where one response includes more specific claims about objects, attributes, counts, or spatial relationships that require visual verification, and there is a trade-off between detail quantity and accuracy.\n\nNot applicable when: Both candidates provide similar levels of detail with comparable accuracy, when the task does not involve visual verification, when differences are purely stylistic or organizational, or when the factuality_no_hallucination criterion already clearly distinguishes the candidates without reference to completeness"
+          },
+          {
+            "cluster_id": "worker_visual_verification_failure",
+            "criterion_name": "fine_grained_visual_completeness",
+            "description": "Criterion focus: Evaluates completeness based on the accurate identification and inclusion of subtle or specific visual elements (e.g., background text, small objects, precise counts, spatial relations) that are often overlooked in favor of generic descriptions.\n\nApplicable only when: Candidates differ in the specificity of visual claims, where one provides fine-grained details (OCR, counts, small items, spatial depth) and the other provides generic descriptions or omits these elements, and the image allows for verification of these details.\n\nNot applicable when: Specific claims are unverifiable due to image quality, when the task does not require fine-grained observation, when both candidates provide similar levels of specific detail, or when the distinction is purely about avoiding hallu"
+          },
+          {
+            "cluster_id": "logic_instruction_priority_error",
+            "criterion_name": "logical_consistency_and_instruction_priority",
+            "description": "Criterion focus: Evaluates whether the response maintains logical coherence between the direct answer (e.g., Yes/No) and supporting details, ensuring core instruction accuracy takes precedence over descriptive volume or prompt constraint adherence.\n\nApplicable only when: Candidates exhibit a trade-off between the correctness of the primary answer/premise handling and the richness of secondary details, or when one candidate contradicts their own direct answer in the explanation.\n\nNot applicable when: Both candidates maintain logical consistency in their direct answers and differ only in visual detail quantity (covered by `verified_completeness_over_hallucination` or `fine_grained_visual_completeness`), or when the task does not involve a verifiable direct answer or premise validation.\n\nDeci"
+          },
+          {
+            "cluster_id": "stylistic_subjective_bias",
+            "criterion_name": "accuracy_over_stylistic_specificity",
+            "description": "Criterion focus: Evaluates whether the response prioritizes factual and visual accuracy over stylistic markers of completeness such as verbosity, specific-sounding terminology, or aesthetically idealized descriptions.\n\nApplicable only when: Candidates differ in stylistic presentation (length, vocabulary, tone, idealization) where the more 'complete'-sounding response contains visual or factual errors that the simpler or less idealized response avoids.\n\nNot applicable when: The trade-off is purely about the quantity of observable visual details like background objects or counts (covered by verified_completeness_over_hallucination), when stylistic differences do not impact accuracy, or when both candidates are equally accurate.\n\nDecision rule: Prefer the candidate that maintains visual and f"
+          }
+        ],
+        "local_metrics": {
+          "parent_accuracy": 0.6707317073170732,
+          "specialized_accuracy": 0.6219512195121951,
+          "accuracy_delta": -0.04878048780487809
+        },
+        "corrected_sample_ids": [
+          "rlhfv-001571",
+          "rlhfv-002050",
+          "rlhfv-000541",
+          "rlhfv-001052",
+          "rlhfv-000287",
+          "rlhfv-001449",
+          "rlhfv-000740"
+        ],
+        "harmed_sample_ids": [
+          "rlhfv-000769",
+          "rlhfv-002182",
+          "rlhfv-000360",
+          "rlhfv-000082",
+          "rlhfv-002738",
+          "rlhfv-002824",
+          "rlhfv-003458",
+          "rlhfv-003450",
+          "rlhfv-000462",
+          "rlhfv-000150",
+          "rlhfv-000969"
+        ],
+        "natural_language_attribution": {
+          "summary": "The Split failed because three of the four child criteria were ineffective or harmful, overriding correct parent decisions on non-target samples. The 'accuracy_over_stylistic_specificity' child failed to correct its own cluster (20% cluster accuracy), while 'verified_completeness_over_hallucination' triggered incorrectly on unrelated cases (27 non-target wrong decisions), leading to a net accuracy loss (11 harmed vs. 7 corrected).",
+          "failure_categories": [
+            "child_too_broad",
+            "cluster_semantically_mixed",
+            "unrelated_scene_activation"
+          ],
+          "details": [
+            "The 'accuracy_over_stylistic_specificity' child achieved only 0.20 accuracy on its target cluster samples, indicating the criterion does not effectively address the identified failure mode.",
+            "The 'verified_completeness_over_hallucination' child caused significant interference with 27 non-target wrong decisions, demonstrating it activates too broadly outside its intended scope.",
+            "Overall specialized accuracy (0.62) dropped below parent accuracy (0.67) because 11 samples that were correctly handled by the parent were incorrectly flipped by the specialized children.",
+            "Only the 'fine_grained_visual_completeness' child performed well (0.75 cluster accuracy), suggesting the other three clusters were poorly defined or the criteria were misaligned."
+          ],
+          "avoid_next_time": [
+            "Tighten the 'Applicable only when' conditions for children to prevent activation on non-target samples and reduce interference.",
+            "Discard or re-cluster the 'stylistic_subjective_bias' group, as the current criterion failed to correct any target samples effectively.",
+            "Prioritize the 'fine_grained_visual_completeness' pattern which showed positive gains, and avoid splitting clusters that lack a clear, actionable signal.",
+            "Add a guardrail to prevent children from overriding the parent decision unless the specific error pattern is detected with high confidence."
+          ]
+        }
+      }
+    },
+    {
+      "epoch": 1,
+      "root_id": "init_02_visual_grounding_and_details",
+      "attempt": 1,
+      "decision": "competition_rejected",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_01\\roots\\r02\\attempt_01",
+      "parent_accuracy": 0.6966292134831461,
+      "specialized_accuracy": 0.651685393258427,
+      "accuracy_delta": -0.0449438202247191,
+      "elapsed_seconds": 4208.672000000002,
+      "history_payload": {
+        "structured_failure": {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        "cluster_summary": [
+          {
+            "cluster_id": "vg_sub_01_hallucination_validation",
+            "label": "Visual Hallucination Validation Failure",
+            "sample_ids": [
+              "rlhfv-002699",
+              "rlhfv-000085",
+              "rlhfv-000195",
+              "rlhfv-000449",
+              "rlhfv-001002",
+              "rlhfv-000628",
+              "rlhfv-001274",
+              "rlhfv-000740"
+            ]
+          },
+          {
+            "cluster_id": "vg_sub_02_fine_grained_verification",
+            "label": "Fine-Grained Detail Verification Failure",
+            "sample_ids": [
+              "rlhfv-004979",
+              "rlhfv-002806",
+              "rlhfv-000042",
+              "rlhfv-004995",
+              "rlhfv-004571",
+              "rlhfv-003218",
+              "rlhfv-000307",
+              "rlhfv-001449"
+            ]
+          },
+          {
+            "cluster_id": "vg_sub_03_spatial_compositional",
+            "label": "Spatial and Compositional Reasoning Failure",
+            "sample_ids": [
+              "rlhfv-002695",
+              "rlhfv-000082",
+              "rlhfv-002726",
+              "rlhfv-002829",
+              "rlhfv-000541",
+              "rlhfv-001347"
+            ]
+          },
+          {
+            "cluster_id": "vg_sub_04_task_logic_adherence",
+            "label": "Task Logic and Visual Truth Adherence Failure",
+            "sample_ids": [
+              "rlhfv-003046",
+              "rlhfv-004830",
+              "rlhfv-001052",
+              "rlhfv-000764",
+              "rlhfv-000837"
+            ]
+          }
+        ],
+        "children_summary": [
+          {
+            "cluster_id": "vg_sub_01_hallucination_validation",
+            "criterion_name": "visual_existence_verification",
+            "description": "Criterion focus: Verifies that cited objects, people, and actions actually exist or are accurately identified as absent in the image before accepting them as valid visual grounding.\n\nApplicable only when: Candidates make conflicting claims about the presence, absence, or specific occurrence of visual entities and actions (e.g., existence of background objects, specific poses, or interactions).\n\nNot applicable when: Existence is not disputed between candidates, or when differences relate solely to spatial layout, color shades, subjective interpretation, or external knowledge not visible in the image.\n\nDecision rule: Prefer the candidate that correctly identifies the presence or absence of entities and actions. Explicitly reject fluent descriptions that hallucinate non-existent elements over"
+          },
+          {
+            "cluster_id": "vg_sub_02_fine_grained_verification",
+            "criterion_name": "fine_grained_attribute_verification",
+            "description": "Criterion focus: Evaluates the accuracy of specific visual attributes (colors, text content, object posture, screen content, small peripheral details) of elements present in the image.\n\nApplicable only when: Candidates differ on specific descriptive details or properties of visible objects, particularly when one candidate provides finer granularity (e.g., specific color, text, pose) that the other omits, describes generically, or describes differently.\n\nNot applicable when: The primary disagreement is about whether a main object or element exists at all (covered by visual_existence_verification), or when the visual evidence is too ambiguous or low-resolution to reliably verify the specific claim.\n\nDecision rule: Prefer the candidate that accurately describes the specific visual attributes "
+          },
+          {
+            "cluster_id": "vg_sub_03_spatial_compositional",
+            "criterion_name": "spatial_layout_and_composition",
+            "description": "Criterion focus: Evaluates the accuracy of spatial relationships, relative positioning, geometry, symmetry, and the overall compositional arrangement of elements within the scene.\n\nApplicable only when: Candidates differ in their description of where objects are located relative to each other or the frame, the geometric structure of the scene (e.g., orderly vs. chaotic, symmetrical vs. asymmetrical), or the interaction between subjects.\n\nNot applicable when: The disagreement is solely about whether an object exists (covered by visual_existence_verification) or about intrinsic object attributes like color, text, material, or individual object posture (covered by fine_grained_attribute_verification), unless these attributes fundamentally define the spatial layout.\n\nDecision rule: Prefer the "
+          },
+          {
+            "cluster_id": "vg_sub_04_task_logic_adherence",
+            "criterion_name": "visual_task_logic_adherence",
+            "description": "Criterion focus: Evaluates whether the candidate's reasoning and task response (e.g., yes/no answers, premise corrections, hypothetical analysis) are logically derived from and consistent with the visual evidence, prioritizing image truth over external knowledge or prompt assumptions.\n\nApplicable only when: Candidates differ in how they align their task logic with visual data, such as correcting false premises in the prompt, maintaining consistency between direct answers and visual descriptions, or choosing visual evidence over external knowledge for analysis.\n\nNot applicable when: The disagreement is solely about the objective presence or absence of entities (covered by visual_existence_verification), specific visual attributes like color or text (covered by fine_grained_attribute_verific"
+          }
+        ],
+        "local_metrics": {
+          "parent_accuracy": 0.6966292134831461,
+          "specialized_accuracy": 0.651685393258427,
+          "accuracy_delta": -0.0449438202247191
+        },
+        "corrected_sample_ids": [
+          "rlhfv-000541",
+          "rlhfv-001449",
+          "rlhfv-000837",
+          "rlhfv-000740"
+        ],
+        "harmed_sample_ids": [
+          "rlhfv-000769",
+          "rlhfv-000360",
+          "rlhfv-002738",
+          "rlhfv-002821",
+          "rlhfv-004694",
+          "rlhfv-004956",
+          "rlhfv-000462",
+          "rlhfv-000150"
+        ],
+        "natural_language_attribution": {
+          "summary": "The Split failed because the child criteria were too broad, applying specialized logic to non-target samples and introducing new errors (8 harmed vs 4 corrected). Additionally, the criteria failed to resolve the specific error patterns they were designed to fix, evidenced by near-zero accuracy on the target clusters (e.g., 0.0 for spatial). The semantic boundaries between existence, attributes, and spatial reasoning proved too blurred for effective separation, leading to degraded performance compared to the holistic parent criterion.",
+          "failure_categories": [
+            "child_too_broad",
+            "cluster_semantically_mixed",
+            "specialized_accuracy_below_parent"
+          ],
+          "details": [
+            "All four children exhibited high error rates on non-target samples (27-36% wrong on non-target decisive votes), indicating they failed to restrict their applicability as intended and overrode correct parent judgments.",
+            "Target cluster accuracy was critically low (0.0 to 0.4 across children), showing the new criteria did not correct the specific parent failures they were clustered to address.",
+            "The split resulted in a net loss of 4 correct predictions, dropping specialized accuracy to 0.651 from the parent's 0.696, violating the guardrail for specialized accuracy improvement."
+          ],
+          "avoid_next_time": [
+            "Strengthen 'Not applicable when' conditions in child criteria to force abstention on samples where multiple visual grounding aspects (existence, attribute, spatial) are simultaneously in dispute.",
+            "Validate that proposed criteria can actually solve the specific cluster samples (aim for >0.5 cluster accuracy in simulation) before finalizing the split.",
+            "Avoid splitting holistic visual reasoning tasks into atomic components if the image evidence requires simultaneous verification of all three; consider clustering by evaluator cognitive bias instead."
+          ]
+        }
+      }
+    },
+    {
+      "epoch": 1,
+      "root_id": "init_03_factuality_no_hallucination",
+      "attempt": 1,
+      "decision": "accepted",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_01\\roots\\r03\\attempt_01",
+      "parent_accuracy": 0.6024096385542169,
+      "specialized_accuracy": 0.6987951807228916,
+      "accuracy_delta": 0.09638554216867468,
+      "elapsed_seconds": 4208.594000000001,
+      "history_payload": null
+    },
+    {
+      "epoch": 1,
+      "root_id": "init_04_creativity_and_expressiveness",
+      "attempt": 1,
+      "decision": "competition_rejected",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_01\\roots\\r04\\attempt_01",
+      "parent_accuracy": 0.627906976744186,
+      "specialized_accuracy": 0.6162790697674418,
+      "accuracy_delta": -0.011627906976744207,
+      "elapsed_seconds": 4208.328000000001,
+      "history_payload": {
+        "structured_failure": {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        "cluster_summary": [
+          {
+            "cluster_id": "hallucinated_specificity_as_knowledge",
+            "label": "Hallucinated Specificity Rewarded as Knowledge",
+            "sample_ids": [
+              "rlhfv-002761",
+              "rlhfv-002699",
+              "rlhfv-001988",
+              "rlhfv-004635",
+              "rlhfv-002080",
+              "rlhfv-001103",
+              "rlhfv-001002",
+              "rlhfv-000449",
+              "rlhfv-002720",
+              "rlhfv-001528",
+              "rlhfv-000277",
+              "rlhfv-002726",
+              "rlhfv-000307",
+              "rlhfv-000932",
+              "rlhfv-000628"
+            ]
+          },
+          {
+            "cluster_id": "narrative_confidence_over_grounding",
+            "label": "Narrative Confidence Prioritized over Visual Grounding",
+            "sample_ids": [
+              "rlhfv-002695",
+              "rlhfv-000196",
+              "rlhfv-000042",
+              "rlhfv-004995",
+              "rlhfv-001052",
+              "rlhfv-000478",
+              "rlhfv-004571"
+            ]
+          },
+          {
+            "cluster_id": "pedantic_rigidity_and_logic_failures",
+            "label": "Pedantic Rigidity and Logical Consistency Failures",
+            "sample_ids": [
+              "rlhfv-000082",
+              "rlhfv-003046",
+              "rlhfv-003218",
+              "rlhfv-002821",
+              "rlhfv-000541",
+              "rlhfv-000764",
+              "rlhfv-000837",
+              "rlhfv-000462",
+              "rlhfv-000740",
+              "rlhfv-001449"
+            ]
+          }
+        ],
+        "children_summary": [
+          {
+            "cluster_id": "hallucinated_specificity_as_knowledge",
+            "criterion_name": "grounded_precision_in_analytical_tasks",
+            "description": "Criterion focus: Determines if specific details claimed as 'precise articulation' are visually verified, ensuring hallucinations are not mistaken for expertise.\n\nApplicable only when: Candidates differ in the level of specific detail provided (e.g., counts, attributes, object names) in tasks requiring factual accuracy or analytical description.\n\nNot applicable when: The task is open-ended creative writing where factual grounding is secondary, or when both candidates exhibit equivalent levels of factual accuracy.\n\nDecision rule: Prefer the candidate that provides specific details confirmed by the image. Penalize candidates that introduce hallucinated specifics (objects, counts, attributes) even if they sound authoritative. If specificity levels are similar and both are grounded, or both hal"
+          },
+          {
+            "cluster_id": "narrative_confidence_over_grounding",
+            "criterion_name": "visual_fidelity_over_expressive_confidence",
+            "description": "Criterion focus: Evaluates whether candidates prioritize visual fidelity and precise spatial description over immersive tone, confident generalizations, or narrative flow in analytical tasks.\n\nApplicable only when: The task requires factual visual description or spatial reasoning, and candidates differ in their trade-off between stylistic confidence (e.g., hyperbole, vague summaries) and visual precision (e.g., specific counts, anatomical landmarks, admitting uncertainty).\n\nNot applicable when: The task is creative writing, storytelling, or subjective interpretation where narrative cohesion is the primary goal, or when both candidates demonstrate equivalent visual accuracy regardless of stylistic tone.\n\nDecision rule: Prefer the candidate that maintains visual accuracy and precise descript"
+          },
+          {
+            "cluster_id": "pedantic_rigidity_and_logic_failures",
+            "criterion_name": "logical_coherence_and_contextual_appropriateness",
+            "description": "Criterion focus: Evaluates whether a candidate's articulation maintains internal logical consistency (e.g., direct answer matches explanation) and adapts precision to the task context (e.g., speculative vs factual), ensuring 'precision' does not override core correctness or intent.\n\nApplicable only when: Candidates differ in logical consistency between direct answers and justifications, or when the task context (e.g., hypothetical, creative, composition-focused) conflicts with a candidate's overly rigid or pedantic factual stance.\n\nNot applicable when: The discrepancy is purely about visual verification of object counts or attributes where one is clearly hallucinated (covered by grounded_precision_in_analytical_tasks), or when both candidates are logically consistent and contextually appro"
+          }
+        ],
+        "local_metrics": {
+          "parent_accuracy": 0.627906976744186,
+          "specialized_accuracy": 0.6162790697674418,
+          "accuracy_delta": -0.011627906976744207
+        },
+        "corrected_sample_ids": [
+          "rlhfv-002761",
+          "rlhfv-000277",
+          "rlhfv-001988",
+          "rlhfv-004635",
+          "rlhfv-000541",
+          "rlhfv-001052",
+          "rlhfv-000932",
+          "rlhfv-002720",
+          "rlhfv-002080",
+          "rlhfv-001103",
+          "rlhfv-001528",
+          "rlhfv-000837",
+          "rlhfv-000740"
+        ],
+        "harmed_sample_ids": [
+          "rlhfv-002182",
+          "rlhfv-000360",
+          "rlhfv-004979",
+          "rlhfv-002738",
+          "rlhfv-000510",
+          "rlhfv-000079",
+          "rlhfv-003458",
+          "rlhfv-002806",
+          "rlhfv-004830",
+          "rlhfv-002069",
+          "rlhfv-001274",
+          "rlhfv-003450",
+          "rlhfv-004956",
+          "rlhfv-004472"
+        ],
+        "natural_language_attribution": {
+          "summary": "The Split failed because the child criteria performed worse than the parent on their target clusters (40-60% cluster accuracy) and introduced new errors on samples where the parent was correct (14 harmed vs 13 corrected). The children were too broad, triggering on non-target samples and overriding correct parent decisions, while failing to consistently correct the specific hallucination and logic errors they were designed to address.",
+          "failure_categories": [
+            "child_too_broad",
+            "cluster_semantically_mixed",
+            "preference_direction_reversed"
+          ],
+          "details": [
+            "Target cluster accuracy was critically low: 'visual_fidelity_over_expressive_confidence' achieved 42.9% (3/7) and 'logical_coherence_and_contextual_appropriateness' achieved 40% (4/10) on their respective clusters, indicating the criteria fail to invert the parent's bias on intended samples.",
+            "High non-target interference: Children generated 21, 23, and 25 'non_target_wrong' predictions respectively, causing 14 samples to be harmed where the parent criterion was originally correct.",
+            "Net negative impact: The split resulted in a specialized accuracy of 0.616 compared to the parent's 0.628, with 13 corrected samples outweighed by 14 harmed samples and 18 unchanged parent errors.",
+            "Low cluster accuracy suggests the error signatures within clusters may require distinct logical fixes (semantically mixed) or the decision rules are not actionable enough to override model fluency biases."
+          ],
+          "avoid_next_time": [
+            "Validate cluster coherence by ensuring a single decision rule can correctly resolve >80% of cluster samples before finalizing the criterion.",
+            "Narrow the 'Applicable only when' conditions to reduce 'non_target_decisive' counts and prevent children from overriding correct parent predictions on unrelated samples.",
+            "Verify that child criteria achieve higher accuracy than the parent on the target cluster subset before accepting the Split."
+          ]
+        }
+      }
+    },
+    {
+      "epoch": 1,
+      "root_id": "init_05_clarity_and_coherence",
+      "attempt": 1,
+      "decision": "competition_rejected",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_01\\roots\\r05\\attempt_01",
+      "parent_accuracy": 0.5632183908045977,
+      "specialized_accuracy": 0.5402298850574713,
+      "accuracy_delta": -0.02298850574712641,
+      "elapsed_seconds": 4208.062000000002,
+      "history_payload": {
+        "structured_failure": {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        "cluster_summary": [
+          {
+            "cluster_id": "clarity_fluency_over_factuality",
+            "label": "Fluency and Structure Prioritized over Visual Factuality",
+            "sample_ids": [
+              "rlhfv-002726",
+              "rlhfv-000510",
+              "rlhfv-004995",
+              "rlhfv-001052",
+              "rlhfv-001103",
+              "rlhfv-001528",
+              "rlhfv-000287",
+              "rlhfv-000307",
+              "rlhfv-002080",
+              "rlhfv-004635",
+              "rlhfv-002806",
+              "rlhfv-000277",
+              "rlhfv-002699",
+              "rlhfv-002824",
+              "rlhfv-000541",
+              "rlhfv-000042",
+              "rlhfv-001002",
+              "rlhfv-003560",
+              "rlhfv-000628",
+              "rlhfv-000449",
+              "rlhfv-001347",
+              "rlhfv-000740",
+              "rlhfv-002821",
+              "rlhfv-004830",
+              "rlhfv-000196",
+              "rlhfv-002802",
+              "rlhfv-003218",
+              "rlhfv-000478"
+            ]
+          },
+          {
+            "cluster_id": "clarity_visual_verification_error",
+            "label": "Evaluator Visual Misinterpretation Masked as Clarity Assessment",
+            "sample_ids": [
+              "rlhfv-002182",
+              "rlhfv-000082",
+              "rlhfv-002695",
+              "rlhfv-003046",
+              "rlhfv-002738",
+              "rlhfv-000195",
+              "rlhfv-002069",
+              "rlhfv-004571",
+              "rlhfv-001449",
+              "rlhfv-000932"
+            ]
+          }
+        ],
+        "children_summary": [
+          {
+            "cluster_id": "clarity_fluency_over_factuality",
+            "criterion_name": "grounded_visual_clarity",
+            "description": "Criterion focus: Assesses whether linguistic fluency and structural coherence in visual descriptions accurately reflect the image content without masking hallucinations.\n\nApplicable only when: Evaluating responses to visual tasks where one candidate demonstrates higher linguistic fluency but lower visual faithfulness compared to the other.\n\nNot applicable when: The task does not involve visual content, or when both candidates are equally factually grounded (use parent criterion for pure stylistic comparison).\n\nDecision rule: Prefer the candidate that maintains visual faithfulness even if less fluent. Treat confident hallucinations as a failure of clarity (misleading communication). Return None if both candidates are equally grounded and differ only in stylistic flow."
+          },
+          {
+            "cluster_id": "clarity_visual_verification_error",
+            "criterion_name": "linguistic_coherence_independent_of_grounding",
+            "description": "Criterion focus: Evaluates logical flow, grammar, and organization of the text independent of whether the described visual elements match the image.\n\nApplicable only when: Visual verification is complex, ambiguous, or prone to evaluator error, ensuring clarity scores reflect language quality rather than grounding disagreements.\n\nNot applicable when: Visual faithfulness is objectively clear and distinct from linguistic structure (use grounded_visual_clarity or factuality criteria).\n\nDecision rule: Prefer the candidate with better sentence structure and flow. Return None if linguistic quality is equivalent, deferring visual accuracy judgments to dedicated factuality criteria."
+          }
+        ],
+        "local_metrics": {
+          "parent_accuracy": 0.5632183908045977,
+          "specialized_accuracy": 0.5402298850574713,
+          "accuracy_delta": -0.02298850574712641
+        },
+        "corrected_sample_ids": [
+          "rlhfv-000195",
+          "rlhfv-001052",
+          "rlhfv-003560",
+          "rlhfv-002802",
+          "rlhfv-001103",
+          "rlhfv-001347",
+          "rlhfv-000740"
+        ],
+        "harmed_sample_ids": [
+          "rlhfv-000769",
+          "rlhfv-000360",
+          "rlhfv-004979",
+          "rlhfv-000079",
+          "rlhfv-003458",
+          "rlhfv-004694",
+          "rlhfv-001274",
+          "rlhfv-000462",
+          "rlhfv-004472"
+        ],
+        "natural_language_attribution": {
+          "summary": "The Split failed because the child criterion 'linguistic_coherence_independent_of_grounding' performed significantly worse than the parent (0.36 vs 0.56 accuracy), causing the overall specialized accuracy to drop below the parent threshold. This criterion's definition explicitly instructs evaluators to ignore visual faithfulness, which encourages the selection of fluent hallucinations and replicates the original failure mode rather than resolving it.",
+          "failure_categories": [
+            "criterion_misalignment",
+            "specialized_accuracy_below_parent",
+            "child_performance_degradation"
+          ],
+          "details": [
+            "Child 'linguistic_coherence_independent_of_grounding' achieved 0.36 accuracy compared to the parent's 0.56, with 0.0 accuracy on its specific target cluster samples.",
+            "The split resulted in 9 harmed samples where the parent was correct but the specialized criteria voted incorrectly, outweighing the 7 corrected samples.",
+            "The criterion instruction to evaluate text 'independent of whether the described visual elements match the image' contradicts VQA task requirements where clarity is inherently tied to accurate description.",
+            "Cluster 2 ('clarity_visual_verification_error') was addressed by removing grounding constraints, which fails to correct evaluator visual errors and instead validates fluent inaccuracies."
+          ],
+          "avoid_next_time": [
+            "Do not define clarity criteria that explicitly decouple linguistic quality from visual faithfulness in multimodal tasks.",
+            "Ensure all child criteria demonstrate accuracy improvements over the parent on their respective subsets before finalizing the split.",
+            "Address evaluator visual errors by strengthening verification instructions rather than removing grounding constraints from the clarity rubric.",
+            "Regenerate the split with a coherent set of children where each maintains necessary visual grounding constraints for VQA contexts."
+          ]
+        }
+      }
+    },
+    {
+      "epoch": 2,
+      "root_id": "init_01_completeness_and_coverage",
+      "attempt": 2,
+      "decision": "competition_rejected",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_02\\roots\\r01\\attempt_02",
+      "parent_accuracy": 0.6707317073170732,
+      "specialized_accuracy": 0.6097560975609756,
+      "accuracy_delta": -0.060975609756097615,
+      "elapsed_seconds": 3023.3899999999994,
+      "history_payload": {
+        "structured_failure": {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        "cluster_summary": [
+          {
+            "cluster_id": "fine_grained_visual_attribute_verification",
+            "label": "Fine-Grained Visual Attribute Verification",
+            "sample_ids": [
+              "rlhfv-003218",
+              "rlhfv-002069",
+              "rlhfv-004995",
+              "rlhfv-004571",
+              "rlhfv-000042",
+              "rlhfv-001002",
+              "rlhfv-000307",
+              "rlhfv-000195"
+            ]
+          },
+          {
+            "cluster_id": "visual_counting_and_presence_verification",
+            "label": "Visual Counting and Presence Verification",
+            "sample_ids": [
+              "rlhfv-002050",
+              "rlhfv-002821",
+              "rlhfv-002720",
+              "rlhfv-000740",
+              "rlhfv-001449",
+              "rlhfv-000287",
+              "rlhfv-000449",
+              "rlhfv-001571",
+              "rlhfv-002699"
+            ]
+          },
+          {
+            "cluster_id": "logical_consistency_and_prompt_adherence",
+            "label": "Logical Consistency and Prompt Adherence",
+            "sample_ids": [
+              "rlhfv-000764",
+              "rlhfv-000837",
+              "rlhfv-004830",
+              "rlhfv-003046",
+              "rlhfv-001052"
+            ]
+          },
+          {
+            "cluster_id": "spatial_relationship_and_perspective_verification",
+            "label": "Spatial Relationship and Perspective Verification",
+            "sample_ids": [
+              "rlhfv-002726",
+              "rlhfv-001347",
+              "rlhfv-000478",
+              "rlhfv-000628",
+              "rlhfv-000541"
+            ]
+          }
+        ],
+        "children_summary": [
+          {
+            "cluster_id": "fine_grained_visual_attribute_verification",
+            "criterion_name": "verified_attribute_completeness",
+            "description": "Criterion focus: Evaluates whether specific visual attribute claims (text content, materials, poses, colors) count toward completeness coverage based on direct visual verification, preventing accurate details from being excluded as 'unsupported' or false details from inflating apparent completeness.\n\nApplicable only when: The completeness evaluation hinges on specific visual attribute claims where one candidate includes verifiable details (OCR text, material composition, pose descriptions, color specifications) that risk being dismissed as speculative, while the alternative offers vaguer descriptions, AND the image quality permits direct verification of these attributes.\n\nNot applicable when: Disagreements concern factuality independent of completeness coverage (visual_attribute_verificati"
+          },
+          {
+            "cluster_id": "visual_counting_and_presence_verification",
+            "criterion_name": "verified_visual_coverage_for_completeness",
+            "description": "Criterion focus: Evaluates completeness coverage by ensuring only visually verified object counts and presence claims contribute to completeness scores, preventing hallucinated quantities from inflating apparent coverage.\n\nApplicable only when: There is a trade-off between response detail quantity and accuracy in object counts or presence claims, where a more detailed response with hallucinated counts might be mistakenly evaluated as 'more complete' than a less detailed but accurate response.\n\nNot applicable when: Both candidates have equivalent accuracy on visual elements, when disagreements concern attributes (color, material, texture, pose) rather than counts/presence, when there is no risk of rewarding hallucinated details as completeness, or when visual_counting_and_presence_verificat"
+          },
+          {
+            "cluster_id": "logical_consistency_and_prompt_adherence",
+            "criterion_name": "logical_coherence_for_completeness",
+            "description": "Criterion focus: Evaluates whether apparent completeness is undermined by logical contradictions, self-inconsistent answers, or uncritical acceptance of false premises, ensuring that descriptive volume does not inflate completeness scores when core reasoning is flawed.\n\nApplicable only when: Candidates differ in the trade-off between response verbosity/descriptive detail and logical validity, where one candidate provides more detailed coverage but contains fatal logical errors (e.g., Yes/No answer contradicts explanation, accepts a false premise without correction) while another candidate is more concise but logically sound.\n\nNot applicable when: Both candidates maintain equivalent logical coherence and differ only in visual detail quantity or attribute accuracy (handled by visual_counting"
+          },
+          {
+            "cluster_id": "spatial_relationship_and_perspective_verification",
+            "criterion_name": "verified_spatial_relationships_for_completeness",
+            "description": "Criterion focus: Evaluates whether completeness coverage claims about spatial relationships (relative positioning, depth ordering, geometric arrangement) are grounded in visually verified evidence rather than assumed or idealized layouts.\n\nApplicable only when: Candidates differ in their descriptions of how objects or subjects are spatially arranged relative to each other (e.g., front/behind, clustered/ordered, depth layers), where one response provides spatial claims that require visual verification to assess completeness, and there is a risk of favoring idealized or hallucinated spatial descriptions as more \"complete.\"\n\nNot applicable when: Disagreements concern object counts or binary presence (handled by visual_counting_and_presence_verification), object attributes like color, text, or"
+          }
+        ],
+        "local_metrics": {
+          "parent_accuracy": 0.6707317073170732,
+          "specialized_accuracy": 0.6097560975609756,
+          "accuracy_delta": -0.060975609756097615
+        },
+        "corrected_sample_ids": [
+          "rlhfv-001571",
+          "rlhfv-002050",
+          "rlhfv-001052",
+          "rlhfv-000287",
+          "rlhfv-001449",
+          "rlhfv-000837",
+          "rlhfv-001347",
+          "rlhfv-000740"
+        ],
+        "harmed_sample_ids": [
+          "rlhfv-000769",
+          "rlhfv-000360",
+          "rlhfv-000082",
+          "rlhfv-002738",
+          "rlhfv-000510",
+          "rlhfv-003458",
+          "rlhfv-000233",
+          "rlhfv-002806",
+          "rlhfv-004694",
+          "rlhfv-003450",
+          "rlhfv-004956",
+          "rlhfv-000462",
+          "rlhfv-000969"
+        ],
+        "natural_language_attribution": {
+          "summary": "The Split failed because the child criteria were too broad, triggering on non-target samples where they incorrectly overrode correct parent decisions, and they performed poorly even on their intended target clusters, indicating the refined logic did not correctly resolve the specific failure modes.",
+          "failure_categories": [
+            "child_too_broad",
+            "preference_direction_reversed"
+          ],
+          "details": [
+            "All four children exhibited high 'non_target_wrong' counts (15, 26, 30, 20), demonstrating they frequently fired on samples outside their intended clusters and made incorrect decisions where the parent was correct.",
+            "Cluster accuracy was critically low for multiple children: 'verified_attribute_completeness' achieved only 0.28 accuracy on its target cluster, and 'verified_spatial_relationships_for_completeness' achieved 0.40, indicating the criteria logic actively selected the wrong candidate on the very errors they were designed to fix.",
+            "The net impact was negative with 13 harmed samples (parent correct, child wrong) versus only 8 corrected samples, driving the specialized accuracy (0.609) below the parent accuracy (0.670).",
+            "The 'Applicable only when' conditions were insufficiently restrictive, allowing children to intervene in cases where the parent's broader 'completeness' judgment was already accurate."
+          ],
+          "avoid_next_time": [
+            "Tighten the 'Applicable only when' conditions to strictly limit child criteria to the specific error patterns identified in the cluster, preventing activation on general completeness cases.",
+            "Validate that the proposed criterion logic actually corrects the target cluster samples (aim for >0.8 cluster accuracy in simulation) before finalizing the Split.",
+            "Ensure children do not override the parent on samples where the failure mode is not present, preserving the parent's performance on non-target data."
+          ]
+        }
+      }
+    },
+    {
+      "epoch": 2,
+      "root_id": "init_02_visual_grounding_and_details",
+      "attempt": 2,
+      "decision": "competition_rejected",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_02\\roots\\r02\\attempt_02",
+      "parent_accuracy": 0.6966292134831461,
+      "specialized_accuracy": 0.6292134831460674,
+      "accuracy_delta": -0.0674157303370787,
+      "elapsed_seconds": 2778.844000000001,
+      "history_payload": {
+        "structured_failure": {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        "cluster_summary": [
+          {
+            "cluster_id": "vg_sub_evaluator_hallucination_blindness",
+            "label": "Evaluator Hallucination Blindness",
+            "sample_ids": [
+              "rlhfv-002699",
+              "rlhfv-000085",
+              "rlhfv-000195",
+              "rlhfv-001002",
+              "rlhfv-000740",
+              "rlhfv-000449",
+              "rlhfv-001274",
+              "rlhfv-000628"
+            ]
+          },
+          {
+            "cluster_id": "vg_sub_evaluator_over_skepticism",
+            "label": "Evaluator Over-Skepticism",
+            "sample_ids": [
+              "rlhfv-004979",
+              "rlhfv-000042",
+              "rlhfv-004995",
+              "rlhfv-004571",
+              "rlhfv-003218",
+              "rlhfv-002806",
+              "rlhfv-000541",
+              "rlhfv-001449"
+            ]
+          },
+          {
+            "cluster_id": "vg_sub_spatial_compositional_reasoning",
+            "label": "Spatial and Compositional Reasoning Failure",
+            "sample_ids": [
+              "rlhfv-002695",
+              "rlhfv-000082",
+              "rlhfv-002726",
+              "rlhfv-002829",
+              "rlhfv-000307",
+              "rlhfv-001347"
+            ]
+          },
+          {
+            "cluster_id": "vg_sub_task_logic_visual_truth",
+            "label": "Task Logic and Visual Truth Adherence",
+            "sample_ids": [
+              "rlhfv-003046",
+              "rlhfv-004830",
+              "rlhfv-001052",
+              "rlhfv-000764",
+              "rlhfv-000837"
+            ]
+          }
+        ],
+        "children_summary": [
+          {
+            "cluster_id": "vg_sub_evaluator_hallucination_blindness",
+            "criterion_name": "hallucination_vs_accurate_sparsity",
+            "description": "Criterion focus: Detecting when candidates invent specific visual details (actions, object attributes, scene elements, or attribute bindings) that contradict observable evidence, prioritizing accurate negative claims or sparse truths over fluent hallucinations.\n\nApplicable only when: Candidates make conflicting claims where one provides specific details that can be verified as non-existent or incorrect (hallucinated objects, actions, poses, or attribute bindings) while the other either correctly identifies their absence or provides more conservative but accurate descriptions.\n\nNot applicable when: Both candidates make similar types of claims (both specific or both vague), disagreements are purely about spatial relationships (handled by spatial_relationship_and_perspective_verification), si"
+          },
+          {
+            "cluster_id": "vg_sub_evaluator_over_skepticism",
+            "criterion_name": "fine_grained_visual_verification",
+            "description": "Criterion focus: Verification of accurate but easily-overlooked visual details (peripheral objects, subtle attributes, partially occluded elements, small text) that are present in the image but require careful inspection to confirm.\n\nApplicable only when: One candidate claims specific fine-grained details that are actually present but easy to miss (small, peripheral, subtle, or partially occluded), while another candidate omits these details or claims they are absent.\n\nNot applicable when: The claimed details are clearly absent from the image (true hallucinations), the disagreement concerns main subject existence rather than fine details (covered by visual_counting_and_presence_verification), or visual evidence is too ambiguous or low-resolution to verify either claim reliably.\n\nDecision r"
+          },
+          {
+            "cluster_id": "vg_sub_spatial_compositional_reasoning",
+            "criterion_name": "compositional_hierarchy_and_subject_interaction",
+            "description": "Criterion focus: Evaluates accuracy of main subject interaction patterns and compositional hierarchy, distinguishing between orderly vs. chaotic arrangements and prioritizing subject-to-subject relationships over background geometry or peripheral attributes.\n\nApplicable only when: Candidates differ in their description of how main subjects are arranged relative to each other (orderly vs. chaotic, grouped vs. scattered, hierarchical vs. equal), particularly when one candidate better captures the actual compositional structure of the primary subjects despite minor errors in background details or attributes.\n\nNot applicable when: Disagreements concern only basic positional claims like left/right or front/behind (covered by spatial_relationship_and_perspective_verification), object counts or b"
+          },
+          {
+            "cluster_id": "vg_sub_task_logic_visual_truth",
+            "criterion_name": "visual_truth_over_task_assumptions",
+            "description": "Criterion focus: Evaluates whether candidates prioritize observable visual evidence over task assumptions, external knowledge, or prompt-induced bias when the two conflict, including correcting false premises and acknowledging visual ambiguity rather than hallucinating to satisfy task expectations.\n\nApplicable only when: Candidates differ in how they resolve tension between visual evidence and task logic—specifically when one candidate corrects false premises in the prompt, acknowledges ambiguity due to missing visual evidence, or grounds reasoning in observable details while the other accepts prompt assumptions, applies external knowledge over visual truth, or hallucinates details to fit task expectations.\n\nNot applicable when: Disagreements concern only visual attributes like color or te"
+          }
+        ],
+        "local_metrics": {
+          "parent_accuracy": 0.6966292134831461,
+          "specialized_accuracy": 0.6292134831460674,
+          "accuracy_delta": -0.0674157303370787
+        },
+        "corrected_sample_ids": [
+          "rlhfv-002699",
+          "rlhfv-000541",
+          "rlhfv-001274",
+          "rlhfv-000307",
+          "rlhfv-000449",
+          "rlhfv-000837",
+          "rlhfv-001347",
+          "rlhfv-000740"
+        ],
+        "harmed_sample_ids": [
+          "rlhfv-000769",
+          "rlhfv-002182",
+          "rlhfv-000360",
+          "rlhfv-002738",
+          "rlhfv-000079",
+          "rlhfv-003458",
+          "rlhfv-000233",
+          "rlhfv-002821",
+          "rlhfv-002069",
+          "rlhfv-002720",
+          "rlhfv-003450",
+          "rlhfv-000462",
+          "rlhfv-000969",
+          "rlhfv-000478"
+        ],
+        "natural_language_attribution": {
+          "summary": "The Split failed due to a significant accuracy drop (-6.7%) driven by three out of four children underperforming the parent criterion and causing 14 harmed predictions compared to only 8 corrected. The children criteria were defined based on evaluator error patterns rather than distinct visual tasks, leading to semantic mixing within clusters and over-triggering on unrelated samples.",
+          "failure_categories": [
+            "cluster_semantically_mixed",
+            "child_too_broad",
+            "unrelated_scene_activation"
+          ],
+          "details": [
+            "The 'spatial_compositional_reasoning' cluster mixed distinct visual tasks (symmetry verification in rlhfv-002829, basic spatial relations in rlhfv-001347, and composition analysis in rlhfv-002726), resulting in the 'compositional_hierarchy_and_subject_interaction' child achieving only 0.54 accuracy.",
+            "The 'hallucination_vs_accurate_sparsity' and 'visual_truth_over_task_assumptions' children overlapped with existing factuality criteria, causing high false-positive activation with 30 and 32 'non_target_wrong' decisions respectively.",
+            "Specialized logic actively degraded performance on 14 samples that the parent criterion handled correctly, indicating the new criteria introduced confusion rather than clarity on visual verification."
+          ],
+          "avoid_next_time": [
+            "Cluster samples by distinct visual verification task (e.g., 'Symmetry', 'Spatial Relations') rather than evaluator error psychology (e.g., 'Evaluator Blindness').",
+            "Ensure new children criteria do not overlap with existing factuality_no_hallucination children unless they address a unique visual modality.",
+            "Validate cluster homogeneity: all samples in a cluster must be solvable by the same specific visual rule before generating a child criterion."
+          ]
+        }
+      }
+    },
+    {
+      "epoch": 2,
+      "root_id": "init_03_factuality_no_hallucination",
+      "attempt": null,
+      "decision": "accepted_locked",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    },
+    {
+      "epoch": 2,
+      "root_id": "init_04_creativity_and_expressiveness",
+      "attempt": 2,
+      "decision": "competition_rejected",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_02\\roots\\r04\\attempt_02",
+      "parent_accuracy": 0.627906976744186,
+      "specialized_accuracy": 0.6162790697674418,
+      "accuracy_delta": -0.011627906976744207,
+      "elapsed_seconds": 2590.155999999999,
+      "history_payload": {
+        "structured_failure": {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        "cluster_summary": [
+          {
+            "cluster_id": "hallucinated_existence_and_attributes",
+            "label": "Hallucinated Existence and Attributes Rewarded as Precision",
+            "sample_ids": [
+              "rlhfv-002761",
+              "rlhfv-002699",
+              "rlhfv-000277",
+              "rlhfv-001988",
+              "rlhfv-004635",
+              "rlhfv-002821",
+              "rlhfv-002720",
+              "rlhfv-002080",
+              "rlhfv-000628",
+              "rlhfv-001002",
+              "rlhfv-001103",
+              "rlhfv-001449",
+              "rlhfv-000449",
+              "rlhfv-000740"
+            ]
+          },
+          {
+            "cluster_id": "spatial_confidence_and_descriptive_style",
+            "label": "Spatial Confidence and Descriptive Style Overriding Visual Fidelity",
+            "sample_ids": [
+              "rlhfv-002695",
+              "rlhfv-002726",
+              "rlhfv-000196",
+              "rlhfv-000541",
+              "rlhfv-000042",
+              "rlhfv-004995",
+              "rlhfv-000932",
+              "rlhfv-004571",
+              "rlhfv-000478"
+            ]
+          },
+          {
+            "cluster_id": "logical_consistency_and_task_intent",
+            "label": "Logical Consistency and Task Intent Misalignment",
+            "sample_ids": [
+              "rlhfv-000082",
+              "rlhfv-003046",
+              "rlhfv-003218",
+              "rlhfv-001052",
+              "rlhfv-000462",
+              "rlhfv-000764",
+              "rlhfv-001528",
+              "rlhfv-000307",
+              "rlhfv-000837"
+            ]
+          }
+        ],
+        "children_summary": [
+          {
+            "cluster_id": "hallucinated_existence_and_attributes",
+            "criterion_name": "factual_grounding_for_expressive_precision",
+            "description": "Criterion focus: Prevents hallucinated specific details (invented objects, incorrect counts, wrong attributes) from being rewarded as 'precise articulation' or 'knowledgeable detail' under the creativity_and_expressiveness criterion in factual or analytical tasks.\n\nApplicable only when: Evaluating creativity_and_expressiveness where candidates differ in specificity of factual claims (object presence/absence, counts, colors, textures, attributes) in tasks requiring visual or factual accuracy, and there is risk of conflating confident specificity with expertise.\n\nNot applicable when: Task is open-ended creative writing where factual grounding is secondary, disagreements concern purely stylistic expressiveness without factual claims, spatial relationships (handled by spatial_relationship_and_"
+          },
+          {
+            "cluster_id": "spatial_confidence_and_descriptive_style",
+            "criterion_name": "spatial_precision_over_expressive_confidence",
+            "description": "Criterion focus: Evaluates whether spatial and positional descriptions prioritize visually grounded specificity over confident but vague or hyperbolic language when assessing creativity_and_expressiveness in analytical visual tasks.\n\nApplicable only when: Candidates describe spatial relationships, body poses, relative positioning, or scene composition with differing levels of descriptive specificity (e.g., hyperbolic terms like 'most of the space' or 'orderly' vs. specific landmarks like 'center', 'near their knees', or anatomical references), and the task requires visual accuracy over creative interpretation.\n\nNot applicable when: Disagreements concern object existence or counts (handled by visual_counting_and_presence_verification), clear factual spatial errors already caught by spatial_"
+          },
+          {
+            "cluster_id": "logical_consistency_and_task_intent",
+            "criterion_name": "task_intent_and_logical_structure",
+            "description": "Criterion focus: Evaluates whether the candidate's articulation aligns with the core task intent (e.g., hypothetical engagement, text extraction, uncertainty admission) and maintains internal logical structure (e.g., answer matches explanation), preventing 'expressive' phrasing from masking intent violations or contradictions.\n\nApplicable only when: Candidates differ in their adherence to the prompt's core intent (e.g. speculative vs. factual, extraction vs. description) or internal logical consistency (e.g. direct answer contradicts justification), where the more 'articulate' candidate fails on these structural or intent grounds.\n\nNot applicable when: Disagreements concern specific visual details such as object counts, attributes, or spatial relationships (handled by factual_grounding_for"
+          }
+        ],
+        "local_metrics": {
+          "parent_accuracy": 0.627906976744186,
+          "specialized_accuracy": 0.6162790697674418,
+          "accuracy_delta": -0.011627906976744207
+        },
+        "corrected_sample_ids": [
+          "rlhfv-002761",
+          "rlhfv-000277",
+          "rlhfv-001988",
+          "rlhfv-004635",
+          "rlhfv-000541",
+          "rlhfv-001052",
+          "rlhfv-002080",
+          "rlhfv-000628",
+          "rlhfv-000764",
+          "rlhfv-001103",
+          "rlhfv-001528",
+          "rlhfv-000449",
+          "rlhfv-000740"
+        ],
+        "harmed_sample_ids": [
+          "rlhfv-000769",
+          "rlhfv-002182",
+          "rlhfv-000360",
+          "rlhfv-004979",
+          "rlhfv-002738",
+          "rlhfv-002824",
+          "rlhfv-003458",
+          "rlhfv-002806",
+          "rlhfv-004830",
+          "rlhfv-004694",
+          "rlhfv-002069",
+          "rlhfv-001274",
+          "rlhfv-003450",
+          "rlhfv-004472"
+        ],
+        "natural_language_attribution": {
+          "summary": "The Split failed because the generated children were too broad, triggering incorrectly on non-target samples, and two of the three clusters lacked semantic coherence, resulting in poor accuracy even on their intended error signatures.",
+          "failure_categories": [
+            "child_too_broad",
+            "cluster_semantically_mixed"
+          ],
+          "details": [
+            "The 'spatial_confidence_and_descriptive_style' and 'logical_consistency_and_task_intent' children achieved only 42.9% and 44.4% accuracy respectively on their own target clusters, indicating the grouped error signatures do not share a solvable decision boundary.",
+            "All three children exhibited high interference on non-target samples, with 'hallucinated_existence_and_attributes' making 30 incorrect decisive votes outside its cluster, demonstrating overly permissive applicability conditions.",
+            "The specialized criteria harmed 14 samples that the parent had correctly classified, exceeding the 13 samples corrected, leading to a net accuracy regression from 68.9% to 64.4%."
+          ],
+          "avoid_next_time": [
+            "Tighten the 'Applicable only when' and 'Not applicable when' clauses to prevent children from overriding parent correctness on samples outside their specific error signatures.",
+            "Re-evaluate the semantic coherence of the 'spatial' and 'logical' clusters before generating criteria, as their low cluster accuracy suggests they group dissimilar failure modes.",
+            "Ensure children abstain by default unless the specific error signature (e.g., hallucinated object vs. vague spatial term) is clearly present, reducing non-target wrong decisions."
+          ]
+        }
+      }
+    },
+    {
+      "epoch": 2,
+      "root_id": "init_05_clarity_and_coherence",
+      "attempt": 2,
+      "decision": "proposal_invalid",
+      "competition_completed": false,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_02\\roots\\r05\\attempt_02",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null,
+      "elapsed_seconds": 2394.0,
+      "history_payload": {
+        "structured_failure": {
+          "code": "proposal_invalid",
+          "stage": "semantic_cluster",
+          "details": {
+            "stage": "semantic_cluster",
+            "raw_response": "\n\n{\n  \"clusters\": [\n    {\n      \"cluster_id\": \"clarity_fluency_over_grounding\",\n      \"label\": \"Fluency and Confidence Bias Over Visual Grounding\",\n      \"shared_failure\": \"Evaluators prioritize linguistic fluency, narrative smoothness, or confident tone over visual faithfulness, incorrectly rating hallucinated but fluent responses as 'clearer' than accurate but less polished ones.\",\n      \"distinction\": \"Focuses on cases where the text quality (flow, confidence) masks visual errors, leading evaluators to mistake a 'smooth lie' for clear communication.\",\n      \"sample_ids\": [\n        \"rlhfv-002726\",\n        \"rlhfv-000510\",\n        \"rlhfv-002699\",\n        \"rlhfv-000277\",\n        \"rlhfv-002824\",\n        \"rlhfv-004635\",\n        \"rlhfv-002806\",\n        \"rlhfv-004995\",\n        \"rlhfv-001052\",\n        \"rlhfv-002080\",\n        \"rlhfv-001103\",\n        \"rlhfv-001528\",\n        \"rlhfv-000287\",\n        \"rlhfv-000449\",\n        \"rlhfv-001002\",\n        \"rlhfv-000628\",\n        \"rlhfv-000307\",\n        \"rlhfv-003560\",\n        \"rlhfv-002802\",\n        \"rlhfv-000042\",\n        \"rlhfv-002069\",\n        \"rlhfv-004571\",\n        \"rlhfv-000932\",\n        \"rlhfv-002738\",\n        \"rlhfv-002695\",\n        \"rlhfv-003046\",\n        \"rlhfv-000082\",\n        \"rlhfv-002182\",\n        \"rlhfv-000195\",\n        \"rlhfv-001347\",\n        \"rlhfv-000740\",\n        \"rlhfv-002821\",\n        \"rlhfv-004830\",\n        \"rlhfv-000541\",\n        \"rlhfv-003218\",\n        \"rlhfv-001449\",\n        \"rlhfv-000196\"\n      ]\n    }\n  ],\n  \"unclustered_sample_ids\": []\n}",
+            "parse_error": "missing sample IDs: ['rlhfv-000478']",
+            "attempt_count": 2,
+            "metrics": {
+              "logical_evaluations": 1,
+              "api_attempts": 2,
+              "parse_retries": 1,
+              "input_tokens": 22722,
+              "output_tokens": 18219,
+              "total_tokens": 40941,
+              "usage_complete": true,
+              "call_latency_seconds": 158.35796290000144,
+              "estimated_cost_usd": null,
+              "cache_hits": 0,
+              "cache_misses": 0,
+              "error_count": 0
+            }
+          }
+        },
+        "cluster_summary": null,
+        "children_summary": [],
+        "local_metrics": null,
+        "corrected_sample_ids": [],
+        "harmed_sample_ids": [],
+        "natural_language_attribution": null
+      }
+    },
+    {
+      "epoch": 3,
+      "root_id": "init_01_completeness_and_coverage",
+      "attempt": 3,
+      "decision": "competition_rejected",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_03\\roots\\r01\\attempt_03",
+      "parent_accuracy": 0.6707317073170732,
+      "specialized_accuracy": 0.6219512195121951,
+      "accuracy_delta": -0.04878048780487809,
+      "elapsed_seconds": 3836.594000000001,
+      "history_payload": {
+        "structured_failure": {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        "cluster_summary": [
+          {
+            "cluster_id": "hallucination_rewarded_as_coverage",
+            "label": "Hallucination Rewarded as Coverage",
+            "sample_ids": [
+              "rlhfv-002699",
+              "rlhfv-000195",
+              "rlhfv-001571",
+              "rlhfv-002050",
+              "rlhfv-001052",
+              "rlhfv-000287",
+              "rlhfv-000449",
+              "rlhfv-000740",
+              "rlhfv-000628"
+            ]
+          },
+          {
+            "cluster_id": "visual_verification_failure_penalizing_accuracy",
+            "label": "Visual Verification Failures Penalizing Accuracy",
+            "sample_ids": [
+              "rlhfv-002069",
+              "rlhfv-001449",
+              "rlhfv-000042",
+              "rlhfv-004995",
+              "rlhfv-004571",
+              "rlhfv-001347",
+              "rlhfv-002726",
+              "rlhfv-002821"
+            ]
+          },
+          {
+            "cluster_id": "logic_and_instruction_priority_error",
+            "label": "Logic and Instruction Priority Error",
+            "sample_ids": [
+              "rlhfv-000764",
+              "rlhfv-000837",
+              "rlhfv-004830",
+              "rlhfv-000307",
+              "rlhfv-003218"
+            ]
+          },
+          {
+            "cluster_id": "subjective_and_verbosity_bias",
+            "label": "Subjective and Verbosity Bias",
+            "sample_ids": [
+              "rlhfv-000541",
+              "rlhfv-001002",
+              "rlhfv-000478",
+              "rlhfv-003046",
+              "rlhfv-002720"
+            ]
+          }
+        ],
+        "children_summary": [
+          {
+            "cluster_id": "hallucination_rewarded_as_coverage",
+            "criterion_name": "verified_completeness_over_hallucinated_volume",
+            "description": "Criterion focus: Evaluates whether apparent completeness is achieved through accurate visual coverage rather than hallucinated objects, counts, or event details that artificially inflate response volume.\n\nApplicable only when: Candidates differ in the quantity of visual details provided where one response includes more specific claims about objects, counts, or contextual elements that require visual verification, there is a trade-off between detail quantity and accuracy, and there is risk that hallucinated details might be mistakenly valued as superior coverage under completeness evaluation.\n\nNot applicable when: Both candidates provide similar levels of detail with comparable accuracy, when the task does not involve visual verification of existence claims, when disagreements are purely st"
+          },
+          {
+            "cluster_id": "visual_verification_failure_penalizing_accuracy",
+            "criterion_name": "verified_subtle_visual_coverage",
+            "description": "Criterion focus: Evaluates whether the response covers the full visual scope by including subtle but verifiable elements (e.g., background text, small objects, nuanced poses) that are often overlooked, ensuring accurate specific claims are counted towards completeness rather than dismissed as unsupported.\n\nApplicable only when: Candidates differ in the inclusion of subtle visual details where one provides specific, verifiable claims requiring close inspection and the other omits these elements or provides generic descriptions, AND there is a risk that the specific claims might be incorrectly dismissed as hallucinations during completeness evaluation.\n\nNot applicable when: Specific claims are clearly false or hallucinated (handled by verified_completeness_over_hallucinated_volume), when vis"
+          },
+          {
+            "cluster_id": "logic_and_instruction_priority_error",
+            "criterion_name": "primary_task_fulfillment_for_completeness",
+            "description": "Criterion focus: Evaluates completeness based on the successful fulfillment of the query's primary directive (e.g., direct answer, false premise correction, mandatory transcription) rather than secondary descriptive volume.\n\nApplicable only when: One candidate correctly executes the primary directive (e.g., provides the factually correct Yes/No, corrects a false premise, follows a negative constraint) while the other fails the primary directive but offers greater explanatory detail or structural adherence to the prompt's phrasing.\n\nNot applicable when: Both candidates correctly execute the primary directive and differ only in the quantity of supporting visual details (handled by verified_subtle_visual_coverage), when the disagreement is purely about visual attribute accuracy without instru"
+          },
+          {
+            "cluster_id": "subjective_and_verbosity_bias",
+            "criterion_name": "verified_grounding_over_stylistic_bias",
+            "description": "Criterion focus: Evaluates whether the response's apparent completeness is grounded in factual accuracy rather than stylistic markers (verbosity, aesthetic idealization, technical jargon) that simulate thoroughness while masking errors.\n\nApplicable only when: One candidate employs stylistic devices that enhance the perception of completeness (e.g., flowery language, idealized composition descriptions like 'harmonious line', excessive contextual padding, or confident technical terminology) while containing a verifiable factual or visual error, AND the alternative candidate avoids these stylistic markers but maintains higher factual/visual accuracy on the core claim.\n\nNot applicable when: The disagreement concerns hallucinated object counts or existence claims (handled by verified_completene"
+          }
+        ],
+        "local_metrics": {
+          "parent_accuracy": 0.6707317073170732,
+          "specialized_accuracy": 0.6219512195121951,
+          "accuracy_delta": -0.04878048780487809
+        },
+        "corrected_sample_ids": [
+          "rlhfv-001571",
+          "rlhfv-002050",
+          "rlhfv-001052",
+          "rlhfv-000307",
+          "rlhfv-000287",
+          "rlhfv-001449",
+          "rlhfv-001347",
+          "rlhfv-000740"
+        ],
+        "harmed_sample_ids": [
+          "rlhfv-000769",
+          "rlhfv-002182",
+          "rlhfv-000360",
+          "rlhfv-000082",
+          "rlhfv-003458",
+          "rlhfv-000233",
+          "rlhfv-000511",
+          "rlhfv-000932",
+          "rlhfv-000095",
+          "rlhfv-004956",
+          "rlhfv-000462",
+          "rlhfv-000969"
+        ],
+        "natural_language_attribution": {
+          "summary": "The Split failed because three of the four child criteria exhibited accuracy significantly below the parent (0.53-0.57 vs 0.67), actively degrading performance on samples the parent handled correctly. The primary_task_fulfillment_for_completeness criterion was particularly ineffective, achieving only 0.25 accuracy on its own target cluster, indicating the clustered samples did not share a coherent solvable pattern. Additionally, high non_target_wrong counts (e.g., 33 for the hallucination criterion) demonstrate that the criteria were applied too broadly, causing incorrect preference flips on samples outside their intended scope.",
+          "failure_categories": [
+            "child_too_broad",
+            "cluster_semantically_mixed",
+            "preference_direction_reversed"
+          ],
+          "details": [
+            "primary_task_fulfillment_for_completeness achieved only 0.25 cluster accuracy, failing to correct 3 out of 4 target samples while harming non-targets.",
+            "verified_completeness_over_hallucinated_volume had 33 non_target_wrong decisions, indicating it incorrectly triggered on standard completeness cases where no hallucination trade-off existed.",
+            "Specialized accuracy (0.62) dropped below parent accuracy (0.67) due to 12 harmed samples versus only 8 corrected.",
+            "verified_grounding_over_stylistic_bias had 0.40 cluster accuracy, suggesting the stylistic bias cluster was not distinct enough for the criterion to resolve reliably."
+          ],
+          "avoid_next_time": [
+            "Validate cluster coherence before generating criteria; discard clusters where target samples do not show a consistent correctable pattern (e.g., primary_task cluster).",
+            "Restrict criterion applicability conditions to reduce non_target_wrong rates; ensure criteria abstain on ambiguous cases rather than forcing a decision.",
+            "Prioritize criteria that demonstrate high precision on target samples over those with high recall but low accuracy.",
+            "Analyze harmed samples to identify if criteria are conflating distinct error types (e.g., stylistic preference vs. factual accuracy) and refine definitions to prevent false positives."
+          ]
+        }
+      }
+    },
+    {
+      "epoch": 3,
+      "root_id": "init_02_visual_grounding_and_details",
+      "attempt": 3,
+      "decision": "competition_rejected",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_03\\roots\\r02\\attempt_03",
+      "parent_accuracy": 0.6966292134831461,
+      "specialized_accuracy": 0.6629213483146067,
+      "accuracy_delta": -0.03370786516853941,
+      "elapsed_seconds": 3537.782000000003,
+      "history_payload": {
+        "structured_failure": {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        "cluster_summary": [
+          {
+            "cluster_id": "vg_sub_visual_truth_priority",
+            "label": "Visual Truth Priority Over Logic and Prompt",
+            "sample_ids": [
+              "rlhfv-003046",
+              "rlhfv-004830",
+              "rlhfv-001052",
+              "rlhfv-000764",
+              "rlhfv-000837"
+            ]
+          },
+          {
+            "cluster_id": "vg_sub_subtle_evidence_verification",
+            "label": "Subtle and Peripheral Evidence Verification",
+            "sample_ids": [
+              "rlhfv-004979",
+              "rlhfv-000042",
+              "rlhfv-004995",
+              "rlhfv-004571",
+              "rlhfv-001449"
+            ]
+          },
+          {
+            "cluster_id": "vg_sub_scene_composition_grounding",
+            "label": "Scene Composition and Interaction Grounding",
+            "sample_ids": [
+              "rlhfv-002695",
+              "rlhfv-000082",
+              "rlhfv-002726",
+              "rlhfv-000541",
+              "rlhfv-002829"
+            ]
+          }
+        ],
+        "children_summary": [
+          {
+            "cluster_id": "vg_sub_visual_truth_priority",
+            "criterion_name": "visual_evidence_priority",
+            "description": "Criterion focus: Evaluates whether candidates prioritize observable visual evidence as the authoritative source of truth when it conflicts with prompt assumptions, external knowledge, or the expectation of a logically consistent direct answer.\n\nApplicable only when: Candidates differ in their resolution of a conflict between image content and task constraints—specifically when one candidate corrects a false prompt premise, acknowledges visual ambiguity, or prioritizes visual accuracy over answer consistency, while the other adheres to the prompt/logic at the expense of visual truth.\n\nNot applicable when: There is no tension between visual evidence and logical/prompt constraints, or when the disagreement concerns only specific visual attributes (color, text, count) without involving prompt "
+          },
+          {
+            "cluster_id": "vg_sub_subtle_evidence_verification",
+            "criterion_name": "subtle_peripheral_evidence_verification",
+            "description": "Criterion focus: Evaluates the accurate identification of visual elements that are small, peripheral, obscured, or distant, ensuring candidates are rewarded for noticing verifiable details that require close inspection rather than penalized for perceived hallucinations.\n\nApplicable only when: Candidates disagree on the presence or attributes of elements that are not immediately obvious (e.g., background objects, partially occluded details, screen text, peripheral items) and the visual evidence supports the more specific claim upon careful examination.\n\nNot applicable when: Disagreements concern clearly visible main subject attributes (handled by visual_attribute_verification), clear object counts or binary presence of prominent objects (handled by visual_counting_and_presence_verification)"
+          },
+          {
+            "cluster_id": "vg_sub_scene_composition_grounding",
+            "criterion_name": "subject_composition_and_interaction_grounding",
+            "description": "Criterion focus: Evaluates the accuracy of holistic compositional patterns describing how main subjects are arranged and interact as a group (e.g., orderly vs. chaotic, clustered vs. scattered, hierarchical vs. equal), prioritizing subject-to-subject compositional reality over background geometry or isolated attribute accuracy.\n\nApplicable only when: Candidates differ in their description of the overall compositional structure or interaction pattern of primary subjects within the scene, particularly when one candidate more accurately captures whether subjects are grouped chaotically or arranged orderly, despite potential minor errors in background details, individual object attributes, or peripheral elements.\n\nNot applicable when: Disagreements concern only basic pairwise spatial relations"
+          }
+        ],
+        "local_metrics": {
+          "parent_accuracy": 0.6966292134831461,
+          "specialized_accuracy": 0.6629213483146067,
+          "accuracy_delta": -0.03370786516853941
+        },
+        "corrected_sample_ids": [
+          "rlhfv-002699",
+          "rlhfv-000085",
+          "rlhfv-002806",
+          "rlhfv-000541",
+          "rlhfv-000837",
+          "rlhfv-001347",
+          "rlhfv-000740"
+        ],
+        "harmed_sample_ids": [
+          "rlhfv-000769",
+          "rlhfv-002182",
+          "rlhfv-000360",
+          "rlhfv-002738",
+          "rlhfv-000079",
+          "rlhfv-003458",
+          "rlhfv-000233",
+          "rlhfv-000462",
+          "rlhfv-000969",
+          "rlhfv-004472"
+        ],
+        "natural_language_attribution": {
+          "summary": "The Split failed because the generated child criteria performed poorly on their specific target clusters (average cluster accuracy 0.37) and introduced new errors on non-target samples, resulting in a net loss of accuracy (10 harmed vs 7 corrected). The children exhibited significant semantic overlap, with non-composition children correcting composition errors and the composition child failing to address its own cluster, indicating ineffective specialization.",
+          "failure_categories": [
+            "cluster_semantically_mixed",
+            "child_too_broad",
+            "specialized_accuracy_below_parent"
+          ],
+          "details": [
+            "The 'subject_composition_and_interaction_grounding' child achieved only 20% accuracy (1/5) on its target cluster, failing to correct the composition errors it was designed to handle.",
+            "High non-target intervention rates indicate criteria are too broad: 'visual_evidence_priority' voted decisively on 71 non-target samples, getting 25 wrong.",
+            "Corrected samples span unrelated error types (hallucination, logic, spatial, composition), suggesting the children are not cleanly separating failure modes but rather applying broad heuristics that sometimes help and often harm.",
+            "Total harmed samples (10) exceeded corrected samples (7), driving the specialized accuracy down to 0.663 from the parent's 0.697."
+          ],
+          "avoid_next_time": [
+            "Require a minimum cluster accuracy of 0.6 for all children before accepting a Split to ensure they actually solve their target errors.",
+            "Tighten applicability conditions to reduce non-target decisive votes, ensuring children only activate on their specific error signatures.",
+            "Separate 'Visual Hallucination Detection' into a distinct criterion rather than conflating it with 'Visual Truth Priority Over Logic', as evidenced by hallucination cases being corrected by the logic-focused child."
+          ]
+        }
+      }
+    },
+    {
+      "epoch": 3,
+      "root_id": "init_03_factuality_no_hallucination",
+      "attempt": null,
+      "decision": "accepted_locked",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    },
+    {
+      "epoch": 3,
+      "root_id": "init_04_creativity_and_expressiveness",
+      "attempt": 3,
+      "decision": "accepted",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_03\\roots\\r04\\attempt_03",
+      "parent_accuracy": 0.627906976744186,
+      "specialized_accuracy": 0.6395348837209303,
+      "accuracy_delta": 0.011627906976744207,
+      "elapsed_seconds": 3310.25,
+      "history_payload": null
+    },
+    {
+      "epoch": 3,
+      "root_id": "init_05_clarity_and_coherence",
+      "attempt": 3,
+      "decision": "accepted",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_03\\roots\\r05\\attempt_03",
+      "parent_accuracy": 0.5632183908045977,
+      "specialized_accuracy": 0.5977011494252874,
+      "accuracy_delta": 0.034482758620689724,
+      "elapsed_seconds": 3115.3280000000013,
+      "history_payload": null
+    },
+    {
+      "epoch": 4,
+      "root_id": "init_01_completeness_and_coverage",
+      "attempt": 4,
+      "decision": "competition_rejected",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_04\\roots\\r01\\attempt_04",
+      "parent_accuracy": 0.6707317073170732,
+      "specialized_accuracy": 0.6463414634146342,
+      "accuracy_delta": -0.024390243902439046,
+      "elapsed_seconds": 2131.844000000001,
+      "history_payload": {
+        "structured_failure": {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        "cluster_summary": [
+          {
+            "cluster_id": "hallucinated_volume_rewarded_as_coverage",
+            "label": "Hallucinated Volume Rewarded as Coverage",
+            "sample_ids": [
+              "rlhfv-002699",
+              "rlhfv-000195",
+              "rlhfv-001571",
+              "rlhfv-002050",
+              "rlhfv-001052",
+              "rlhfv-000287",
+              "rlhfv-000449",
+              "rlhfv-000740",
+              "rlhfv-000628",
+              "rlhfv-003046",
+              "rlhfv-000541",
+              "rlhfv-001002",
+              "rlhfv-000478"
+            ]
+          },
+          {
+            "cluster_id": "accurate_specificity_penalized_as_unsupported",
+            "label": "Accurate Specificity Penalized as Unsupported",
+            "sample_ids": [
+              "rlhfv-002069",
+              "rlhfv-001449",
+              "rlhfv-004571",
+              "rlhfv-004995",
+              "rlhfv-000042",
+              "rlhfv-002821",
+              "rlhfv-002720",
+              "rlhfv-002726",
+              "rlhfv-001347"
+            ]
+          },
+          {
+            "cluster_id": "logical_coherence_and_instruction_priority",
+            "label": "Logical Coherence and Instruction Priority",
+            "sample_ids": [
+              "rlhfv-000764",
+              "rlhfv-000837",
+              "rlhfv-004830",
+              "rlhfv-000307",
+              "rlhfv-003218"
+            ]
+          }
+        ],
+        "children_summary": [
+          {
+            "cluster_id": "hallucinated_volume_rewarded_as_coverage",
+            "criterion_name": "completeness_without_hallucinated_volume",
+            "description": "Criterion focus: Evaluates whether apparent completeness is achieved through accurate visual coverage rather than hallucinated objects, counts, or attributes that artificially inflate response volume and create a false impression of thoroughness.\n\nApplicable only when: Candidates differ in the quantity of visual details provided where one response includes more specific claims about objects, counts, or contextual elements that require visual verification, there is a clear trade-off between detail quantity and accuracy, and there is risk that hallucinated details might be mistakenly valued as superior coverage under completeness evaluation.\n\nNot applicable when: Both candidates provide similar levels of detail with comparable accuracy, when the task does not involve visual verification of e"
+          },
+          {
+            "cluster_id": "accurate_specificity_penalized_as_unsupported",
+            "criterion_name": "verified_specificity_for_completeness",
+            "description": "Criterion focus: Evaluates whether accurate, verifiable specific details (e.g., background text, small objects, precise poses, spatial relationships) are properly counted toward completeness coverage rather than incorrectly dismissed as unsupported speculation or hallucination.\n\nApplicable only when: One candidate includes specific visual claims that are verifiable in the image while another candidate omits these details or provides generic descriptions, AND there is demonstrable risk that the specific claims could be incorrectly penalized as 'unsupported' during completeness evaluation despite being visually grounded.\n\nNot applicable when: The specific claims are clearly false or hallucinated (handled by factuality_no_hallucination and its children), when both candidates provide equivalen"
+          },
+          {
+            "cluster_id": "logical_coherence_and_instruction_priority",
+            "criterion_name": "core_directive_fulfillment_for_completeness",
+            "description": "Criterion focus: Evaluates whether completeness scoring prioritizes the accuracy of the primary directive (e.g., direct answer, premise correction) over secondary descriptive volume, ensuring logical or instructional failures reduce completeness ratings.\n\nApplicable only when: Candidates exhibit a trade-off where one provides the factually correct direct answer or corrects a false premise while the other offers greater descriptive detail or structural adherence but fails the core directive (e.g., incorrect Yes/No, self-contradiction, accepting a false premise).\n\nNot applicable when: Both candidates correctly fulfill the primary directive and differ only in visual detail quantity (handled by completeness_without_hallucinated_volume or verified_specificity_for_completeness), when disagreemen"
+          }
+        ],
+        "local_metrics": {
+          "parent_accuracy": 0.6707317073170732,
+          "specialized_accuracy": 0.6463414634146342,
+          "accuracy_delta": -0.024390243902439046
+        },
+        "corrected_sample_ids": [
+          "rlhfv-000195",
+          "rlhfv-001571",
+          "rlhfv-002050",
+          "rlhfv-001052",
+          "rlhfv-002720",
+          "rlhfv-000628",
+          "rlhfv-000287",
+          "rlhfv-001449",
+          "rlhfv-000449",
+          "rlhfv-000740"
+        ],
+        "harmed_sample_ids": [
+          "rlhfv-000769",
+          "rlhfv-002182",
+          "rlhfv-000082",
+          "rlhfv-002738",
+          "rlhfv-000510",
+          "rlhfv-002824",
+          "rlhfv-003458",
+          "rlhfv-002806",
+          "rlhfv-000095",
+          "rlhfv-004956",
+          "rlhfv-000462",
+          "rlhfv-000150"
+        ],
+        "natural_language_attribution": {
+          "summary": "The Split failed because the generated child criteria performed worse than the parent on both their target clusters and the general domain, causing net accuracy regression. One child achieved 0% accuracy on its target cluster, while all three children frequently voted incorrectly on samples outside their intended scope, overriding correct parent predictions.",
+          "failure_categories": [
+            "unrelated_scene_activation",
+            "preference_direction_reversed",
+            "child_too_broad"
+          ],
+          "details": [
+            "The 'core_directive_fulfillment_for_completeness' child achieved 0.0 cluster_accuracy on its 3 target samples, indicating a complete preference_direction_reversed or logic failure where it consistently selected the wrong candidate in its intended domain.",
+            "High non_target_wrong counts (26, 16, and 28 across the three children) demonstrate unrelated_scene_activation, where criteria triggered and voted incorrectly on samples that did not match their specific failure mode, harming 12 previously correct parent predictions.",
+            "Specialized accuracy (0.646) fell below parent accuracy (0.671), with the 'completeness_without_hallucinated_volume' child achieving only 0.56 accuracy overall, confirming the children are too broad and insufficiently accurate to justify replacing the parent logic."
+          ],
+          "avoid_next_time": [
+            "Validate that each child criterion achieves accuracy significantly higher than the parent on its target cluster before considering the Split successful.",
+            "Tighten the 'Applicable only when' conditions in criterion definitions to reduce non-target activation and prevent interference with correct parent predictions.",
+            "Ensure logical coherence criteria (like 'core_directive_fulfillment') are tested for basic directional correctness on their cluster samples to avoid 0% accuracy failures."
+          ]
+        }
+      }
+    },
+    {
+      "epoch": 4,
+      "root_id": "init_02_visual_grounding_and_details",
+      "attempt": 4,
+      "decision": "competition_rejected",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_04\\roots\\r02\\attempt_04",
+      "parent_accuracy": 0.6966292134831461,
+      "specialized_accuracy": 0.6179775280898876,
+      "accuracy_delta": -0.07865168539325851,
+      "elapsed_seconds": 1953.2969999999987,
+      "history_payload": {
+        "structured_failure": {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        "cluster_summary": [
+          {
+            "cluster_id": "vg_evaluator_hallucination_acceptance",
+            "label": "Evaluator Hallucination Acceptance",
+            "sample_ids": [
+              "rlhfv-002699",
+              "rlhfv-000085",
+              "rlhfv-000195",
+              "rlhfv-000449",
+              "rlhfv-001002",
+              "rlhfv-000740"
+            ]
+          },
+          {
+            "cluster_id": "vg_evaluator_accurate_detail_rejection",
+            "label": "Evaluator Accurate Detail Rejection",
+            "sample_ids": [
+              "rlhfv-004979",
+              "rlhfv-000042",
+              "rlhfv-004995",
+              "rlhfv-004571",
+              "rlhfv-001449",
+              "rlhfv-002806"
+            ]
+          },
+          {
+            "cluster_id": "vg_spatial_composition_misjudgment",
+            "label": "Spatial and Compositional Misjudgment",
+            "sample_ids": [
+              "rlhfv-002695",
+              "rlhfv-000082",
+              "rlhfv-002726",
+              "rlhfv-002829",
+              "rlhfv-000541",
+              "rlhfv-001347"
+            ]
+          },
+          {
+            "cluster_id": "vg_visual_truth_vs_task_logic",
+            "label": "Visual Truth Versus Task Logic Conflict",
+            "sample_ids": [
+              "rlhfv-003046",
+              "rlhfv-004830",
+              "rlhfv-001052",
+              "rlhfv-000764",
+              "rlhfv-000837"
+            ]
+          }
+        ],
+        "children_summary": [
+          {
+            "cluster_id": "vg_evaluator_hallucination_acceptance",
+            "criterion_name": "existence_and_action_verification",
+            "description": "Criterion focus: Verifying that referenced visual elements (objects, actions, poses) actually exist and occur as described in the image before accepting them as valid visual grounding.\n\nApplicable only when: Candidates make conflicting claims about whether specific objects exist, whether actions are occurring, or whether subjects are in particular poses, and direct image inspection can definitively confirm or refute at least one claim.\n\nNot applicable when: Disagreements concern only spatial relationships (handled by spatial_relationship_and_perspective_verification), object counts (handled by visual_counting_and_presence_verification), qualitative attributes like color or text (handled by visual_attribute_verification), or when visual evidence is too ambiguous to verify either claim.\n\nDec"
+          },
+          {
+            "cluster_id": "vg_evaluator_accurate_detail_rejection",
+            "criterion_name": "subtle_detail_verification",
+            "description": "Criterion focus: Accurate identification of visual elements that require careful inspection to verify, including distant, partially obscured, peripheral, or subtly-featured details that are present but easy to overlook.\n\nApplicable only when: Candidates disagree on specific visual details that require careful inspection to confirm (e.g., distant background objects, partially occluded markings, peripheral items, subtle pose variations, screen content), and the visual evidence supports the more detailed claim upon close examination.\n\nNot applicable when: Disagreements concern obvious/main subject attributes (handled by visual_attribute_verification), clear object counts or binary presence of prominent objects (handled by visual_counting_and_presence_verification), spatial relationships (hand"
+          },
+          {
+            "cluster_id": "vg_spatial_composition_misjudgment",
+            "criterion_name": "main_subject_composition_accuracy",
+            "description": "Criterion focus: Evaluates the accuracy of compositional pattern descriptions for primary subjects within a scene, specifically whether subjects are arranged orderly versus chaotically, clustered versus scattered, and their subject-to-subject spatial relationships.\n\nApplicable only when: Candidates differ in their description of how main subjects are compositionally arranged as a group (e.g., orderly vs. chaotic, lined up vs. mixed together, symmetrical vs. asymmetrical), particularly when one candidate more accurately captures the actual compositional structure of primary subjects despite potential minor errors in background geometry or peripheral attributes.\n\nNot applicable when: Disagreements concern only basic pairwise spatial relations like left/right or front/behind (handled by spati"
+          },
+          {
+            "cluster_id": "vg_visual_truth_vs_task_logic",
+            "criterion_name": "visual_truth_over_task_assumptions",
+            "description": "Criterion focus: Evaluates whether candidates prioritize observable visual evidence as the authoritative source of truth when it conflicts with prompt assumptions, external knowledge, or the expectation of a logically complete answer.\n\nApplicable only when: There is explicit tension between what the image shows and what the prompt assumes or implies, candidates differ in how they resolve this tension (one corrects false premises or acknowledges visual ambiguity while the other accepts prompt bias or hallucinates to satisfy task expectations), and visual evidence can definitively support prioritizing image truth over task logic.\n\nNot applicable when: There is no conflict between visual evidence and task logic (handled by visual_attribute_verification, visual_counting_and_presence_verificati"
+          }
+        ],
+        "local_metrics": {
+          "parent_accuracy": 0.6966292134831461,
+          "specialized_accuracy": 0.6179775280898876,
+          "accuracy_delta": -0.07865168539325851
+        },
+        "corrected_sample_ids": [
+          "rlhfv-002699",
+          "rlhfv-000541",
+          "rlhfv-000042",
+          "rlhfv-000307",
+          "rlhfv-000837",
+          "rlhfv-001347"
+        ],
+        "harmed_sample_ids": [
+          "rlhfv-000769",
+          "rlhfv-002182",
+          "rlhfv-000360",
+          "rlhfv-002738",
+          "rlhfv-000510",
+          "rlhfv-000079",
+          "rlhfv-003458",
+          "rlhfv-002821",
+          "rlhfv-004694",
+          "rlhfv-004956",
+          "rlhfv-000462",
+          "rlhfv-000969",
+          "rlhfv-000478"
+        ],
+        "natural_language_attribution": {
+          "summary": "The Split failed because the generated child criteria were too broad, triggering decisively on non-target samples where they performed worse than the parent (unrelated_scene_activation), and failed to correctly resolve even their own target clusters (low cluster accuracy). High sibling conflict indicates overlapping applicability domains that degraded overall precision.",
+          "failure_categories": [
+            "child_too_broad",
+            "unrelated_scene_activation",
+            "cluster_semantically_mixed"
+          ],
+          "details": [
+            "Children triggered on excessive non-target samples: 'visual_truth_over_task_assumptions' made 76 non-target decisions with 29 errors, and 'existence_and_action_verification' made 70 non-target decisions with 23 errors.",
+            "Target cluster accuracy was critically low: 'main_subject_composition_accuracy' achieved 0% accuracy on its 5 cluster samples, and 'visual_truth_over_task_assumptions' achieved only 40% on its 5 cluster samples.",
+            "High sibling conflict (30 conflicts) indicates the children's applicability conditions overlap significantly, causing inconsistent voting on samples outside their intended domains.",
+            "Net harm outweighed corrections: 13 samples were harmed (Parent correct, Specialized wrong) compared to only 6 corrected, driving specialized accuracy down to 0.618 from parent's 0.697."
+          ],
+          "avoid_next_time": [
+            "Tighten 'Applicable only when' conditions to reduce non-target activation; ensure coverage on non-cluster samples is minimal.",
+            "Verify cluster coherence before generating criteria; discard clusters where target samples show no consistent solvable pattern (e.g., 0% cluster accuracy).",
+            "Ensure mutual exclusivity between children's applicability domains to reduce sibling conflict and overlapping decisions."
+          ]
+        }
+      }
+    },
+    {
+      "epoch": 4,
+      "root_id": "init_03_factuality_no_hallucination",
+      "attempt": null,
+      "decision": "accepted_locked",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    },
+    {
+      "epoch": 4,
+      "root_id": "init_04_creativity_and_expressiveness",
+      "attempt": null,
+      "decision": "accepted_locked",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    },
+    {
+      "epoch": 4,
+      "root_id": "init_05_clarity_and_coherence",
+      "attempt": null,
+      "decision": "accepted_locked",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    },
+    {
+      "epoch": 5,
+      "root_id": "init_01_completeness_and_coverage",
+      "attempt": 5,
+      "decision": "accepted",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_05\\roots\\r01\\attempt_05",
+      "parent_accuracy": 0.6707317073170732,
+      "specialized_accuracy": 0.6951219512195121,
+      "accuracy_delta": 0.024390243902438935,
+      "elapsed_seconds": 1821.2030000000013,
+      "history_payload": null
+    },
+    {
+      "epoch": 5,
+      "root_id": "init_02_visual_grounding_and_details",
+      "attempt": 5,
+      "decision": "competition_rejected",
+      "competition_completed": true,
+      "attempt_dir": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase6_split_only_evolution_global_memory_v1\\epochs\\epoch_05\\roots\\r02\\attempt_05",
+      "parent_accuracy": 0.6966292134831461,
+      "specialized_accuracy": 0.6292134831460674,
+      "accuracy_delta": -0.0674157303370787,
+      "elapsed_seconds": 1618.4530000000013,
+      "history_payload": {
+        "structured_failure": {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        "cluster_summary": [
+          {
+            "cluster_id": "vg_sub_accurate_detail_rejection",
+            "label": "Accurate Fine-Grained Detail Rejection",
+            "sample_ids": [
+              "rlhfv-004979",
+              "rlhfv-002806",
+              "rlhfv-000042",
+              "rlhfv-004995",
+              "rlhfv-004571",
+              "rlhfv-001449",
+              "rlhfv-000307"
+            ]
+          },
+          {
+            "cluster_id": "vg_sub_hallucination_acceptance",
+            "label": "Hallucinated Content Acceptance",
+            "sample_ids": [
+              "rlhfv-002699",
+              "rlhfv-000085",
+              "rlhfv-000195",
+              "rlhfv-001002",
+              "rlhfv-000740",
+              "rlhfv-000449",
+              "rlhfv-001274",
+              "rlhfv-000628",
+              "rlhfv-001052"
+            ]
+          },
+          {
+            "cluster_id": "vg_sub_spatial_composition_misjudgment",
+            "label": "Spatial and Compositional Misjudgment",
+            "sample_ids": [
+              "rlhfv-002695",
+              "rlhfv-000082",
+              "rlhfv-002726",
+              "rlhfv-002829",
+              "rlhfv-000541",
+              "rlhfv-001347"
+            ]
+          },
+          {
+            "cluster_id": "vg_sub_visual_truth_vs_logic",
+            "label": "Visual Truth Versus Task Logic Conflict",
+            "sample_ids": [
+              "rlhfv-003046",
+              "rlhfv-004830",
+              "rlhfv-000764",
+              "rlhfv-000837",
+              "rlhfv-003218"
+            ]
+          }
+        ],
+        "children_summary": [
+          {
+            "cluster_id": "vg_sub_accurate_detail_rejection",
+            "criterion_name": "fine_grained_peripheral_grounding",
+            "description": "Criterion focus: Evaluates the accuracy and quality of visual grounding for elements that are small, peripheral, partially obscured, or distant, requiring careful inspection to verify.\n\nApplicable only when: Candidates differ on specific visual details that are easily overlooked due to size, position, or occlusion (e.g., background objects, obscured text, peripheral items, subtle pose variations), and the visual evidence supports the more detailed claim upon close examination.\n\nNot applicable when: The disputed detail is part of the main subject or clearly visible without careful inspection (handled by parent criterion or visual_attribute_verification), claims are demonstrably false (true hallucinations), or the visual evidence is too ambiguous to verify reliably.\n\nDecision rule: Prefer th"
+          },
+          {
+            "cluster_id": "vg_sub_hallucination_acceptance",
+            "criterion_name": "fluent_hallucination_detection",
+            "description": "Criterion focus: Detecting when evaluators incorrectly prefer fluent but factually incorrect descriptions containing hallucinated objects, actions, poses, or attribute bindings over sparse but truthful descriptions or correct identifications of absence.\n\nApplicable only when: One candidate makes specific claims about visual elements (objects, actions, poses, attribute bindings, scene composition) that are verifiably false upon image inspection, while another candidate either correctly identifies their absence, provides accurate but potentially sparser descriptions, or acknowledges visual ambiguity without inventing details.\n\nNot applicable when: Disagreements concern only object counts (handled by visual_counting_and_presence_verification),单一 visual attributes like color or text (handled b"
+          },
+          {
+            "cluster_id": "vg_sub_spatial_composition_misjudgment",
+            "criterion_name": "compositional_pattern_accuracy",
+            "description": "Criterion focus: Evaluates whether candidates accurately describe the compositional arrangement patterns of primary subjects (e.g., orderly vs. chaotic, clustered vs. scattered, hierarchical vs. equal) rather than imposing assumed orderliness or prioritizing background geometry over subject composition.\n\nApplicable only when: Candidates differ in their description of how primary subjects are arranged as a group within the scene, particularly when one candidate captures the actual compositional reality (chaotic, irregular, clustered) while the other imposes false orderliness, describes subjects as 'lined up' when they are mixed, or focuses on background elements instead of subject-to-subject relationships.\n\nNot applicable when: Disagreements concern only basic pairwise spatial relations lik"
+          },
+          {
+            "cluster_id": "vg_sub_visual_truth_vs_logic",
+            "criterion_name": "visual_truth_over_assumptions",
+            "description": "Criterion focus: Evaluates whether candidates prioritize observable visual evidence as the authoritative source of truth when it directly conflicts with prompt assumptions, false premises, or external knowledge expectations.\n\nApplicable only when: The prompt contains a premise, question structure, or expectation that is demonstrably contradicted by observable image content (e.g., presupposing non-existent objects, asking for reasons behind false attributes, or requiring a binary answer that conflicts with visual location), AND candidates differ in how they resolve this contradiction (e.g., one corrects the premise based on vision, the other complies with the prompt).\n\nNot applicable when: The prompt's premises are visually accurate, disagreements concern only internal text consistency with"
+          }
+        ],
+        "local_metrics": {
+          "parent_accuracy": 0.6966292134831461,
+          "specialized_accuracy": 0.6292134831460674,
+          "accuracy_delta": -0.0674157303370787
+        },
+        "corrected_sample_ids": [
+          "rlhfv-002699",
+          "rlhfv-002806",
+          "rlhfv-000541",
+          "rlhfv-000042",
+          "rlhfv-001052",
+          "rlhfv-000307",
+          "rlhfv-000837",
+          "rlhfv-001347",
+          "rlhfv-000740"
+        ],
+        "harmed_sample_ids": [
+          "rlhfv-000769",
+          "rlhfv-000360",
+          "rlhfv-002738",
+          "rlhfv-001045",
+          "rlhfv-000079",
+          "rlhfv-003458",
+          "rlhfv-000233",
+          "rlhfv-002821",
+          "rlhfv-004694",
+          "rlhfv-000932",
+          "rlhfv-002069",
+          "rlhfv-002720",
+          "rlhfv-004956",
+          "rlhfv-000478",
+          "rlhfv-000457"
+        ],
+        "natural_language_attribution": {
+          "summary": "The Split failed because two child criteria (visual_truth_vs_logic, spatial_composition_misjudgment) were ineffective on their target clusters (0.0 and 0.5 accuracy), while the other two (accurate_detail_rejection, hallucination_acceptance) were too broad, causing significant accuracy drops on non-target samples. The net result was a specialized accuracy (0.629) lower than the parent (0.697).",
+          "failure_categories": [
+            "child_too_broad",
+            "cluster_semantically_mixed",
+            "specialized_accuracy_below_parent"
+          ],
+          "details": [
+            "vg_sub_visual_truth_vs_logic achieved 0.0 cluster accuracy, failing to correct target samples like rlhfv-003046 and rlhfv-004830 which remained unchanged_wrong.",
+            "vg_sub_spatial_composition_misjudgment achieved only 0.5 cluster accuracy, failing to fix errors on samples like rlhfv-002695 and rlhfv-000082.",
+            "vg_sub_accurate_detail_rejection and vg_sub_hallucination_acceptance generated 56 combined non_target_wrong votes, causing 15 harmed samples where the parent criterion was originally correct.",
+            "Overall specialized accuracy dropped by 0.067 compared to the parent criterion due to the high volume of non-target errors outweighing target corrections."
+          ],
+          "avoid_next_time": [
+            "Regenerate clusters to ensure semantic coherence, as the logic and spatial clusters failed to produce actionable criteria for their target samples.",
+            "Tighten applicability conditions for detail and hallucination children to prevent activation on non-target samples where the parent is already correct.",
+            "Verify that child criteria achieve significantly higher accuracy than the parent on their specific target clusters to justify any loss in non-target performance."
+          ]
+        }
+      }
+    },
+    {
+      "epoch": 5,
+      "root_id": "init_03_factuality_no_hallucination",
+      "attempt": null,
+      "decision": "accepted_locked",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    },
+    {
+      "epoch": 5,
+      "root_id": "init_04_creativity_and_expressiveness",
+      "attempt": null,
+      "decision": "accepted_locked",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    },
+    {
+      "epoch": 5,
+      "root_id": "init_05_clarity_and_coherence",
+      "attempt": null,
+      "decision": "accepted_locked",
+      "parent_accuracy": null,
+      "specialized_accuracy": null,
+      "accuracy_delta": null
+    }
+  ],
+  "final_roots": [
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "criterion_name": "completeness_and_coverage",
+      "status": "accepted_locked",
+      "attempts": 5,
+      "children": [
+        "verified_existence_over_hallucinated_volume",
+        "verified_fine_grained_coverage"
+      ],
+      "parent_accuracy": 0.6707317073170732,
+      "specialized_accuracy": 0.6951219512195121,
+      "delta": 0.024390243902438935
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "criterion_name": "visual_grounding_and_details",
+      "status": "exhausted",
+      "attempts": 5,
+      "children": [],
+      "parent_accuracy": 0.6966292134831461,
+      "specialized_accuracy": 0.6292134831460674,
+      "delta": -0.0674157303370787
+    },
+    {
+      "root_id": "init_03_factuality_no_hallucination",
+      "criterion_name": "factuality_no_hallucination",
+      "status": "accepted_locked",
+      "attempts": 1,
+      "children": [
+        "visual_counting_and_presence_verification",
+        "visual_attribute_verification",
+        "spatial_relationship_and_perspective_verification",
+        "logical_consistency_and_prompt_adherence",
+        "grounded_specificity_verification"
+      ],
+      "parent_accuracy": 0.6024096385542169,
+      "specialized_accuracy": 0.6987951807228916,
+      "delta": 0.09638554216867468
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "criterion_name": "creativity_and_expressiveness",
+      "status": "accepted_locked",
+      "attempts": 3,
+      "children": [
+        "verified_presence_and_quantity_in_articulation",
+        "spatial_accuracy_over_expressive_confidence",
+        "task_intent_alignment_in_expressiveness"
+      ],
+      "parent_accuracy": 0.627906976744186,
+      "specialized_accuracy": 0.6395348837209303,
+      "delta": 0.011627906976744207
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "criterion_name": "clarity_and_coherence",
+      "status": "accepted_locked",
+      "attempts": 3,
+      "children": [
+        "spatial_and_quantitative_clarity",
+        "semantic_grounding_clarity"
+      ],
+      "parent_accuracy": 0.5632183908045977,
+      "specialized_accuracy": 0.5977011494252874,
+      "delta": 0.034482758620689724
+    }
+  ],
+  "discovery_m1": {
+    "init": {
+      "sample_count": 90,
+      "accuracy": 0.6555555555555556,
+      "coverage": 0.9666666666666667,
+      "covered_accuracy": 0.6781609195402298,
+      "tie_rate": 0.033333333333333326,
+      "predictions": [
+        "A",
+        "A",
+        "B",
+        "A",
+        "B",
+        "B",
+        "B",
+        "A",
+        "B",
+        "A",
+        "Tie",
+        "A",
+        "B",
+        "A",
+        "Tie",
+        "B",
+        "B",
+        "B",
+        "B",
+        "A",
+        "A",
+        "B",
+        "A",
+        "B",
+        "B",
+        "A",
+        "B",
+        "B",
+        "B",
+        "A",
+        "A",
+        "A",
+        "A",
+        "B",
+        "A",
+        "B",
+        "B",
+        "A",
+        "A",
+        "B",
+        "A",
+        "B",
+        "B",
+        "B",
+        "A",
+        "A",
+        "A",
+        "A",
+        "A",
+        "B",
+        "B",
+        "A",
+        "B",
+        "B",
+        "Tie",
+        "B",
+        "B",
+        "B",
+        "B",
+        "B",
+        "B",
+        "A",
+        "A",
+        "B",
+        "B",
+        "B",
+        "B",
+        "B",
+        "B",
+        "A",
+        "B",
+        "A",
+        "A",
+        "B",
+        "A",
+        "B",
+        "A",
+        "B",
+        "B",
+        "A",
+        "B",
+        "B",
+        "A",
+        "A",
+        "A",
+        "B",
+        "A",
+        "A",
+        "A",
+        "A"
+      ]
+    },
+    "final": {
+      "sample_count": 90,
+      "accuracy": 0.6333333333333333,
+      "coverage": 1.0,
+      "covered_accuracy": 0.6333333333333333,
+      "tie_rate": 0.0,
+      "predictions": [
+        "A",
+        "A",
+        "B",
+        "A",
+        "B",
+        "B",
+        "B",
+        "B",
+        "B",
+        "A",
+        "B",
+        "A",
+        "B",
+        "A",
+        "B",
+        "B",
+        "A",
+        "B",
+        "A",
+        "A",
+        "A",
+        "B",
+        "A",
+        "B",
+        "B",
+        "A",
+        "B",
+        "B",
+        "B",
+        "A",
+        "B",
+        "A",
+        "A",
+        "B",
+        "A",
+        "B",
+        "B",
+        "A",
+        "A",
+        "B",
+        "A",
+        "B",
+        "B",
+        "B",
+        "A",
+        "A",
+        "A",
+        "A",
+        "A",
+        "B",
+        "B",
+        "A",
+        "B",
+        "B",
+        "B",
+        "B",
+        "A",
+        "B",
+        "A",
+        "B",
+        "B",
+        "A",
+        "A",
+        "A",
+        "B",
+        "B",
+        "B",
+        "B",
+        "B",
+        "A",
+        "B",
+        "A",
+        "A",
+        "B",
+        "A",
+        "B",
+        "A",
+        "B",
+        "B",
+        "A",
+        "B",
+        "B",
+        "B",
+        "B",
+        "A",
+        "B",
+        "B",
+        "A",
+        "A",
+        "B"
+      ]
+    },
+    "paired": {
+      "corrected_count": 5,
+      "harmed_count": 7,
+      "net_corrected": -2,
+      "corrected_sample_ids": [
+        "rlhfv-000196",
+        "rlhfv-002720",
+        "rlhfv-000837",
+        "rlhfv-001347",
+        "rlhfv-000740"
+      ],
+      "harmed_sample_ids": [
+        "rlhfv-002182",
+        "rlhfv-002738",
+        "rlhfv-000510",
+        "rlhfv-003458",
+        "rlhfv-003450",
+        "rlhfv-000462",
+        "rlhfv-000457"
+      ],
+      "mcnemar_exact_two_sided_p": 0.7744140625
+    }
+  },
+  "retry_history": [
+    {
+      "root_id": "init_01_completeness_and_coverage",
+      "attempts": 5,
+      "decisions": [
+        "competition_rejected",
+        "competition_rejected",
+        "competition_rejected",
+        "competition_rejected",
+        "accepted"
+      ],
+      "failure_reasons": [
+        {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        null
+      ],
+      "metric_deltas": [
+        -0.04878048780487809,
+        -0.060975609756097615,
+        -0.04878048780487809,
+        -0.024390243902439046,
+        0.024390243902438935
+      ]
+    },
+    {
+      "root_id": "init_02_visual_grounding_and_details",
+      "attempts": 5,
+      "decisions": [
+        "competition_rejected",
+        "competition_rejected",
+        "competition_rejected",
+        "competition_rejected",
+        "competition_rejected"
+      ],
+      "failure_reasons": [
+        {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        }
+      ],
+      "metric_deltas": [
+        -0.0449438202247191,
+        -0.0674157303370787,
+        -0.03370786516853941,
+        -0.07865168539325851,
+        -0.0674157303370787
+      ]
+    },
+    {
+      "root_id": "init_04_creativity_and_expressiveness",
+      "attempts": 3,
+      "decisions": [
+        "competition_rejected",
+        "competition_rejected",
+        "accepted"
+      ],
+      "failure_reasons": [
+        {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        null
+      ],
+      "metric_deltas": [
+        -0.011627906976744207,
+        -0.011627906976744207,
+        0.011627906976744207
+      ]
+    },
+    {
+      "root_id": "init_05_clarity_and_coherence",
+      "attempts": 3,
+      "decisions": [
+        "competition_rejected",
+        "proposal_invalid",
+        "accepted"
+      ],
+      "failure_reasons": [
+        {
+          "code": "specialized_accuracy_below_parent",
+          "stage": "competition",
+          "details": {}
+        },
+        {
+          "code": "proposal_invalid",
+          "stage": "semantic_cluster",
+          "details": {
+            "stage": "semantic_cluster",
+            "raw_response": "\n\n{\n  \"clusters\": [\n    {\n      \"cluster_id\": \"clarity_fluency_over_grounding\",\n      \"label\": \"Fluency and Confidence Bias Over Visual Grounding\",\n      \"shared_failure\": \"Evaluators prioritize linguistic fluency, narrative smoothness, or confident tone over visual faithfulness, incorrectly rating hallucinated but fluent responses as 'clearer' than accurate but less polished ones.\",\n      \"distinction\": \"Focuses on cases where the text quality (flow, confidence) masks visual errors, leading evaluators to mistake a 'smooth lie' for clear communication.\",\n      \"sample_ids\": [\n        \"rlhfv-002726\",\n        \"rlhfv-000510\",\n        \"rlhfv-002699\",\n        \"rlhfv-000277\",\n        \"rlhfv-002824\",\n        \"rlhfv-004635\",\n        \"rlhfv-002806\",\n        \"rlhfv-004995\",\n        \"rlhfv-001052\",\n        \"rlhfv-002080\",\n        \"rlhfv-001103\",\n        \"rlhfv-001528\",\n        \"rlhfv-000287\",\n        \"rlhfv-000449\",\n        \"rlhfv-001002\",\n        \"rlhfv-000628\",\n        \"rlhfv-000307\",\n        \"rlhfv-003560\",\n        \"rlhfv-002802\",\n        \"rlhfv-000042\",\n        \"rlhfv-002069\",\n        \"rlhfv-004571\",\n        \"rlhfv-000932\",\n        \"rlhfv-002738\",\n        \"rlhfv-002695\",\n        \"rlhfv-003046\",\n        \"rlhfv-000082\",\n        \"rlhfv-002182\",\n        \"rlhfv-000195\",\n        \"rlhfv-001347\",\n        \"rlhfv-000740\",\n        \"rlhfv-002821\",\n        \"rlhfv-004830\",\n        \"rlhfv-000541\",\n        \"rlhfv-003218\",\n        \"rlhfv-001449\",\n        \"rlhfv-000196\"\n      ]\n    }\n  ],\n  \"unclustered_sample_ids\": []\n}",
+            "parse_error": "missing sample IDs: ['rlhfv-000478']",
+            "attempt_count": 2,
+            "metrics": {
+              "logical_evaluations": 1,
+              "api_attempts": 2,
+              "parse_retries": 1,
+              "input_tokens": 22722,
+              "output_tokens": 18219,
+              "total_tokens": 40941,
+              "usage_complete": true,
+              "call_latency_seconds": 158.35796290000144,
+              "estimated_cost_usd": null,
+              "cache_hits": 0,
+              "cache_misses": 0,
+              "error_count": 0
+            }
+          }
+        },
+        null
+      ],
+      "metric_deltas": [
+        -0.02298850574712641,
+        null,
+        0.034482758620689724
+      ]
+    }
+  ],
+  "history_evidence": {
+    "natural_reject_retry_observed": true,
+    "statement": "Natural reject→retry observed; inspect retry table."
+  },
+  "cost": {
+    "epochs": 5,
+    "attempts": 17,
+    "reused_v1_signature_artifacts": 0,
+    "manager_api_attempts": 85,
+    "manager_failed_api_attempts": 2,
+    "manager_usage_incomplete_artifacts": 0,
+    "manager_input_tokens": 871672,
+    "manager_output_tokens": 442971,
+    "manager_summed_latency_seconds": 4230.083295199996,
+    "evolution_epoch_wall_seconds": 15022.280999999999,
+    "pairwise_provenance_files": 16,
+    "pairwise_api_attempts": 4926,
+    "pairwise_usage_incomplete_calls": 0,
+    "pairwise_input_tokens": 0,
+    "pairwise_output_tokens": 0,
+    "pairwise_summed_latency_seconds": 108933.66113300006,
+    "reused_control_v2_signature_artifacts": 157
+  },
+  "final_rubric_sha256": "9565f3a7d5fa67ae8f8edd23f491d013f13427d12000724949e6740ef64b77f4",
+  "protocol": "global_rubric_v1",
+  "rubric_memory_epochs": [
+    {
+      "epoch": 0,
+      "rubric_memory_sha256": "5595171b72d9ceca41fa4b4529ae7e46e06293632110018eae1af06c87cf41c2",
+      "rubric_sha256": "88f831f700967c31d22941b2cc660d9b48034bb3310706fe3124781ba53a09c8",
+      "node_count": 5
+    },
+    {
+      "epoch": 1,
+      "rubric_memory_sha256": "5595171b72d9ceca41fa4b4529ae7e46e06293632110018eae1af06c87cf41c2",
+      "rubric_sha256": "88f831f700967c31d22941b2cc660d9b48034bb3310706fe3124781ba53a09c8",
+      "node_count": 5
+    },
+    {
+      "epoch": 2,
+      "rubric_memory_sha256": "026830d4818adf7b25e53215a4881cf0d29fc408f732ec9889a22807b43d0beb",
+      "rubric_sha256": "c875b400a05f119bee7affa39f2d9df3abcc85c113f6d0e2e5d898f2ba96364a",
+      "node_count": 10
+    },
+    {
+      "epoch": 3,
+      "rubric_memory_sha256": "026830d4818adf7b25e53215a4881cf0d29fc408f732ec9889a22807b43d0beb",
+      "rubric_sha256": "c875b400a05f119bee7affa39f2d9df3abcc85c113f6d0e2e5d898f2ba96364a",
+      "node_count": 10
+    },
+    {
+      "epoch": 4,
+      "rubric_memory_sha256": "e2b79daba03129b893099c87ce4f5e8a18ec79e5abbc38e01c96339963b8ed97",
+      "rubric_sha256": "92e11acffb6021ef431481466ac52781793fa7818cfd2eb7e80b1215fc66b3df",
+      "node_count": 15
+    },
+    {
+      "epoch": 5,
+      "rubric_memory_sha256": "e2b79daba03129b893099c87ce4f5e8a18ec79e5abbc38e01c96339963b8ed97",
+      "rubric_sha256": "92e11acffb6021ef431481466ac52781793fa7818cfd2eb7e80b1215fc66b3df",
+      "node_count": 15
+    }
+  ]
+}

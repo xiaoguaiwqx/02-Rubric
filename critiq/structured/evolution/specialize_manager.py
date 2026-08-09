@@ -11,8 +11,10 @@ from typing import Any, Mapping, Sequence
 from critiq.agent import AgentCallMetrics
 from critiq.specialize_prompts import (
     CHILD_GENERATION_PROMPT,
+    CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC,
     ERROR_SIGNATURE_PROMPT,
     SEMANTIC_CLUSTER_PROMPT,
+    SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC,
     SPLIT_FAILURE_ATTRIBUTION_PROMPT,
 )
 
@@ -20,8 +22,10 @@ from ..backend_pool import AvailableSlotBackendPool
 from ..schema import RubricNode
 from ..telemetry import ModelCallMetrics
 from ..version import (
+    CHILD_GENERATION_GLOBAL_RUBRIC_PROMPT_VERSION,
     CHILD_GENERATION_PROMPT_VERSION,
     ERROR_SIGNATURE_PROMPT_VERSION,
+    SEMANTIC_CLUSTER_GLOBAL_RUBRIC_PROMPT_VERSION,
     SEMANTIC_CLUSTER_PROMPT_VERSION,
     SEMANTIC_CLUSTER_PARSER_VERSION,
     SPLIT_FAILURE_ATTRIBUTION_PROMPT_VERSION,
@@ -71,7 +75,8 @@ class SpecializeManager:
                  clustering_request_kwargs: Mapping[str, Any] | None = None,
                  generation_request_kwargs: Mapping[str, Any] | None = None,
                  child_input_mode: str = "multimodal",
-                 image_field: str = "image_path") -> None:
+                 image_field: str = "image_path",
+                 rubric_memory_mode: str = "none") -> None:
         self.model = model
         self.backend_pool = backend_pool
         self.api_keys = api_keys
@@ -85,6 +90,9 @@ class SpecializeManager:
             raise ValueError("child_input_mode must be multimodal or text")
         self.child_input_mode = child_input_mode
         self.image_field = image_field
+        if rubric_memory_mode not in {"none", "global_rubric_v1"}:
+            raise ValueError("rubric_memory_mode must be none or global_rubric_v1")
+        self.rubric_memory_mode = rubric_memory_mode
         for stage, request in (
                 ("error-signature", self.analysis_request_kwargs),
                 ("semantic-clustering", self.clustering_request_kwargs),
@@ -107,20 +115,32 @@ class SpecializeManager:
             parser_version=parser_version)
 
     def request_specs(self) -> dict[str, SpecializeManagerRequestSpec]:
+        cluster_prompt = (SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC
+                          if self.rubric_memory_mode == "global_rubric_v1"
+                          else SEMANTIC_CLUSTER_PROMPT)
+        cluster_version = (SEMANTIC_CLUSTER_GLOBAL_RUBRIC_PROMPT_VERSION
+                           if self.rubric_memory_mode == "global_rubric_v1"
+                           else SEMANTIC_CLUSTER_PROMPT_VERSION)
+        child_prompt = (CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC
+                        if self.rubric_memory_mode == "global_rubric_v1"
+                        else CHILD_GENERATION_PROMPT)
+        child_version = (CHILD_GENERATION_GLOBAL_RUBRIC_PROMPT_VERSION
+                         if self.rubric_memory_mode == "global_rubric_v1"
+                         else CHILD_GENERATION_PROMPT_VERSION)
         return {
             "error_signature": self._spec(ERROR_SIGNATURE_PROMPT,
                                            self.analysis_request_kwargs,
                                            ERROR_SIGNATURE_PROMPT_VERSION),
             "semantic_cluster": self._spec(
-                                            SEMANTIC_CLUSTER_PROMPT,
+                                            cluster_prompt,
                                             self.clustering_request_kwargs,
-                                            SEMANTIC_CLUSTER_PROMPT_VERSION,
+                                            cluster_version,
                                             parser_version=SEMANTIC_CLUSTER_PARSER_VERSION),
             "child_generation": self._spec(
-                                            CHILD_GENERATION_PROMPT
+                                            child_prompt
                                             + f"\n[child_input_mode={self.child_input_mode}]",
                                             self.generation_request_kwargs,
-                                            CHILD_GENERATION_PROMPT_VERSION),
+                                            child_version),
             "split_failure_attribution": self._spec(
                                             SPLIT_FAILURE_ATTRIBUTION_PROMPT,
                                             self.clustering_request_kwargs,
@@ -194,16 +214,24 @@ class SpecializeManager:
 
     def cluster(self, signatures: Sequence[ErrorSignature], *, criterion_name: str,
                 min_cluster_size: int, max_clusters: int,
-                prior_failures: Sequence[Mapping[str, Any]] = ()) -> ClusterProposal:
+                prior_failures: Sequence[Mapping[str, Any]] = (),
+                rubric_memory: Mapping[str, Any] | None = None) -> ClusterProposal:
         if not signatures:
             raise ValueError("signatures must not be empty")
-        prompt = SEMANTIC_CLUSTER_PROMPT.format(
+        if self.rubric_memory_mode == "global_rubric_v1" and rubric_memory is None:
+            raise ValueError("global_rubric_v1 clustering requires rubric_memory")
+        prompt_template = (SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC
+                           if self.rubric_memory_mode == "global_rubric_v1"
+                           else SEMANTIC_CLUSTER_PROMPT)
+        prompt = prompt_template.format(
             criterion_name=criterion_name, min_cluster_size=min_cluster_size,
             max_clusters=max_clusters,
             signatures_json=json.dumps([item.to_dict() for item in signatures],
                                        indent=2, ensure_ascii=False),
             split_failure_history_json=json.dumps(list(prior_failures), indent=2,
-                                                  ensure_ascii=False))
+                                                  ensure_ascii=False),
+            rubric_memory_json=json.dumps(rubric_memory, indent=2,
+                                          ensure_ascii=False))
         spec = self.request_specs()["semantic_cluster"]
         calls = []; last_raw = None; last_error = "invalid cluster proposal"
         total = self.structured_max_retries + 1
@@ -226,14 +254,20 @@ class SpecializeManager:
     def generate_child(self, *, parent: RubricNode, cluster: SemanticCluster,
                        signatures: Sequence[ErrorSignature], representative_rows: Sequence[Mapping[str, Any]],
                        siblings: Sequence[ChildCriterionProposal],
-                       prior_failures: Sequence[Mapping[str, Any]] = ()) -> ChildCriterionProposal:
+                       prior_failures: Sequence[Mapping[str, Any]] = (),
+                       rubric_memory: Mapping[str, Any] | None = None) -> ChildCriterionProposal:
+        if self.rubric_memory_mode == "global_rubric_v1" and rubric_memory is None:
+            raise ValueError("global_rubric_v1 child generation requires rubric_memory")
         representative_ids = tuple(str(row["sample_id"]) for row in representative_rows)
         representative_samples = [
             {"sample_id": str(row["sample_id"]), "question": row["question"],
              "A": row["A"], "B": row["B"], "gold": row.get("answer")}
             for row in representative_rows
         ]
-        prompt = CHILD_GENERATION_PROMPT.format(
+        prompt_template = (CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC
+                           if self.rubric_memory_mode == "global_rubric_v1"
+                           else CHILD_GENERATION_PROMPT)
+        prompt = prompt_template.format(
             criterion_name=parent.criterion.name,
             criterion_description=parent.criterion.description,
             cluster_json=json.dumps(cluster.to_dict(), indent=2, ensure_ascii=False),
@@ -246,7 +280,9 @@ class SpecializeManager:
                                                   ensure_ascii=False),
             representative_sample_ids=json.dumps(representative_ids, ensure_ascii=False),
             representative_samples_json=json.dumps(
-                representative_samples, indent=2, ensure_ascii=False))
+                representative_samples, indent=2, ensure_ascii=False),
+            rubric_memory_json=json.dumps(rubric_memory, indent=2,
+                                          ensure_ascii=False))
         spec = self.request_specs()["child_generation"]
         calls = []; last_raw = None; last_error = "invalid child proposal"
         total = self.structured_max_retries + 1

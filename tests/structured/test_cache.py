@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -59,6 +60,36 @@ def node_output():
 
 
 class JsonPredictionCacheTest(unittest.TestCase):
+    def test_compact_filename_avoids_windows_max_path_without_changing_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            full_name = "f" * 64 + ".json"
+            while len(str(root / "node" / full_name)) <= 260:
+                root /= "nested-cache-segment"
+            cache = JsonPredictionCache(root)
+            payload = node_cache_key_payload(
+                sample_fingerprint="e" * 64, criterion_name="c",
+                criterion_description="desc", request_spec=worker_spec(),
+            )
+            digest = canonical_sha256(payload)
+            compact_path = cache._path("node", digest)
+            legacy_path = cache._legacy_path("node", digest)
+            self.assertGreater(len(str(legacy_path)), 260)
+            self.assertLess(len(str(compact_path)), 260)
+
+            real_replace = os.replace
+
+            def windows_limited_replace(source, target):
+                if len(os.fspath(target)) > 260:
+                    raise FileNotFoundError("simulated Windows MAX_PATH")
+                return real_replace(source, target)
+
+            with patch("critiq.structured.cache.os.replace", side_effect=windows_limited_replace):
+                cache.put_node(payload, node_output(), ModelCallMetrics())
+            stored = json.loads(compact_path.read_text(encoding="utf-8"))
+            self.assertEqual(digest, stored["key_sha256"])
+            self.assertEqual(node_output(), cache.get_node(payload).output)
+
     def test_atomic_cache_temp_name_does_not_repeat_long_cache_key(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / ("long-cache-directory-" * 4)
@@ -116,12 +147,30 @@ class JsonPredictionCacheTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             cache = JsonPredictionCache(directory)
             cache.put_node(first, node_output(), ModelCallMetrics())
-            path = Path(directory) / "node" / f"{canonical_sha256(first)}.json"
+            path = cache._path("node", canonical_sha256(first))
             value = json.loads(path.read_text(encoding="utf-8"))
             value["key_sha256"] = "0" * 64
             path.write_text(json.dumps(value), encoding="utf-8")
             with self.assertRaises(CacheCorruptionError):
                 cache.get_node(first)
+
+    def test_legacy_full_digest_filename_remains_readable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = JsonPredictionCache(directory)
+            payload = node_cache_key_payload(
+                sample_fingerprint="e" * 64, criterion_name="legacy",
+                criterion_description="desc", request_spec=worker_spec(),
+            )
+            metrics = ModelCallMetrics(logical_evaluations=1, api_attempts=1)
+            cache.put_node(payload, node_output(), metrics)
+            digest = canonical_sha256(payload)
+            compact = cache._path("node", digest)
+            legacy = cache._legacy_path("node", digest)
+            compact.replace(legacy)
+
+            restored = cache.get_node(payload)
+            self.assertEqual(node_output(), restored.output)
+            self.assertEqual((metrics,), cache.generation_provenance("node"))
 
     def test_online_node_backend_cold_warm_and_refresh(self):
         class FakeEvaluator:

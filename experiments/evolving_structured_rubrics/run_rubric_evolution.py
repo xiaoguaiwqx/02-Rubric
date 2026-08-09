@@ -22,6 +22,19 @@ Five-root Split-only evolution (397B Manager, Pairwise only on 8001):
     Invoke-EvolutionStage "split-evolution-final-report"
 
 Artifacts are isolated under ``$output/phase6_split_only_evolution_v2``; v1 is read-only.
+
+Manager Global-Rubric Memory ablation (reuses completed v2 signatures read-only):
+
+    Invoke-EvolutionStage "split-memory-freeze"
+    Invoke-EvolutionStage "split-memory-smoke"
+    Invoke-EvolutionStage "split-memory-run"
+    Invoke-EvolutionStage "split-memory-report"
+    Invoke-EvolutionStage "split-memory-heldout"
+    Invoke-EvolutionStage "split-memory-final-report"
+
+Treatment artifacts are isolated under
+``$output/phase6_split_only_evolution_global_memory_v1``. The heldout stage is
+exploratory and must be run only after the discovery report freezes the final Rubric.
 Evolving Structured Rubrics 的 Phase 5 与 Phase 6B 实验入口。
 
 当前 Split v2 完整运行脚本（397B Manager；Pairwise Worker 仅使用本地 8001）：
@@ -280,7 +293,8 @@ def _config(path: Path) -> dict[str, Any]:
         "heldout_dataset_sha256", "backend_pool", "worker_request_kwargs",
         "structured_max_retries", "api_retry_attempts", "evolution_policy",
     }
-    optional_fields = {"specialize_managers", "split_evolution"}
+    optional_fields = {"specialize_managers", "split_evolution",
+                       "split_manager_memory_ablation"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -305,6 +319,7 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value = dict(config)
     value.pop("specialize_managers", None)
     value.pop("split_evolution", None)
+    value.pop("split_manager_memory_ablation", None)
     return value
 
 
@@ -452,7 +467,8 @@ def _inspect_endpoints(config: Mapping[str, Any], spec: BackendPoolSpec) -> list
         max_model_len=config["max_model_len"], spec=spec)
 
 
-def _manager_runtime(config: Mapping[str, Any], stage: str):
+def _manager_runtime(config: Mapping[str, Any], stage: str, *,
+                     rubric_memory_mode: str = "none"):
     profile = _specialize_profiles(config)[stage]
     spec = BackendPoolSpec.from_dict(profile["backend_pool"])
     identity = profile["vllm_identity"]
@@ -482,6 +498,7 @@ def _manager_runtime(config: Mapping[str, Any], stage: str):
         generation_request_kwargs=(request if stage == "child_generation"
                                    else SPECIALIZE_MANAGER_POLICY["generation_request_kwargs"]),
         child_input_mode=profile["input_mode"],
+        rubric_memory_mode=rubric_memory_mode,
     )
     public_profile = {
         "model": profile["model"], "backend_pool": spec.to_dict(),
@@ -489,6 +506,8 @@ def _manager_runtime(config: Mapping[str, Any], stage: str):
         "request_kwargs": request,
         "vllm_identity": identity,
     }
+    if rubric_memory_mode != "none":
+        public_profile["rubric_memory_mode"] = rubric_memory_mode
     return manager, pool, public_profile, endpoint_identities
 
 
@@ -2871,7 +2890,9 @@ def main() -> int:
         "specialize-freeze", "specialize-signatures", "specialize-cluster",
         "specialize-propose", "specialize-evaluate", "specialize-report",
         "split-evolution-repair-audit", "split-evolution-freeze", "split-evolution-smoke", "split-evolution-run", "split-evolution-report",
-        "split-evolution-heldout", "split-evolution-final-report"))
+        "split-evolution-heldout", "split-evolution-final-report",
+        "split-memory-freeze", "split-memory-smoke", "split-memory-run",
+        "split-memory-report", "split-memory-heldout", "split-memory-final-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -2906,7 +2927,7 @@ def main() -> int:
         "specialize-evaluate": lambda: specialize_evaluate(config, output),
         "specialize-report": lambda: specialize_report(config, output),
     }
-    if args.stage.startswith("split-evolution-"):
+    if args.stage.startswith(("split-evolution-", "split-memory-")):
         from .split_evolution import run_stage
         run_stage(config, output, args.stage)
     else:

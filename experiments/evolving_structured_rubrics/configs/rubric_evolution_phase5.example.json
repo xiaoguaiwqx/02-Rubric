@@ -110,6 +110,14 @@
     "reuse_signatures_if_parent_unchanged": true,
     "heldout_access": "final_stage_only"
   },
+  "split_manager_memory_ablation": {
+    "variant": "global_rubric_v1",
+    "control_experiment_dir": "phase6_split_only_evolution_v2",
+    "memory_stages": ["semantic_cluster", "child_generation"],
+    "refresh": "epoch_start_committed_rubric",
+    "signature_source": "control_read_only_exact_identity",
+    "heldout_protocol": "reuse_exploratory"
+  },
   "evolution_policy": {
     "policy_version": "phase5-v2",
     "trigger_thresholds": {

@@ -661,6 +661,8 @@ $$
 
 ## 10.2 Root、Split-only 多 Epoch 演化实验
 
+Commit：`29b7523 feat: add multi-epoch split evolution`
+
 ```mermaid
 flowchart TD
     base["冻结基础实验<br/>rubric_evolution_phase5<br/>5个初始Root + discovery-90"]
@@ -803,14 +805,86 @@ Invoke-EvolutionStage "split-evolution-final-report"
 | 最终等权五-root M1 | 65.56% / 100.00% | 69.40% / 99.40% |
 | 最终重加权 M1（Visual Grounding=0.40；其余各=0.15） | — | **70.20% / 99.60%** |
 
-最终等权模型在 heldout-500 上增加 22 个净正确样本（corrected=52，harmed=30，exact McNemar `p=0.0198`）。Visual Grounding 父准则加其 children 单独投票也达到 69.40% ACC；将其权重提升至 0.40 后，冻结预测的后验重聚合达到 351/500（70.20%，较等权 +0.8 pp）。这支持该数据划分主要受视觉事实 grounding 驱动。
+最终等权模型在 heldout-500 上增加 22 个净正确样本（corrected=52，harmed=30，exact McNemar `p=0.0198`）。Visual Grounding 父准则加其 children 单独投票也达到 69.40% ACC；将其权重提升至 0.40 后，冻结预测的后验重聚合达到 351/500（70.20%，较等权 +0.8 pp）。这说明该数据划分可能主要受视觉事实 grounding 驱动。
 
-需要严格区分：重加权结果是在 heldout 预测已产生后进行的诊断性重聚合，不是预注册的 confirmatory heldout 指标，不能据此再选择最终权重；后续应在新的 validation/test 划分上冻结该权重并复验。discovery 的全局 ACC 未提升，说明当前证据支持 Split 改善 heldout 泛化与覆盖，但尚不足以证明多轮局部优化稳定提升 discovery 全局 M1。
+需要严格区分：discovery 的全局 ACC 未提升，说明当前证据支持 Split 改善 heldout 泛化与覆盖，但尚不足以证明多轮局部优化稳定提升 discovery 全局 M1。
 
 实验产物：[最终报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_v2/final_report.md)、[discovery 报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_v2/final/discovery_report.json)、[heldout 报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_v2/heldout500/report.json)。
 
 
 
+---
+
+## 10.3 Manager Global-Rubric Memory Ablation
+
+验证唯一核心假设：
+
+> 在 Split-only 演化中，给 clustering 与 child-generation Manager 提供每个 epoch 最新的完整 Rubric，能否提高最终五-root 等权 M1 ACC。Control 为 10.2 节的 `phase6_split_only_evolution_v2`，Treatment 为 `phase6_split_only_evolution_global_memory_v1`；两者复用完全相同的 ErrorSignatures，Split 触发、竞争、投票和接受条件保持不变。
+
+```shell
+$ErrorActionPreference = "Stop"
+
+$python = (Get-Command python).Source
+$module = "experiments.evolving_structured_rubrics.run_rubric_evolution"
+$config = "experiments/evolving_structured_rubrics/configs/local/rubric_evolution_phase5_8001.json"
+$output = "output/evolving_structured_rubrics/rubric_evolution_phase5"
+
+function Invoke-MemoryStage([string]$stage) {
+    Write-Host "`n===== $stage =====" -ForegroundColor Cyan
+
+    & $python -m $module `
+        --config $config `
+        --output-dir $output `
+        $stage
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "$stage failed with exit code $LASTEXITCODE"
+    }
+}
+
+# 先运行冻结和单-root smoke：
+Invoke-MemoryStage "split-memory-freeze"
+Invoke-MemoryStage "split-memory-smoke"
+
+# 确认 smoke 正常后，运行完整的 5-root、3–5 epoch 演化：
+Invoke-MemoryStage "split-memory-run"
+Invoke-MemoryStage "split-memory-report"
+
+# 最后运行 heldout-500 和最终 Control–Treatment 对照报告：
+Invoke-MemoryStage "split-memory-heldout"
+Invoke-MemoryStage "split-memory-final-report"
+
+```
+
+### 本次实验结果（`phase6_split_only_evolution_global_memory_v1`）
+
+实验完成 5 个 epoch、17 次 Split attempt。4/5 个 roots 接受完整 children 集合，`visual_grounding_and_details` 在 5 次失败后保持 parent-only；最终 rubric 从 5 个节点增长至 17 个节点（新增 12 个 children）。Treatment 全程只读复用 Control v2 的 157 条 ErrorSignatures，没有重新生成签名；Rubric memory 按 epoch 从 5 个节点更新到 10、15 个节点，并在最终形成 17 个节点，符合“本轮同步提交、下一轮可见”的冻结协议。
+
+| Root | 最终状态 | 接受轮次 | children 数 | discovery 局部 Parent → Specialized ACC | heldout parent-scope Parent → Specialized ACC |
+|---|---|---:|---:|---:|---:|
+| Completeness | accepted | 5 | 2 | 67.07% → 69.51% | 65.09% → **72.41%** |
+| Visual Grounding | exhausted | — | 0 | 69.66% → 62.92%（最终失败） | 保持 parent-only |
+| Factuality | accepted | 1 | 5 | 60.24% → **69.88%** | 66.24% → **70.70%** |
+| Creativity | accepted | 3 | 3 | 62.79% → 63.95% | 62.12% → **69.45%** |
+| Clarity | accepted | 3 | 2 | 56.32% → 59.77% | 60.21% → **66.88%** |
+
+所有在 discovery-90 上被接受的 subtrees 均在 heldout parent scope 上保持正向增益，说明局部 `Specialized ACC >= Parent ACC` 竞争能够筛出具有泛化价值的 children。失败历史也在自然轨迹中发挥了作用：Completeness 的 children 数量从 4 条逐步收缩到 2 条，局部 delta 从负值改善为 +2.44 pp，并在第 5 轮成功接受。
+
+| 系统 | discovery-90 ACC / Coverage | heldout-500 ACC / Coverage | heldout 正确数 | Final children / nodes |
+|---|---:|---:|---:|---:|
+| 初始五-root M1 | 65.56% / 96.67% | 65.00% / 97.20% | 325 | 0 / 5 |
+| Control v2（无全局 memory, 10.2实验） | 65.56% / 100.00% | 69.40% / 99.40% | 347 | 14 / 19 |
+| Global-Rubric Memory | 63.33% / 100.00% | **70.00% / 98.60%** | **350** | **12 / 17** |
+
+Treatment 相对初始五-root 在 heldout-500 上提升 5.0 pp，增加 25 个净正确样本（corrected=44，harmed=19，exact McNemar `p=0.00223`）。相对 Control v2，Treatment 进一步增加 3 个正确样本（+0.6 pp），同时用更小的 rubric 获得最高等权 M1 ACC。两者的 lexical near-duplicate pairs 从 14 对减少到 7 对；考虑 children 总数后的重复率由 15.4% 降至 10.6%，说明全局 Rubric 上下文能够帮助 Manager 感知已有准则边界，减少冗余生成。
+
+该对照只有单条演化轨迹，Treatment 与 Control 的直接配对差异为 corrected=30、harmed=27（McNemar `p=0.791`），且 heldout-500 已被前序实验使用，因此不把 memory 的 +0.6 pp 作为独立研究贡献。这里采用更务实的结论：Global-Rubric Memory 在没有修改 Split 核心机制的情况下取得了数值最优 ACC、减少了最终节点和近重复准则，并为后续 Manager 提供了完整的当前 Rubric 状态，适合作为默认基础设施。
+
+**后续默认设置**：除专门研究 Manager memory 的消融实验外，后续 Split、Define 及其他 Manager 算子均启用 `global_rubric_v1`，向 Manager 提供每个 epoch 起始时最新的 roots、nodes、edges、criterion name 和 description；不提供 examples、预测、gold、ACC 或 heldout 信息。同一 epoch 内尚未提交的 candidates 仍不可见，accepted children 从下一 epoch 开始进入全局 memory。
+
+**Split v1 冻结结论**：当前触发条件、ErrorSignature/聚类/children 生成流程、固定 parent scope 上的 Specialized Accuracy 竞争、整组接受与 parent 回退、失败归因历史以及 `global_rubric_v1` memory contract 共同构成冻结的 Split v1。后续算子直接复用该协议；若需要修改上述语义，必须提升协议版本并使用新的实验目录，不得覆盖本节结果。
+
+实验产物：[最终报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_global_memory_v1/final_report.md)、[discovery 报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_global_memory_v1/final/discovery_report.json)、[heldout 报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_global_memory_v1/heldout500/report.json)。
 
 
 ---
