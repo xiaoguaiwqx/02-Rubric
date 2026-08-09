@@ -817,6 +817,10 @@ Invoke-EvolutionStage "split-evolution-final-report"
 
 ## 10.3 Manager Global-Rubric Memory Ablation
 
+```
+e2051b4 feat: freeze split v1 with global rubric memory
+```
+
 验证唯一核心假设：
 
 > 在 Split-only 演化中，给 clustering 与 child-generation Manager 提供每个 epoch 最新的完整 Rubric，能否提高最终五-root 等权 M1 ACC。Control 为 10.2 节的 `phase6_split_only_evolution_v2`，Treatment 为 `phase6_split_only_evolution_global_memory_v1`；两者复用完全相同的 ErrorSignatures，Split 触发、竞争、投票和接受条件保持不变。
