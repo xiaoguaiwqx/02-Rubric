@@ -1,0 +1,100 @@
+flowchart TD
+    source["冻结来源<br/>Split-only + Global Memory 最终Rubric<br/>discovery-90预测与feedback"]
+    manager["Refine Manager<br/>Qwen3.5-397B-A17B<br/>global_rubric_v1"]
+    worker["Pairwise Worker<br/>Qwen3-VL-8B-Instruct · P05<br/>仅使用8001"]
+    freeze["refine-freeze<br/>冻结source hashes、目标node、数据、<br/>Global Memory与request identity"]
+    target["Forced smoke目标<br/>verified_existence_over_hallucinated_volume<br/>ACC=0.5062 · Coverage=0.9000 · Support=81"]
+    trigger{"正式Refine触发?<br/>0.55 < ACC < 0.80<br/>Coverage ≤ 0.80 · Support ≥ 15"}
+    forced["本案例不满足自动触发<br/>记录forced=true<br/>只绕过trigger，不绕过竞争"]
+
+    subgraph refine_core["Refine v1 核心流程（本实验重点）"]
+        direction LR
+        evidence["构建错误反馈证据<br/>全部decisive-wrong：question/A/B/gold/vote/thought<br/>最多6 correct + 6 abstain边界样本"]
+        visual["固定多模态代表样本<br/>3 wrong + 2 correct + 1 abstain<br/>类别不足时不跨类别补齐"]
+        memory["Epoch-start Global Rubric Memory<br/>roots + nodes + edges<br/>仅name与description"]
+        history["读取当前node的Refine失败历史<br/>旧proposal、指标、行为变化、自然语言归因"]
+        generate["397B生成一个新description<br/>保持同一criterion语义与身份<br/>针对错误收紧适用边界"]
+        parser{"严格候选校验"}
+        invalid_proposal["proposal_invalid<br/>不形成候选<br/>仅保存结构化失败"]
+        candidate["构建Refine patch<br/>只upsert当前node<br/>ID/name/score/parent/edges/topology不变"]
+        evaluate["仅刷新目标node × discovery-90<br/>Worker只读取新description<br/>其余node预测逐项复用"]
+        metrics["分别计算old/new selective ACC<br/>各自只以有效A/B支持集为分母<br/>同时记录None转移与corrected/harmed"]
+        compare{"Acc(new) > Acc(old)<br/>且 Support(new) ≥ 15?"}
+        accept["ACCEPT<br/>接纳新description"]
+        attribute["397B失败归因<br/>宽泛、过度None、视觉错误、方向反转、<br/>代表样本过拟合、sibling冲突或行为未变"]
+        attr_state{"归因成功且schema有效?"}
+        pause["网络失败：paused<br/>不提交rejection历史<br/>恢复后继续同一归因"]
+        attr_invalid["连续schema-invalid<br/>attribution_invalid<br/>不伪装成完整失败历史"]
+        reject["competition_rejected<br/>保存完整结构化历史<br/>下一次Refine注入失败归因"]
+        diagnostic["仅诊断，不改变接受决定<br/>root-subtree固定scope Specialized ACC<br/>完整discovery M1 · coverage · overlap/conflict"]
+
+        evidence --> generate
+        visual --> generate
+        memory --> generate
+        history --> generate
+        generate --> parser
+        parser -- "不合法" --> invalid_proposal
+        parser -- "合法" --> candidate --> evaluate --> metrics --> compare
+        metrics -. "并行诊断" .-> diagnostic
+        compare -- "是" --> accept
+        compare -- "否" --> attribute --> attr_state
+        attr_state -- "网络失败" --> pause
+        attr_state -- "schema无效" --> attr_invalid
+        attr_state -- "成功" --> reject
+        reject -. "下一次attempt" .-> history
+    end
+
+    heldout["refine-smoke-heldout<br/>冻结同一candidate hash<br/>仅刷新该node的heldout-500预测"]
+    smoke_report{"refine-smoke-report<br/>Discovery严格提升且heldout<br/>node/subtree无明显反向退化?"}
+    stop["STOP_AND_DIAGNOSE<br/>分析失败模式<br/>修改prompt/evidence需提升协议版本"]
+    go["GO<br/>Refine v1 smoke通过"]
+
+    subgraph full_evolution["Smoke通过后的 Split + Refine 多 Epoch"]
+        direction LR
+        epoch_snapshot["Epoch-start committed Rubric<br/>同一Global Memory snapshot"]
+        split_track["Split v1<br/>仅初始roots · 高Coverage"]
+        refine_track["Refine v1<br/>当前roots与children · 低Coverage"]
+        sync["同步提交accepted patches<br/>新children下一Epoch才可Refine"]
+        loop{"至少3轮<br/>无eligible/retryable操作?<br/>最多5轮"}
+        final_eval["最终一次heldout-500<br/>Initial vs Split-only vs Split+Refine M1"]
+
+        epoch_snapshot --> split_track --> sync
+        epoch_snapshot --> refine_track --> sync
+        sync --> loop
+        loop -- "继续" --> epoch_snapshot
+        loop -- "结束" --> final_eval
+    end
+
+    source --> freeze --> target --> trigger
+    trigger -- "否：forced smoke" --> forced --> evidence
+    trigger -- "是：正式调度" --> evidence
+    manager -. "生成与归因" .-> generate
+    manager -.-> attribute
+    worker -. "单节点Pairwise" .-> evaluate
+    accept --> heldout
+    reject --> heldout
+    invalid_proposal --> stop
+    heldout --> smoke_report
+    smoke_report -- "否" --> stop
+    smoke_report -- "是" --> go --> epoch_snapshot
+
+    classDef input fill:#ECFDF5,stroke:#10B981,color:#111827,stroke-width:2px;
+    classDef manager fill:#EEF2FF,stroke:#4F46E5,color:#111827,stroke-width:2px;
+    classDef worker fill:#EFF6FF,stroke:#2563EB,color:#111827,stroke-width:2px;
+    classDef refine fill:#FAF5FF,stroke:#7C3AED,color:#111827,stroke-width:3px;
+    classDef decision fill:#FFF7ED,stroke:#EA580C,color:#111827,stroke-width:2px;
+    classDef success fill:#F0FDF4,stroke:#16A34A,color:#111827,stroke-width:2px;
+    classDef failure fill:#FEF2F2,stroke:#DC2626,color:#111827,stroke-width:2px;
+    classDef diagnostic fill:#F8FAFC,stroke:#64748B,color:#111827,stroke-width:2px,stroke-dasharray:5 3;
+
+    class source,freeze,target,epoch_snapshot input;
+    class manager,memory,history,generate,attribute manager;
+    class worker,evaluate worker;
+    class evidence,visual,candidate,metrics,refine_track refine;
+    class trigger,parser,compare,attr_state,smoke_report,loop decision;
+    class accept,heldout,go,sync,final_eval success;
+    class forced,invalid_proposal,pause,attr_invalid,reject,stop failure;
+    class diagnostic,split_track diagnostic;
+
+    style refine_core fill:#FCFAFF,stroke:#7C3AED,stroke-width:4px
+    style full_evolution fill:#F8FAFC,stroke:#64748B,stroke-width:2px

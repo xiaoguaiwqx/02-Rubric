@@ -34,7 +34,7 @@
 
 Treatment produced the highest equal-weight M1 ACC with a smaller final Rubric. Lexical near-duplicate pairs decreased from 14/91 possible Control pairs (15.4%) to 7/66 Treatment pairs (10.6%). The direct Treatment-Control difference is exploratory (`corrected=30`, `harmed=27`, McNemar `p=0.791`) and is not treated as a separate research contribution.
 
-Split v1 is frozen with its trigger, Manager generation stages, local Specialized Accuracy competition, whole-set acceptance/fallback, required failure-attribution history, and `global_rubric_v1` memory contract. Future Split, Define, and other Manager experiments use `global_rubric_v1` by default; changing frozen Split semantics requires a new protocol version and experiment directory.
+Split v1 is frozen with its trigger, Manager generation stages, local Specialized Accuracy competition, whole-set acceptance/fallback, required failure-attribution history, and `global_rubric_v1` memory contract. Future Split, Refine, and other Manager experiments use `global_rubric_v1` by default; changing frozen Split semantics requires a new protocol version and experiment directory.
 
 ## Review checklist
 

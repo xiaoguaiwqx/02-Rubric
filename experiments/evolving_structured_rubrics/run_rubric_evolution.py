@@ -294,7 +294,8 @@ def _config(path: Path) -> dict[str, Any]:
         "structured_max_retries", "api_retry_attempts", "evolution_policy",
     }
     optional_fields = {"specialize_managers", "split_evolution",
-                       "split_manager_memory_ablation"}
+                       "split_manager_memory_ablation", "refine_manager",
+                       "refine_operator"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -320,6 +321,8 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("specialize_managers", None)
     value.pop("split_evolution", None)
     value.pop("split_manager_memory_ablation", None)
+    value.pop("refine_manager", None)
+    value.pop("refine_operator", None)
     return value
 
 
@@ -2892,7 +2895,11 @@ def main() -> int:
         "split-evolution-repair-audit", "split-evolution-freeze", "split-evolution-smoke", "split-evolution-run", "split-evolution-report",
         "split-evolution-heldout", "split-evolution-final-report",
         "split-memory-freeze", "split-memory-smoke", "split-memory-run",
-        "split-memory-report", "split-memory-heldout", "split-memory-final-report"))
+        "split-memory-report", "split-memory-heldout", "split-memory-final-report",
+        "refine-freeze", "refine-smoke", "refine-smoke-heldout",
+        "refine-smoke-report", "split-refine-freeze", "split-refine-run",
+        "split-refine-report", "split-refine-heldout",
+        "split-refine-final-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -2929,6 +2936,9 @@ def main() -> int:
     }
     if args.stage.startswith(("split-evolution-", "split-memory-")):
         from .split_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith(("refine-", "split-refine-")):
+        from .refine_evolution import run_stage
         run_stage(config, output, args.stage)
     else:
         actions[args.stage]()

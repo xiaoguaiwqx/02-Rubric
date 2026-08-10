@@ -30,6 +30,23 @@ from .specialize_types import (
     SubtreeDiagnostic,
 )
 from .specialize_manager import SpecializeManager, SpecializeManagerFailure
+from .refine_manager import RefineManager, RefineManagerFailure
+from .refine import (
+    RefineParseError,
+    assemble_refined_pairwise_prediction,
+    build_refine_candidate,
+    detect_refine_trigger,
+    evaluate_refine_candidate,
+    parse_refine_failure_attribution_response,
+    parse_refine_proposal_response,
+)
+from .refine_types import (
+    RefineCandidate,
+    RefineEvaluation,
+    RefineNodeMetric,
+    RefineProposal,
+    RefineTriggerDecision,
+)
 from .types import (
     ArtifactRefreshPlan,
     CandidateAcceptancePolicy,
@@ -64,6 +81,14 @@ __all__ = [
     "RubricDiff",
     "RubricFeedback",
     "RubricPatch",
+    "RefineCandidate",
+    "RefineEvaluation",
+    "RefineManager",
+    "RefineManagerFailure",
+    "RefineNodeMetric",
+    "RefineParseError",
+    "RefineProposal",
+    "RefineTriggerDecision",
     "SemanticCluster",
     "SpecializeCandidate",
     "SpecializeEvaluation",
@@ -74,14 +99,18 @@ __all__ = [
     "SpecializeTriggerDecision",
     "SubtreeDiagnostic",
     "apply_rubric_patch",
+    "assemble_refined_pairwise_prediction",
     "assemble_specialized_pairwise_prediction",
     "build_specialize_candidate",
+    "build_refine_candidate",
     "criterion_fitness",
     "diff_rubrics",
     "detect_specialize_trigger",
+    "detect_refine_trigger",
     "deterministic_child_node_id",
     "evaluate_candidate",
     "evaluate_specialize_candidate",
+    "evaluate_refine_candidate",
     "execute_offline_m1",
     "extract_rubric_feedback",
     "plan_artifact_refresh",
@@ -89,5 +118,7 @@ __all__ = [
     "parse_cluster_proposal_response",
     "parse_error_signature_response",
     "parse_split_failure_attribution_response",
+    "parse_refine_failure_attribution_response",
+    "parse_refine_proposal_response",
     "project_pairwise_prediction",
 ]

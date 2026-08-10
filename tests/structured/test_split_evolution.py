@@ -10,7 +10,7 @@ from experiments.evolving_structured_rubrics.split_evolution import (
  SCIENTIFIC_ATTEMPT_OUTCOMES, TRANSPORT_FAILED, AttributionInvalid, TransportFailed,
  MEMORY_CONFIG_V1, MEMORY_PROTOCOL,
  _abort_program, _history_projection, _manager_failure_kind, _pause_transport, colliding_roots, merge_accepted_rubrics,
- _signatures, freeze_rubric_memory, rubric_memory_snapshot, root_shard,
+ _require_split_clusters, _signatures, freeze_rubric_memory, rubric_memory_snapshot, root_shard,
  _required_failure_attribution, non_degenerate_acceptance_check, require_heldout_treatment, retryable_roots,
  runtime_acceptance_policy, should_stop_after_epoch, signature_identity, validate_phase5_lineage, validate_policy)
 from critiq.structured import (EdgeCondition, ErrorSignature, ErrorSignatureOutput,
@@ -28,6 +28,16 @@ class SplitEvolutionStateTests(unittest.TestCase):
  def test_collision_rejects_all_owners(self):
   child=lambda n:SimpleNamespace(criterion_name=n);candidate=lambda *ns:SimpleNamespace(children=tuple(child(n) for n in ns))
   self.assertEqual(colliding_roots({'z':candidate('shared','z_only'),'a':candidate('shared','a_only')}),{'shared':['a','z']})
+ def test_single_semantic_cluster_is_a_retryable_proposal_failure(self):
+  cluster=SimpleNamespace(
+   clusters=(SimpleNamespace(cluster_id='one_mode'),),
+   unclustered_sample_ids=('s2',))
+  with self.assertRaises(split_module.ProposalInvalid) as raised:
+   _require_split_clusters(cluster)
+  self.assertEqual(raised.exception.stage,'semantic_cluster')
+  self.assertEqual(raised.exception.details,{
+   'reason':'insufficient_cluster_count','valid_clusters':1,
+   'required_minimum':2,'cluster_ids':['one_mode'],'unclustered_count':1})
  def test_signature_cache_identity(self):
   trigger={'decisive_wrong_sample_ids':['s1','s2']};spec={'model':'397b'};first=signature_identity('p',trigger,['A','B'],spec)
   self.assertEqual(first,signature_identity('p',trigger,['A','B'],spec));self.assertNotEqual(first,signature_identity('p',trigger,['B','B'],spec));self.assertNotEqual(first,signature_identity('p',{'decisive_wrong_sample_ids':['s1']},['A','B'],spec))

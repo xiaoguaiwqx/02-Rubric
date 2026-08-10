@@ -100,6 +100,46 @@
       "vllm_identity": null
     }
   },
+  "refine_manager": {
+    "model": "Qwen/Qwen3.5-397B-A17B",
+    "backend_pool": {
+      "pool_id": "siliconflow-qwen35-397b-refine-manager-v1",
+      "common_checkpoint_id": "Qwen/Qwen3.5-397B-A17B",
+      "global_request_concurrency": 1,
+      "endpoints": [
+        {
+          "endpoint_id": "siliconflow-cn",
+          "base_url": "https://api.siliconflow.cn/v1",
+          "checkpoint_root": "provider:Qwen/Qwen3.5-397B-A17B",
+          "max_concurrency": 1
+        }
+      ]
+    },
+    "api_key_env": "GUIJI_API_KEY",
+    "generation_request_kwargs": {
+      "temperature": 0.7,
+      "seed": 42,
+      "extra_body": {"enable_thinking": true, "thinking_budget": 8192}
+    },
+    "attribution_request_kwargs": {
+      "temperature": 0.2,
+      "seed": 42,
+      "extra_body": {"enable_thinking": true, "thinking_budget": 8192}
+    }
+  },
+  "refine_operator": {
+    "protocol_version": "refine-v1",
+    "rubric_memory_mode": "global_rubric_v1",
+    "max_description_chars": 1800,
+    "wrong_image_count": 3,
+    "correct_image_count": 2,
+    "abstain_image_count": 1,
+    "correct_text_count": 6,
+    "abstain_text_count": 6,
+    "candidate_count": 1,
+    "forced_smoke_target_node_id": "init_01_completeness_and_coverage__verified_existence_over_hallucinated_volume__dbf3c657ab",
+    "heldout_protocol": "exploratory_diagnostic_only"
+  },
   "split_evolution": {
     "candidate_scope": "initial_roots_only",
     "lock_root_after_accept": true,

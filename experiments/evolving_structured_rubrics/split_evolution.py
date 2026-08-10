@@ -333,6 +333,13 @@ def _history_projection(history,root):
 
 def _prior(history,root):return _history_projection(history,root)
 
+def _require_split_clusters(cluster):
+ if len(cluster.clusters)<2:
+  raise ProposalInvalid('semantic_cluster','Split requires at least two valid clusters',{
+   'reason':'insufficient_cluster_count','valid_clusters':len(cluster.clusters),
+   'required_minimum':2,'cluster_ids':[x.cluster_id for x in cluster.clusters],
+   'unclustered_count':len(cluster.unclustered_sample_ids)})
+
 def _signatures(target,manager,parent,trigger,node_feedback,rows_by_id,identity,spec,
                 protocol:EvolutionProtocol=CONTROL_PROTOCOL):
  cache=target/'signature_cache'/root_shard(parent.node_id)/identity[:16];cache.mkdir(parents=True,exist_ok=True);v1_cache=target.parent/'phase6_split_only_evolution_v1'/'signature_cache'/root_shard(parent.node_id)/identity[:16]
@@ -395,6 +402,7 @@ def _prepare(config,target,epoch_dir,root,attempt_no,rubric,pred,feedback,rows,h
   _write(d/'rubric_memory_ref.json',{'rubric_memory_mode':protocol.rubric_memory_mode,'rubric_memory_sha256':rubric_memory_sha256,'control_signature_source':CONTROL_EXPERIMENT_DIR,'semantic_cluster_request_spec':specs['semantic_cluster'],'child_generation_request_spec':specs['child_generation']})
  cluster=ClusterProposal.from_dict(load_json(cluster_path)) if cluster_path.exists() else managers['semantic_cluster'].cluster(tuple(signatures.values()),criterion_name=pname,min_cluster_size=thresholds['N_min_cluster'],max_clusters=t.remaining_capacity,prior_failures=prior,rubric_memory=rubric_memory)
  if not cluster_path.exists():_write(cluster_path,cluster.to_dict())
+ _require_split_clusters(cluster)
  children=[]
  for i,c in enumerate(cluster.clusters,1):
   reps=c.sample_ids[:3];child_path=d/'children'/f'{c.cluster_id}.json'

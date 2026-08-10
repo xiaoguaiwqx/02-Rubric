@@ -4,7 +4,7 @@
 
 Does exposing the latest committed Rubric to the Split clustering and child-generation Managers improve the final equal-weight five-root M1 accuracy?
 
-This is a clean Manager-memory ablation. Control is the completed `phase6_split_only_evolution_v2`; Treatment is `phase6_split_only_evolution_global_memory_v1`. Define, trigger conditions, Specialized Accuracy, acceptance, voting, Manager/Worker models, seed, and epoch policy remain unchanged.
+This is a clean Manager-memory ablation. Control is the completed `phase6_split_only_evolution_v2`; Treatment is `phase6_split_only_evolution_global_memory_v1`. Refine, trigger conditions, Specialized Accuracy, acceptance, voting, Manager/Worker models, seed, and epoch policy remain unchanged.
 
 ## 2. Frozen comparison
 

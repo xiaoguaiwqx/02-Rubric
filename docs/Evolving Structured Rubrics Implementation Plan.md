@@ -414,7 +414,7 @@ Gap 定义为：对样本 `s`，当前所有 node 都没有产生与 gold 相同
 - `cascade_failure`：M1 final 为 wrong/Tie；
 - `aggregation_conflict`：存在正确 decisive node，但 M1 final 仍为 wrong/Tie。
 
-旧版 Fitness 的长度与 coverage 惩罚仅保留为历史诊断。当前 Split 的硬接受标准不再使用加权 Fitness，而是在父准则固定适用域上直接比较 parent 与完整 children 集合的 Specialized Accuracy。长度交给后续 `define` 算子优化；coverage 过低由生存条件中的最小支持数处理。
+旧版 Fitness 的长度与 coverage 惩罚仅保留为历史诊断。当前 Split 的硬接受标准不再使用加权 Fitness，而是在父准则固定适用域上直接比较 parent 与完整 children 集合的 Specialized Accuracy。长度交给后续 `Refine` 算子优化；coverage 过低由生存条件中的最小支持数处理。
 
 父准则的固定适用域定义为其产生有效 decisive A/B 的样本集合：
 
@@ -455,7 +455,7 @@ $$
 \boxed{\operatorname{Acc}_{\mathrm{spec}}\ge\operatorname{Acc}_{\mathrm{parent}}}.
 $$
 
-每个 child 的 support、accuracy、coverage、cluster accuracy、非目标激活和 leave-one-out 影响继续记录，但只用于诊断与后续 `define`；全部 discovery 样本上的 M1 ACC、Coverage 也不参与 Split 的硬接受判定。
+每个 child 的 support、accuracy、coverage、cluster accuracy、非目标激活和 leave-one-out 影响继续记录，但只用于诊断与后续 `Refine`；全部 discovery 样本上的 M1 ACC、Coverage 也不参与 Split 的硬接受判定。
 
 ### 8.4 Patch 与 ArtifactRefreshPlan
 
@@ -492,7 +492,7 @@ max_children    = 5
 
 这些数值只产生 operator 候选，不直接决定接受。Split 的统计候选需满足 `accuracy < 0.70`、`coverage > 0.80`、`support >= 15`、`wrong >= 15`；Refine 候选需满足 `0.55 < accuracy < 0.80`、`coverage <= 0.80`、`support >= 15`。Pairwise Worker 在第一轮继续使用 P05（`temperature=0.5`）。
 
-接受规则按 operator 区分。Refine 与 Create 继续使用 discovery-90 M1 结果门槛；Split 仅比较同一父准则区域上的局部准确率：
+接受规则按 operator 区分。Refine 使用同一 node 改写前后的 selective accuracy 自竞争，Create 暂保留 discovery-90 M1 结果门槛；Split 仅比较同一父准则区域上的局部准确率：
 
 $$
 \operatorname{Acc}_{\mathrm{spec}}\ge\operatorname{Acc}_{\mathrm{parent}}.
@@ -500,7 +500,7 @@ $$
 
 条件成立时保留 parent，并整体接纳本次共同生成的 children；条件不成立时丢弃整组 children，Rubric 保持不变。完整 M1 accuracy、全局 coverage、corrected/harmed、child correction/harm、sibling conflict 和 final-valid rate 继续报告，但不参与 Split 硬接受判定。Rubric/Artifact 合法、数据隔离和 trace replay 仍是工程有效性前提。P05 每个候选只运行一次，不设置重复确认。
 
-trigger、operator-specific acceptance 和单次 P05 execution 共同写入版本化配置及 frozen manifest。Refine/Create 以 discovery-90 M1 为接受依据；Split 以 $\mathcal S(c_p)$ 上的 Specialized Accuracy 为接受依据，完整 M1 仅作为诊断。
+trigger、operator-specific acceptance 和单次 P05 execution 共同写入版本化配置及 frozen manifest。Refine 在 old/new 各自 A/B 支持集上比较 node accuracy，要求严格提升且新 support 不低于15；Split 以 $\mathcal S(c_p)$ 上的 Specialized Accuracy 为接受依据。Refine 的 subtree/M1 与 Split 的完整 M1 均只作诊断。
 
 ---
 
@@ -510,10 +510,13 @@ trigger、operator-specific acceptance 和单次 P05 execution 共同写入版�
 
 ### 9.1 Refine
 
-- 根据 node 的 wrong、abstain、Pairwise thought 和代表多模态样本，让 CritiQ-V Manager 先反思再生成两个 description 候选；
-- node ID、criterion name、root 顺序和 topology 不变；
-- 只刷新目标 node Pairwise outputs；
-- discovery-90 完整 M1 before/after 是唯一接受依据。
+- 自动触发条件为 `0.55 < accuracy < 0.80`、`coverage <= 0.80`、`support >= 15`；forced smoke 只能绕过触发器，不能绕过 schema、provenance 或竞争。
+- 397B Manager 根据全部 decisive-wrong、最多6条 correct/abstain 边界样本、固定的3/2/1多模态代表样本、历史失败归因和 epoch-start `global_rubric_v1` memory 生成一个 description 候选。
+- node ID、criterion name、score、parent、edges、root 顺序和 topology 不变；description 必须包含 `Criterion focus`、`Applicable only when`、`Not applicable when`、`Decision rule` 四段且不超过1800字符。
+- Pairwise Worker 只读取新 description；只刷新目标 node 的 discovery-90 outputs，其余节点预测逐项复用。
+- old/new criterion 分别在自己的有效 A/B 支持集上计算 selective accuracy。仅当 `Acc(new) > Acc(old)` 且 `support(new) >= 15` 时接受；平局拒绝。subtree、完整 M1、coverage、overlap/conflict 只作诊断。
+- 有效候选被拒绝后，必须先完成397B自然语言失败归因才能写入历史；transport failure 暂停并可恢复，连续 schema-invalid 不得伪装成完整失败历史。
+- 第一项实验固定为 `verified_existence_over_hallucinated_volume` 的 forced smoke，输出到 `phase7_refine_operator_v1/`；只有 discovery 严格提升且 heldout-500 未明显反向退化，才允许启动 `phase7_split_refine_evolution_v1/`。
 
 ### 9.2 Split
 
@@ -534,7 +537,7 @@ ErrorSignature 保存 task pattern、visual focus、candidate difference、paren
 
 Split 保留 parent，children 数量严格等于有效 cluster 数量，不设置目标数量：有效 cluster 少于2个则不触发 Split，存在2–5个则分别生成2–5个 children。`max_children=5` 只是结构上限，不允许为了达到上限强行拆分；超出上限的模式进入 unclustered。每个 child 包含 criterion name、description、1–3个对应 cluster 的代表 examples，以及 cluster lineage；examples 只供 Manager、lineage 和审计，Pairwise Worker 不读取 examples。第一版所有新 edges 固定为 `ALWAYS`，不同时优化 Gate/Child Router。无论 children 数量多少，整棵 root subtree 仍最多贡献一票。
 
-Split 竞争时不再对 child Fitness 求算术平均。完整 children 集合先按 A/B 多数产生 specialized vote；`None` 不参与，children 平票或全部 `None` 时回退 parent vote。Parent Accuracy 与 Specialized Accuracy 都只在 freeze 时确定的父准则区域 $\mathcal{S}(c_p)$ 上计算，且使用相同分母。若 `specialized_accuracy >= parent_accuracy`，保留 parent 并整体接纳 children；否则整体回退。不能因为某个 child 较弱而单独删除它，较弱 child 留给后续 `define` 优化。
+Split 竞争时不再对 child Fitness 求算术平均。完整 children 集合先按 A/B 多数产生 specialized vote；`None` 不参与，children 平票或全部 `None` 时回退 parent vote。Parent Accuracy 与 Specialized Accuracy 都只在 freeze 时确定的父准则区域 $\mathcal{S}(c_p)$ 上计算，且使用相同分母。若 `specialized_accuracy >= parent_accuracy`，保留 parent 并整体接纳 children；否则整体回退。不能因为某个 child 较弱而单独删除它，较弱 child 留给后续 `Refine` 优化。
 
 每次 Split 都写入版本化 history；失败项完整保存 parent、Error Signatures、聚类、children、局部 parent/specialized 指标、父区域逐样本预测、corrected/harmed IDs、结构化失败原因，以及 397B Manager 生成的自然语言失败归因。归因需要指出聚类混杂、child 太宽泛、视觉事实错误、偏好方向写反、children 重复或无关场景激活等具体问题，并给出下一次应避免的做法。同一 parent 下一次 Split 时，语义聚类和 child generation 都读取这些历史；历史只用于避免重复失败方案，不覆盖当前数据上的竞争结果。
 
@@ -642,7 +645,7 @@ $$
 | 四个 children 全部投票 | 210 / 470 | 44.7% |
 | Sibling A/B 冲突 | 137 / 470 | 29.1% |
 
-当前 children 更接近多个高度重叠的视觉评审器，而不是边界清晰、互斥的语义子区域；Pairwise Worker 对 `Applicable only when` 的执行仍然偏宽。该问题不在 Split 阶段通过删除较弱 child 解决，而交由后续 `define` 算子收紧描述和适用性。重叠也产生了有效 ensemble 收益：在 137 个 sibling 冲突样本上，Parent Accuracy 为 `0.526`，完整 children 子树为 `0.642`。
+当前 children 更接近多个高度重叠的视觉评审器，而不是边界清晰、互斥的语义子区域；Pairwise Worker 对 `Applicable only when` 的执行仍然偏宽。该问题不在 Split 阶段通过删除较弱 child 解决，而交由后续 `Refine` 算子收紧描述和适用性。重叠也产生了有效 ensemble 收益：在 137 个 sibling 冲突样本上，Parent Accuracy 为 `0.526`，完整 children 子树为 `0.642`。
 
 #### 结论与边界
 
@@ -652,7 +655,7 @@ $$
 
 - `all_children=0.704` 是“Visual 子树作为唯一 root”的独立结果，不等价于“将 children 接入完整 M1 后”的系统结果；
 - 结果说明视觉子树具有较强判别能力，但尚不能单独证明“先判断 Visual Grounding、再执行其他 roots”的层级因果机制；
-- children 仍有适用范围过宽和输出偏向 B 的风险，需要在新开发集上由 `define` 与位置交换诊断继续验证；
+- children 仍有适用范围过宽和输出偏向 B 的风险，需要在新开发集上由 `Refine` 与位置交换诊断继续验证；
 - heldout-500 已作为一次性 final evaluation 使用，不得再依据该报告选择、删除或改写 children；后续完整 M1 集成实验必须使用新的验证划分。
 
 实验 artifact：`output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_signature_qwen35_397b/heldout_visual_only/report.json`。
@@ -884,7 +887,7 @@ Treatment 相对初始五-root 在 heldout-500 上提升 5.0 pp，增加 25 个�
 
 该对照只有单条演化轨迹，Treatment 与 Control 的直接配对差异为 corrected=30、harmed=27（McNemar `p=0.791`），且 heldout-500 已被前序实验使用，因此不把 memory 的 +0.6 pp 作为独立研究贡献。这里采用更务实的结论：Global-Rubric Memory 在没有修改 Split 核心机制的情况下取得了数值最优 ACC、减少了最终节点和近重复准则，并为后续 Manager 提供了完整的当前 Rubric 状态，适合作为默认基础设施。
 
-**后续默认设置**：除专门研究 Manager memory 的消融实验外，后续 Split、Define 及其他 Manager 算子均启用 `global_rubric_v1`，向 Manager 提供每个 epoch 起始时最新的 roots、nodes、edges、criterion name 和 description；不提供 examples、预测、gold、ACC 或 heldout 信息。同一 epoch 内尚未提交的 candidates 仍不可见，accepted children 从下一 epoch 开始进入全局 memory。
+**后续默认设置**：除专门研究 Manager memory 的消融实验外，后续 Split、Refine 及其他 Manager 算子均启用 `global_rubric_v1`，向 Manager 提供每个 epoch 起始时最新的 roots、nodes、edges、criterion name 和 description；不提供 examples、预测、gold、ACC 或 heldout 信息。同一 epoch 内尚未提交的 candidates 仍不可见，accepted children 从下一 epoch 开始进入全局 memory。
 
 **Split v1 冻结结论**：当前触发条件、ErrorSignature/聚类/children 生成流程、固定 parent scope 上的 Specialized Accuracy 竞争、整组接受与 parent 回退、失败归因历史以及 `global_rubric_v1` memory contract 共同构成冻结的 Split v1。后续算子直接复用该协议；若需要修改上述语义，必须提升协议版本并使用新的实验目录，不得覆盖本节结果。
 
@@ -892,6 +895,93 @@ Treatment 相对初始五-root 在 heldout-500 上提升 5.0 pp，增加 25 个�
 
 
 ---
+
+## 10.4 Refine v1 算子实现与实验
+
+```shell
+conda activate critiq
+
+$python = (Get-Command python).Source
+$module = "experiments.evolving_structured_rubrics.run_rubric_evolution"
+$config = "experiments/evolving_structured_rubrics/configs/local/rubric_evolution_phase5_8001.json"
+$output = "output/evolving_structured_rubrics/rubric_evolution_phase5"
+
+function Invoke-RefineStage {
+    param([string]$Stage)
+
+    Write-Host "`n===== $Stage =====" -ForegroundColor Cyan
+
+    & $python -m $module `
+        --config $config `
+        --output-dir $output `
+        $Stage
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Stage failed with exit code $LASTEXITCODE"
+    }
+}
+
+# smoke
+# 冻结 source rubric、目标节点、Global Memory 和请求身份
+Invoke-RefineStage "refine-freeze"
+
+# 生成一个新 description，并执行 discovery-90 self-competition
+Invoke-RefineStage "refine-smoke"
+
+# 对同一个候选执行 heldout-500 diagnostic
+Invoke-RefineStage "refine-smoke-heldout"
+
+# 汇总 discovery 与 heldout，生成 go/no-go 结论
+Invoke-RefineStage "refine-smoke-report"
+
+$reportPath = Join-Path $output "phase7_refine_operator_v1/report.json"
+$report = Get-Content -Raw -Encoding UTF8 $reportPath | ConvertFrom-Json
+
+$report | ConvertTo-Json -Depth 20
+Write-Host "`nGo/No-Go: $($report.go_no_go)" -ForegroundColor Yellow
+
+# ---- 完整 Split+Refine 演化： ----
+Invoke-RefineStage "split-refine-freeze"
+Invoke-RefineStage "split-refine-run"
+Invoke-RefineStage "split-refine-report"
+Invoke-RefineStage "split-refine-heldout"
+Invoke-RefineStage "split-refine-final-report"
+
+```
+
+### 10.4.1 Forced Refine smoke 结果
+
+Smoke 从冻结的 `phase6_split_only_evolution_global_memory_v1` 最终 Rubric 出发，只改写 child `verified_existence_over_hallucinated_volume` 的 description。该节点不满足自动 Refine trigger，因此本实验只验证 Refine 机制，不作为自动调度证据。
+
+| 层级 | Discovery old | Discovery new | Delta | Heldout old | Heldout new | Delta |
+|---|---:|---:|---:|---:|---:|---:|
+| Target node ACC | 50.62% | 64.86% | +14.25 pp | 63.88% | 70.27% | +6.39 pp |
+| Completeness subtree ACC | 70.11% | 75.86% | +5.75 pp | 72.20% | 72.41% | +0.21 pp |
+| Equal-root M1 ACC | 63.33% | 66.67% | +3.33 pp | 70.00% | 70.40% | +0.40 pp |
+
+新 description 将 discovery support 从81降至74，但仍远高于最小支持数；discovery M1 corrected=3、harmed=0。heldout 只作诊断且不反向修改 discovery 决策，最终 `go_no_go=go`。
+
+### 10.4.2 五-root Split+Refine 演化结果
+
+完整实验从五个初始 roots 重新开始，而不是在 smoke Rubric 上继续演化。由于 Split clustering 与 children 重新生成，最终 Rubric 不包含 smoke 的目标节点，因此该实验不是对 smoke candidate 的直接复现。
+
+| 系统 | Discovery ACC | Heldout ACC | Heldout correct | Coverage |
+|---|---:|---:|---:|---:|
+| Initial five roots | 65.56% | 65.00% | 325 / 500 | — |
+| Split-only + Global Memory control | 63.33% | 70.00% | 350 / 500 | 98.60% |
+| Split+Refine final | 66.67% | 70.00% | 350 / 500 | 98.80% |
+
+相对 initial five roots，最终 heldout corrected=51、harmed=26、净纠正25，exact McNemar `p=0.00587`。相对 Split-only + Global Memory control，最终 ACC 持平；Refine 带来的 discovery 优势没有转化成额外 heldout 提升，因此当前结果支持 Refine 的局部修复能力，但尚不能证明自动 Refine 调度能稳定提高最终泛化 ACC。
+
+演化过程中共有6个不同节点执行21次 Refine attempt：20次形成合法候选，其中4次接受、16次竞争拒绝，另有1次 proposal-invalid。4次接受发生在3个 Factuality children 上；其中只有部分 node-level 改进同时传递到 subtree/M1，符合 v1 将 subtree 与完整 M1仅作为诊断的冻结定义。
+
+Visual Grounding root 连续执行5次 Split 均被拒绝；最好一次 Specialized ACC 为68.54%，相对 parent 69.66%只少1个正确样本。旧 Visual children 在当前固定 parent scope 上可达到71.91%，说明主要问题是 Split proposal 的搜索稳定性，而不是 Visual Grounding 不重要。下一阶段优先研究 child-level Split failure feedback、强 child 保留，以及 root/child 分离的 Refine trigger
+
+
+
+
+
+
 
 ## 11. 后续候选
 
@@ -914,7 +1004,7 @@ Treatment 相对初始五-root 在 heldout-500 上提升 5.0 pp，增加 25 个�
 - [x] 第一版 Split edges 全部使用 `ALWAYS`
 - [x] Split children examples 不进入 Pairwise Worker
 - [x] Split 使用固定 parent scope 上的 Specialized Accuracy，children 平票/全 None 回退 parent
-- [x] Refine、Split、Create 单独通过后才组合 workflow
+- [ ] Refine forced smoke 通过后才启动 Split+Refine；Create 单独通过后才加入完整 workflow
 - [x] Phase 5 Init baseline 与 feedback report 完成
 - [x] 根据 Phase 5 实测分布冻结 trigger 与结构阈值
 - [x] 冻结精简的 candidate acceptance 与单次 P05 execution 规则
