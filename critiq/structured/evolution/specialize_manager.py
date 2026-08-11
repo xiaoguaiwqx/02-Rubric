@@ -12,10 +12,15 @@ from critiq.agent import AgentCallMetrics
 from critiq.specialize_prompts import (
     CHILD_GENERATION_PROMPT,
     CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC,
+    CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC_LOCKED_RETRY_V3,
+    CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC_RETRY_V2,
     ERROR_SIGNATURE_PROMPT,
     SEMANTIC_CLUSTER_PROMPT,
     SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC,
+    SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC_RETRY_V2,
     SPLIT_FAILURE_ATTRIBUTION_PROMPT,
+    SPLIT_FAILURE_ATTRIBUTION_PROMPT_LOCKED_RETRY_V3,
+    SPLIT_FAILURE_ATTRIBUTION_PROMPT_RETRY_V2,
 )
 
 from ..backend_pool import AvailableSlotBackendPool
@@ -76,7 +81,8 @@ class SpecializeManager:
                  generation_request_kwargs: Mapping[str, Any] | None = None,
                  child_input_mode: str = "multimodal",
                  image_field: str = "image_path",
-                 rubric_memory_mode: str = "none") -> None:
+                 rubric_memory_mode: str = "none",
+                 retry_feedback_mode: str = "aggregate_v1") -> None:
         self.model = model
         self.backend_pool = backend_pool
         self.api_keys = api_keys
@@ -93,6 +99,15 @@ class SpecializeManager:
         if rubric_memory_mode not in {"none", "global_rubric_v1"}:
             raise ValueError("rubric_memory_mode must be none or global_rubric_v1")
         self.rubric_memory_mode = rubric_memory_mode
+        if retry_feedback_mode not in {"aggregate_v1", "child_diagnostic_v2",
+                                       "locked_sample_v3"}:
+            raise ValueError(
+                "retry_feedback_mode must be aggregate_v1, child_diagnostic_v2, "
+                "or locked_sample_v3")
+        if (retry_feedback_mode in {"child_diagnostic_v2", "locked_sample_v3"}
+                and rubric_memory_mode != "global_rubric_v1"):
+            raise ValueError(f"{retry_feedback_mode} requires global_rubric_v1")
+        self.retry_feedback_mode = retry_feedback_mode
         for stage, request in (
                 ("error-signature", self.analysis_request_kwargs),
                 ("semantic-clustering", self.clustering_request_kwargs),
@@ -115,18 +130,32 @@ class SpecializeManager:
             parser_version=parser_version)
 
     def request_specs(self) -> dict[str, SpecializeManagerRequestSpec]:
-        cluster_prompt = (SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC
+        retry_v2 = self.retry_feedback_mode == "child_diagnostic_v2"
+        retry_v3 = self.retry_feedback_mode == "locked_sample_v3"
+        cluster_prompt = (SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC_RETRY_V2
+                          if retry_v2 else SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC
                           if self.rubric_memory_mode == "global_rubric_v1"
                           else SEMANTIC_CLUSTER_PROMPT)
-        cluster_version = (SEMANTIC_CLUSTER_GLOBAL_RUBRIC_PROMPT_VERSION
+        cluster_version = ("semantic-cluster-global-rubric-retry-v2"
+                           if retry_v2 else SEMANTIC_CLUSTER_GLOBAL_RUBRIC_PROMPT_VERSION
                            if self.rubric_memory_mode == "global_rubric_v1"
                            else SEMANTIC_CLUSTER_PROMPT_VERSION)
-        child_prompt = (CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC
+        child_prompt = (CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC_LOCKED_RETRY_V3
+                        if retry_v3 else CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC_RETRY_V2
+                        if retry_v2 else CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC
                         if self.rubric_memory_mode == "global_rubric_v1"
                         else CHILD_GENERATION_PROMPT)
-        child_version = (CHILD_GENERATION_GLOBAL_RUBRIC_PROMPT_VERSION
+        child_version = ("child-generation-global-rubric-locked-retry-v3"
+                         if retry_v3 else "child-generation-global-rubric-retry-v2"
+                         if retry_v2 else CHILD_GENERATION_GLOBAL_RUBRIC_PROMPT_VERSION
                          if self.rubric_memory_mode == "global_rubric_v1"
                          else CHILD_GENERATION_PROMPT_VERSION)
+        attribution_prompt = (SPLIT_FAILURE_ATTRIBUTION_PROMPT_LOCKED_RETRY_V3
+                              if retry_v3 else SPLIT_FAILURE_ATTRIBUTION_PROMPT_RETRY_V2
+                              if retry_v2 else SPLIT_FAILURE_ATTRIBUTION_PROMPT)
+        attribution_version = ("split-failure-attribution-locked-retry-v3"
+                               if retry_v3 else "split-failure-attribution-retry-v2"
+                               if retry_v2 else SPLIT_FAILURE_ATTRIBUTION_PROMPT_VERSION)
         return {
             "error_signature": self._spec(ERROR_SIGNATURE_PROMPT,
                                            self.analysis_request_kwargs,
@@ -142,9 +171,9 @@ class SpecializeManager:
                                             self.generation_request_kwargs,
                                             child_version),
             "split_failure_attribution": self._spec(
-                                            SPLIT_FAILURE_ATTRIBUTION_PROMPT,
+                                            attribution_prompt,
                                             self.clustering_request_kwargs,
-                                            SPLIT_FAILURE_ATTRIBUTION_PROMPT_VERSION),
+                                            attribution_version),
         }
 
     def _call(self, content: object, *, request_type: str, request_key: str,
@@ -215,12 +244,17 @@ class SpecializeManager:
     def cluster(self, signatures: Sequence[ErrorSignature], *, criterion_name: str,
                 min_cluster_size: int, max_clusters: int,
                 prior_failures: Sequence[Mapping[str, Any]] = (),
-                rubric_memory: Mapping[str, Any] | None = None) -> ClusterProposal:
+                rubric_memory: Mapping[str, Any] | None = None,
+                retry_feedback: Mapping[str, Any] | None = None) -> ClusterProposal:
         if not signatures:
             raise ValueError("signatures must not be empty")
         if self.rubric_memory_mode == "global_rubric_v1" and rubric_memory is None:
             raise ValueError("global_rubric_v1 clustering requires rubric_memory")
-        prompt_template = (SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC
+        if self.retry_feedback_mode in {"child_diagnostic_v2", "locked_sample_v3"} and retry_feedback is None:
+            raise ValueError(f"{self.retry_feedback_mode} clustering requires retry_feedback")
+        prompt_template = (SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC_RETRY_V2
+                           if self.retry_feedback_mode == "child_diagnostic_v2"
+                           else SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC
                            if self.rubric_memory_mode == "global_rubric_v1"
                            else SEMANTIC_CLUSTER_PROMPT)
         prompt = prompt_template.format(
@@ -231,7 +265,9 @@ class SpecializeManager:
             split_failure_history_json=json.dumps(list(prior_failures), indent=2,
                                                   ensure_ascii=False),
             rubric_memory_json=json.dumps(rubric_memory, indent=2,
-                                          ensure_ascii=False))
+                                          ensure_ascii=False),
+            retry_feedback_json=json.dumps(retry_feedback or {}, indent=2,
+                                           ensure_ascii=False))
         spec = self.request_specs()["semantic_cluster"]
         calls = []; last_raw = None; last_error = "invalid cluster proposal"
         total = self.structured_max_retries + 1
@@ -255,7 +291,10 @@ class SpecializeManager:
                        signatures: Sequence[ErrorSignature], representative_rows: Sequence[Mapping[str, Any]],
                        siblings: Sequence[ChildCriterionProposal],
                        prior_failures: Sequence[Mapping[str, Any]] = (),
-                       rubric_memory: Mapping[str, Any] | None = None) -> ChildCriterionProposal:
+                       rubric_memory: Mapping[str, Any] | None = None,
+                       retry_feedback: Mapping[str, Any] | None = None,
+                       repair_context: Mapping[str, Any] | None = None,
+                       supplemental_rows: Sequence[Mapping[str, Any]] = ()) -> ChildCriterionProposal:
         if self.rubric_memory_mode == "global_rubric_v1" and rubric_memory is None:
             raise ValueError("global_rubric_v1 child generation requires rubric_memory")
         representative_ids = tuple(str(row["sample_id"]) for row in representative_rows)
@@ -264,7 +303,15 @@ class SpecializeManager:
              "A": row["A"], "B": row["B"], "gold": row.get("answer")}
             for row in representative_rows
         ]
-        prompt_template = (CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC
+        if self.retry_feedback_mode in {"child_diagnostic_v2", "locked_sample_v3"} and retry_feedback is None:
+            raise ValueError(f"{self.retry_feedback_mode} child generation requires retry_feedback")
+        if self.retry_feedback_mode == "locked_sample_v3" and repair_context is None:
+            raise ValueError("locked_sample_v3 child generation requires repair_context")
+        prompt_template = (CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC_LOCKED_RETRY_V3
+                           if self.retry_feedback_mode == "locked_sample_v3"
+                           else CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC_RETRY_V2
+                           if self.retry_feedback_mode == "child_diagnostic_v2"
+                           else CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC
                            if self.rubric_memory_mode == "global_rubric_v1"
                            else CHILD_GENERATION_PROMPT)
         prompt = prompt_template.format(
@@ -282,12 +329,19 @@ class SpecializeManager:
             representative_samples_json=json.dumps(
                 representative_samples, indent=2, ensure_ascii=False),
             rubric_memory_json=json.dumps(rubric_memory, indent=2,
-                                          ensure_ascii=False))
+                                          ensure_ascii=False),
+            retry_feedback_json=json.dumps(retry_feedback or {}, indent=2,
+                                           ensure_ascii=False),
+            repair_context_json=json.dumps(repair_context or {}, indent=2,
+                                           ensure_ascii=False))
         spec = self.request_specs()["child_generation"]
         calls = []; last_raw = None; last_error = "invalid child proposal"
         total = self.structured_max_retries + 1
         for attempt in range(1, total + 1):
-            content = (self._multimodal(prompt, representative_rows)
+            visual_rows = tuple(representative_rows) + tuple(
+                row for row in supplemental_rows
+                if str(row.get("sample_id")) not in set(representative_ids))
+            content = (self._multimodal(prompt, visual_rows)
                        if self.child_input_mode == "multimodal" else prompt)
             raw, metrics = self._call(content,
                 request_type="specialize_child", request_key=f"{parent.node_id}::{cluster.cluster_id}",
@@ -311,10 +365,18 @@ class SpecializeManager:
         children: Sequence[ChildCriterionProposal],
         local_metrics: Mapping[str, Any],
         changed_predictions: Sequence[Mapping[str, Any]],
+        retry_feedback: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Generate a structured natural-language diagnosis for a rejected Split."""
 
-        prompt = SPLIT_FAILURE_ATTRIBUTION_PROMPT.format(
+        if self.retry_feedback_mode in {"child_diagnostic_v2", "locked_sample_v3"} and retry_feedback is None:
+            raise ValueError(f"{self.retry_feedback_mode} attribution requires retry_feedback")
+        prompt_template = (SPLIT_FAILURE_ATTRIBUTION_PROMPT_LOCKED_RETRY_V3
+                           if self.retry_feedback_mode == "locked_sample_v3"
+                           else SPLIT_FAILURE_ATTRIBUTION_PROMPT_RETRY_V2
+                           if self.retry_feedback_mode == "child_diagnostic_v2"
+                           else SPLIT_FAILURE_ATTRIBUTION_PROMPT)
+        prompt = prompt_template.format(
             criterion_name=parent.criterion.name,
             criterion_description=parent.criterion.description,
             signatures_json=json.dumps([item.to_dict() for item in signatures], indent=2,
@@ -328,7 +390,10 @@ class SpecializeManager:
                 for item in children], indent=2, ensure_ascii=False),
             metrics_json=json.dumps(dict(local_metrics), indent=2, ensure_ascii=False),
             changed_predictions_json=json.dumps(list(changed_predictions), indent=2,
-                                                ensure_ascii=False))
+                                                ensure_ascii=False),
+            retry_feedback_json=json.dumps(retry_feedback or {}, indent=2,
+                                           ensure_ascii=False),
+            repair_context_json=json.dumps({}, indent=2, ensure_ascii=False))
         spec = self.request_specs()["split_failure_attribution"]
         calls = []
         last_raw = None

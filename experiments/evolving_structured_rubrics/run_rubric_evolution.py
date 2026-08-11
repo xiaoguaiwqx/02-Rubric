@@ -295,7 +295,10 @@ def _config(path: Path) -> dict[str, Any]:
     }
     optional_fields = {"specialize_managers", "split_evolution",
                        "split_manager_memory_ablation", "refine_manager",
-                       "refine_operator"}
+                       "refine_operator", "split_retry_experiment",
+                       "split_retry_v2_experiment", "refine_role_experiment",
+                       "visual_split_refine_experiment",
+                       "five_root_locked_split_refine_experiment"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -323,6 +326,11 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("split_manager_memory_ablation", None)
     value.pop("refine_manager", None)
     value.pop("refine_operator", None)
+    value.pop("split_retry_experiment", None)
+    value.pop("split_retry_v2_experiment", None)
+    value.pop("refine_role_experiment", None)
+    value.pop("visual_split_refine_experiment", None)
+    value.pop("five_root_locked_split_refine_experiment", None)
     return value
 
 
@@ -2896,10 +2904,32 @@ def main() -> int:
         "split-evolution-heldout", "split-evolution-final-report",
         "split-memory-freeze", "split-memory-smoke", "split-memory-run",
         "split-memory-report", "split-memory-heldout", "split-memory-final-report",
+        "split-retry-visual-freeze", "split-retry-visual-audit",
+        "split-retry-visual-run", "split-retry-visual-report",
+        "split-retry-v2-freeze", "split-retry-v2-audit",
+        "split-retry-v2-run", "split-retry-v2-report",
+        "split-retry-v2-heldout-freeze", "split-retry-v2-heldout-run",
+        "split-retry-v2-heldout-report",
         "refine-freeze", "refine-smoke", "refine-smoke-heldout",
         "refine-smoke-report", "split-refine-freeze", "split-refine-run",
         "split-refine-report", "split-refine-heldout",
-        "split-refine-final-report"))
+        "split-refine-final-report", "refine-role-freeze",
+        "refine-role-audit", "refine-role-run", "refine-role-report",
+        "refine-role-heldout", "refine-role-final-report",
+        "refine-role-checkpoints-freeze", "refine-role-checkpoints-run",
+        "refine-role-checkpoints-report",
+        "refine-role-checkpoints-v2-freeze", "refine-role-checkpoints-v2-run",
+        "refine-role-checkpoints-v2-report",
+        "visual-split-refine-freeze", "visual-split-refine-audit",
+        "visual-split-refine-run", "visual-split-refine-report",
+        "visual-split-refine-heldout", "visual-split-refine-final-report",
+        "five-root-locked-split-refine-freeze",
+        "five-root-locked-split-refine-audit",
+        "five-root-locked-split-refine-run",
+        "five-root-locked-split-refine-report",
+        "five-root-locked-split-refine-heldout",
+        "five-root-locked-split-refine-final-report",
+        "vlrb-freeze", "vlrb-smoke", "vlrb-run", "vlrb-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -2934,11 +2964,17 @@ def main() -> int:
         "specialize-evaluate": lambda: specialize_evaluate(config, output),
         "specialize-report": lambda: specialize_report(config, output),
     }
-    if args.stage.startswith(("split-evolution-", "split-memory-")):
+    if args.stage.startswith(("split-evolution-", "split-memory-",
+                              "split-retry-visual-", "split-retry-v2-")):
         from .split_evolution import run_stage
         run_stage(config, output, args.stage)
-    elif args.stage.startswith(("refine-", "split-refine-")):
+    elif args.stage.startswith(("refine-", "split-refine-",
+                                "visual-split-refine-",
+                                "five-root-locked-split-refine-")):
         from .refine_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-"):
+        from .vl_rewardbench import run_stage
         run_stage(config, output, args.stage)
     else:
         actions[args.stage]()

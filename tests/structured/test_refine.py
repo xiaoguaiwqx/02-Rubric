@@ -42,6 +42,7 @@ from experiments.evolving_structured_rubrics.run_rubric_evolution import (
     _phase5_config_view,
 )
 from experiments.evolving_structured_rubrics.refine_evolution import (
+    _combine_heldout_predictions,
     _manifest_path,
     _same_pairwise_scientific_identity,
     _smoke_go_no_go,
@@ -387,6 +388,47 @@ class RefineTests(unittest.TestCase):
                 evidence={"representative_sample_ids": ["s0"]},
                 representative_rows=(), prior_failures=(), rubric_memory=None,
                 max_description_chars=1800)
+
+    def test_heldout_reconciliation_builds_source_and_final_description_views(self):
+        source_rubric = StructuredRubric({
+            "visual": RubricNode(
+                "visual", RubricCriterionSnapshot("visual", "visual-old", 1.0)),
+            "spatial": RubricNode(
+                "spatial", RubricCriterionSnapshot("spatial", "spatial-current", 1.0)),
+        }, (), ("visual", "spatial"))
+        final_rubric = StructuredRubric({
+            "visual": RubricNode(
+                "visual", RubricCriterionSnapshot("visual", "visual-final", 1.0)),
+            "spatial": source_rubric.get_node("spatial"),
+        }, (), ("visual", "spatial"))
+        spec = _worker_spec()
+        source_row = {"visual": _vote(Vote.A), "spatial": _vote(Vote.A)}
+        generated_row = {"visual": _vote(Vote.B), "spatial": _vote(Vote.B)}
+        source = PairwisePredictionOutput(
+            ("s0",), ("1" * 64,),
+            (StructuredCriterionSnapshot("visual", "visual-old"),
+             StructuredCriterionSnapshot("spatial", "spatial-stale")),
+            (source_row,), (aggregate_flat_votes(item.vote for item in source_row.values()),),
+            spec)
+        generated = PairwisePredictionOutput(
+            ("s0",), ("1" * 64,),
+            (StructuredCriterionSnapshot("visual", "visual-final"),
+             StructuredCriterionSnapshot("spatial", "spatial-current")),
+            (generated_row,),
+            (aggregate_flat_votes(item.vote for item in generated_row.values()),), spec)
+
+        source_view = _combine_heldout_predictions(source, generated, source_rubric)
+        final_view = _combine_heldout_predictions(source, generated, final_rubric)
+
+        self.assertEqual(
+            [(item.name, item.description) for item in source_view.criteria],
+            [("visual", "visual-old"), ("spatial", "spatial-current")])
+        self.assertIs(source_view.node_outputs[0]["visual"].vote, Vote.A)
+        self.assertIs(source_view.node_outputs[0]["spatial"].vote, Vote.B)
+        self.assertEqual(
+            [(item.name, item.description) for item in final_view.criteria],
+            [("visual", "visual-final"), ("spatial", "spatial-current")])
+        self.assertIs(final_view.node_outputs[0]["visual"].vote, Vote.B)
 
 
 if __name__ == "__main__":

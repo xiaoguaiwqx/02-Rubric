@@ -956,12 +956,12 @@ Smoke 从冻结的 `phase6_split_only_evolution_global_memory_v1` 最终 Rubric 
 | 层级 | Discovery old | Discovery new | Delta | Heldout old | Heldout new | Delta |
 |---|---:|---:|---:|---:|---:|---:|
 | Target node ACC | 50.62% | 64.86% | +14.25 pp | 63.88% | 70.27% | +6.39 pp |
-| Completeness subtree ACC | 70.11% | 75.86% | +5.75 pp | 72.20% | 72.41% | +0.21 pp |
+| Completeness subtree ACC | 70.11% | 75.86% | +5.75 pp | 72.20% | **72.41%** | +0.21 pp |
 | Equal-root M1 ACC | 63.33% | 66.67% | +3.33 pp | 70.00% | 70.40% | +0.40 pp |
 
 新 description 将 discovery support 从81降至74，但仍远高于最小支持数；discovery M1 corrected=3、harmed=0。heldout 只作诊断且不反向修改 discovery 决策，最终 `go_no_go=go`。
 
-### 10.4.2 五-root Split+Refine 演化结果
+### 10.4.2 五-root Split+Refine V1 演化结果
 
 完整实验从五个初始 roots 重新开始，而不是在 smoke Rubric 上继续演化。由于 Split clustering 与 children 重新生成，最终 Rubric 不包含 smoke 的目标节点，因此该实验不是对 smoke candidate 的直接复现。
 
@@ -977,11 +977,286 @@ Smoke 从冻结的 `phase6_split_only_evolution_global_memory_v1` 最终 Rubric 
 
 Visual Grounding root 连续执行5次 Split 均被拒绝；最好一次 Specialized ACC 为68.54%，相对 parent 69.66%只少1个正确样本。旧 Visual children 在当前固定 parent scope 上可达到71.91%，说明主要问题是 Split proposal 的搜索稳定性，而不是 Visual Grounding 不重要。下一阶段优先研究 child-level Split failure feedback、强 child 保留，以及 root/child 分离的 Refine trigger
 
+### 10.4.3 Role-aware Refine：阈值实验与 checkpoint 诊断
+
+此前统一的 Refine trigger 同时要求中等 ACC 与较低 Coverage，容易漏掉“覆盖较广、但仍有足够错误可修复”的 children，或者是”满足覆盖率要求但是ACC达不到阈值，但是refine之后增益很大“的chirldren。为此，本实验保留 root 的原触发规则，而将 child 改为 role-aware 规则：
+
+$$
+0.5 < \operatorname{Acc}(c) < 0.80,\qquad
+|\mathcal S(c)|\ge15,\qquad
+\operatorname{Wrong}(c)\ge5.
+$$
+在 Split-only + Global Memory 的初始 Rubric (没有做过refine，来验证refine是否有效) 上，统一阈值仅触发 4 个节点；role-aware 规则触发 11 个节点，其中新增 7 个均为 children。实验运行 3 个 epoch，并冻结 source、epoch 1 和 epoch 3 三个 checkpoint，在同一 heldout-500 上进行探索性配对比较。
+
+| Checkpoint | Heldout correct | Equal-root M1 ACC | Coverage | 相对 source corrected / harmed | Exact McNemar |
+|---|---:|---:|---:|---:|---:|
+| Source（Split-only + Global Memory） | 350 / 500 | 70.0% | 98.6% | — | — |
+| Epoch 1 | **356 / 500** | **71.2%** | **98.8%** | 15 / 9（净 +6） | 0.3075 |
+| Epoch 3 | 355 / 500 | 71.0% | 98.6% | 22 / 17（净 +5） | 0.5224 |
+
+Role-aware 阈值在第一轮带来正向结果：discovery M1 从 63.33% 升至 68.89%，heldout M1 从 70.0% 升至 71.2%，且 Coverage 保持稳定。后续两轮的 discovery 轨迹为 `68.89% → 67.78% → 66.67%`，heldout 亦从 71.2% 轻微回落至 71.0%；因此该实验支持“放宽 child 的独立触发条件能发现有价值的局部 Refine”，但不支持在本次轨迹中继续迭代会带来额外的全局 M1 增益。两项 heldout 差异均未显著，且该 heldout 已用于开发诊断，结论仅为 exploratory evidence。
+
+为进一步判断 epoch 1 后的再次 Refine 是否本身有效，固定 epoch-1 的其余节点与预测，只替换 epoch 2--3 中实际改写过的 3 个 child description：
+
+| 后续再次 Refine 的 child | Node ACC（epoch 1 → epoch 3） | Support（epoch 1 → epoch 3） | 固定 epoch-1 ensemble 的 M1 |
+|---|---:|---:|---:|
+| `verified_existence_over_hallucinated_volume` | 65.09% → 68.60% | 424 → 414 | 71.6%（+2 correct） |
+| `visual_attribute_verification` | 75.48% → 77.24% | 367 → 312 | 71.0%（−1 correct） |
+| `spatial_and_quantitative_clarity` | 68.81% → 73.29% | 452 → 438 | 72.0%（+4 correct） |
+| 三者同时替换 | — | — | **72.4%**（corrected / harmed = 12 / 6，净 +6） |
+
+该对照说明再次 Refine 并非无效：`verified_existence_over_hallucinated_volume` 与 `spatial_and_quantitative_clarity` 的改写在固定 ensemble 中均提高最终判断，三者共同替换可达 72.4%。其中 `visual_attribute_verification` 的 node ACC 上升伴随明显 support 收缩，未转化为整体收益。完整 epoch-3 Rubric 仅为 71.0%，表明额外的局部改写在多数投票中抵消了这些收益；因此，本次结果的核心结论是：**role-aware 阈值能够找到可提升的 child，重复 Refine 也可产生局部增益，但局部 self-competition 的接受不保证多节点聚合后的单调提升。**
+
+checkpoint 诊断采用修复版 `heldout_checkpoint_diagnostic_v2`：预测以 **(node ID, description hash)** 为身份，补跑 epoch-1 的 4 个旧 description，并仅在 description/hash 完全一致时复用输出。旧版按 node ID 复用导致的 epoch-1 `72.6%` 不再采用。
+
+实验 artifact：`output/evolving_structured_rubrics/rubric_evolution_phase5/phase8_refine_role_aware_v2/heldout_checkpoint_diagnostic_v2/`。
+
+### 10.5 Visual Grounding Split-retry v2：锁定强 child
+
+本实验从 `phase7_split_refine_evolution_v1` 中 Visual Grounding 的一次失败 Split 出发。原完整 children 集合在固定父区域上为 `61/89=68.54%`，低于 parent 的 `62/89=69.66%`，因此未被接受。v2 不重跑 ErrorSignature 或聚类：先在该失败集合中识别具有足够支持且净纠正为正的 child，锁定其 description 与 discovery Pairwise 预测；然后只为其余聚类重新生成 children，并沿用原 Split 的 parent 回退、多数投票和 `Specialized ACC >= Parent ACC` 接受规则。
+
+强 child 的冻结判据为 `support >= 15` 且相对 parent 的单 child specialized vote `net_corrected >= 3`。本次唯一被锁定的 child 为 `peripheral_detail_verification_accuracy`：在 discovery 父区域上达到 `68/89=76.40%`，相对 parent 净纠正 `+6`（13 corrected / 7 harmed）。完整 v2 集合达到 `63/89=70.79%`，仅高于 parent 1 个样本，因此按既定规则接受；本次第一次 v2 candidate 即被接受，没有形成 v2 内部“连续失败后再次重试”的自然证据。
+
+| Heldout-500 系统 | 完整五-root M1 | Visual 子树（parent scope） | 相对 parent M1 corrected / harmed | McNemar |
+|---|---:|---:|---:|---:|
+| Parent-only | 70.0%（350 / 500） | 66.60%（313 / 470） | — | — |
+| Locked child only | **71.8%（359 / 500）** | 71.91%（338 / 470） | 12 / 3（净 +9） | **0.0352** |
+| Full v2（locked + 3 regenerated children） | 70.8%（354 / 500） | **72.55%（341 / 470）** | 11 / 7（净 +4） | 0.4807 |
+
+锁定 child 的正向收益可泛化：它使完整 M1 增加 `+1.8 pp`，且在配对检验中显著。完整 v2 虽使 Visual 子树额外提高 `+0.64 pp`，但相对 locked-only 的完整 M1 下降 `1.0 pp`（6 corrected / 11 harmed）；这不是锁定策略失败，而是新 siblings 的重叠投票稀释了强 child 的收益。heldout child 诊断也显示，`relational_compositional_priority` 在单 child ACC 上仍低于 parent（61.31% vs 62.62%），并且四个 children 的两两冲突率为 12.3%--32.1%。
+
+**采纳的后续协议。** 当失败 Split 中存在强 child 时，保留其作为**稳定局部专家**；未锁定 children 不随之强制淘汰，而是作为待改进准则交给后续 `Refine`，重点收紧适用条件、减少与 locked child 的冲突。Split 继续以完整 children 对 parent 的局部 Specialized Accuracy 进行接受，不额外把“必须超过 locked-only”设为硬门槛，以保留探索空间；但每次后续操作必须记录 locked child、各 child ACC/support、leave-one-out 影响与 sibling conflict。
+
+实验 artifact：`output/evolving_structured_rubrics/rubric_evolution_phase5/phase8_visual_split_retry_locked_v2/`，其中 discovery 为 `report.json`，heldout 为 `heldout500_diagnostic/report.json`。
+
+
+
+---
+
+### 10.6 Visual Grounding Split→Refine 局部演化实验
+
+Visual Grounding Split-retry v2 已接受一个固定的四-child 子树：其中 locked child `peripheral_detail_verification_accuracy` 单独投票在 heldout 上优于 parent-only，但完整四-child 多数投票仍可能受到其余 siblings 的低质量或冲突投票影响。该实验不重新验证 Split，也不改变投票规则；它只检验：**在保留已接受的 Split 结构和强 child 的前提下，role-aware Refine 能否改善现有 children，并提高完整 Visual Grounding 子树的集体判断。**
+
+#### 冻结起点与范围
+
+- 起点固定为 `phase8_visual_split_retry_locked_v2/final/rubric_committed.json`，根节点为 `init_02_visual_grounding_and_details`；冻结其 parent、4 个 children、edge、name、node ID、score 与 examples。
+- 禁用 Split：不生成 ErrorSignature、不重新聚类、不生成或替换 child，也不改变 Rubric topology。
+- Refine 的唯一允许编辑是改写现有 child 的 description。四个候选 child 为：
+  - `peripheral_detail_verification_accuracy`（Split locked）；
+  - `visual_premise_validation_and_consistency`；
+  - `main_subject_factuality_and_grounding`；
+  - `relational_compositional_priority`。
+- Split locked 的含义仅是该 child 不会在后续 Split 中被重新生成；它并不豁免 Refine。只要满足 Refine trigger，locked child 与其余 children 一样可被改写和竞争。
+
+#### Refine 协议
+
+child 使用 role-aware trigger：
+
+$$
+0.5 < \operatorname{Acc}(c) < 0.80,\qquad
+|\mathcal S(c)|\ge15,\qquad
+\operatorname{Wrong}(c)\ge5.
+$$
+
+在冻结的 discovery-90 起点上，四个 children 均满足该条件。每个 child 在每轮最多生成一个 Refine candidate；仅当该 candidate 在自己的有效 A/B 支持集上严格优于旧 description，且新 support 不低于 15 时接受：
+
+$$
+\operatorname{Acc}(c')>\operatorname{Acc}(c),\qquad
+|\mathcal S(c')|\ge15.
+$$
+
+每个 epoch 的四个 child 都基于同一个 epoch-start Rubric、相同的 `global_rubric_v1` memory 和上一轮已提交的 prediction 独立生成与竞争；本轮任何 candidate 都看不到同轮其他 candidate。所有通过 self-competition 的 description 在 epoch 末尾同步提交，因此新的 siblings 只会在下一轮进入彼此的 Global Memory。有效候选被拒绝时，必须先生成自然语言失败归因，再在下一轮携带该 node 的指标、corrected/harmed、abstain 转移、sibling overlap/conflict、旧 proposal 与失败归因重试。最多运行 3 个 epoch，并在没有 triggered 或 retryable child 时提前停止。
+
+Manager 固定为 `Qwen/Qwen3.5-397B-A17B`，使用 Refine v1 prompt 与 `global_rubric_v1`；Pairwise Worker 固定为 Qwen3-VL-8B-Instruct、P05、单 replicate，经 8000 端口运行。每个候选只刷新其 90 个 discovery Pairwise 预测，所有未变化节点的预测严格复用。
+
+#### 最终 heldout-500 验证
+
+仅在 discovery 结束、final Rubric/hash 冻结后访问 heldout-500。只为 description 实际改变的 children 生成新预测，其余节点复用 Split-retry v2 的 heldout artifact。主要比较为：
+
+| 系统 | 作用 |
+|---|---|
+| Parent-only | Visual parent 的固定基线 |
+| Locked child only（source/final） | 强 child 单独贡献的诊断 |
+| Split v2 full children | 本实验的直接起点与主要对照 |
+| Split v2 + Refined children | 主要结果 |
+
+报告 discovery 与 heldout 的 child-level ACC、support、coverage、corrected/harmed、`None` 转移、sibling overlap/conflict，以及完整五-root M1 与 Visual 子树（全 500 / parent scope）指标。heldout-500 已用于前序开发，因此该验证明确标记为 exploratory；它不反向选择 Refine candidate、epoch 或投票配置。
+
+实验 artifact：`output/evolving_structured_rubrics/rubric_evolution_phase5/phase9_visual_split_refine_local_v1/`。
+
+#### 实验结果
+
+实验完整运行 3 个 epoch，共调度 10 次 Refine attempt，其中 9 次形成有效候选并进入竞争：3 次接受、6 次拒绝；另有 1 次因 description 超过 1800 字符而 proposal-invalid。最终接受的修改为 Epoch 1 的 `peripheral_detail_verification_accuracy`、Epoch 1 的 `main_subject_factuality_and_grounding`，以及 Epoch 2 携带失败历史重试成功的 `relational_compositional_priority`；`visual_premise_validation_and_consistency` 连续三轮均未通过 self-competition。
+
+Discovery-90 的演化轨迹如下。Visual subtree 与完整 M1 的 ACC 均以全部 90 个样本为分母。
+
+| Epoch | 本轮接受的 Refine | Visual subtree ACC | 完整五-root M1 ACC | M1 Coverage |
+|---:|---|---:|---:|---:|
+| 0 | — | 71.11% | 66.67% | 97.78% |
+| 1 | Peripheral、Main subject | 66.67% | 67.78% | 100.00% |
+| 2 | Relational composition | 68.89% | 67.78% | 100.00% |
+| 3 | 无 | 68.89% | 67.78% | 100.00% |
+
+最终相对 Split v2 起点，discovery Visual subtree 下降 2.22 个百分点，而完整 M1 提高 1.11 个百分点。Epoch 1 的两个 candidate 均独立通过 self-competition，但同步提交后 subtree 从 71.11% 降至 66.67%，说明多个 child 的局部改进在多数投票中存在非线性交互，单节点通过不保证整组同步更新后仍然单调提升。
+
+下表比较四个 children 的 discovery 与 heldout 变化。这里的 child ACC 均是在该 child 自己输出有效 A/B 的 support 上计算，`Support` 不是 90 或 500 的固定分母。
+
+| Child | Discovery：Source → Final ACC（Support） | Heldout：Source → Final ACC（Support） | 主要变化 |
+|---|---:|---:|---|
+| `peripheral_detail_verification_accuracy` | 78.08% (73) → 80.30% (66) | 72.87% (376) → 77.59% (348) | 错误票明显减少，但 support 收缩；heldout 正确票 274 → 270 |
+| `visual_premise_validation_and_consistency` | 62.03% (79) → 62.03% (79) | 72.69% (432) → 72.69% (432) | 三轮候选均拒绝，description 保持不变 |
+| `main_subject_factuality_and_grounding` | 65.75% (73) → 68.25% (63) | 75.38% (394) → 75.79% (347) | ACC 小幅提高主要来自更强选择性；heldout 正确票 297 → 263 |
+| `relational_compositional_priority` | 62.07% (58) → 65.67% (67) | 61.31% (305) → 68.39% (367) | 最稳定的实质改进：heldout support +62、正确票 +64 |
+
+`relational_compositional_priority` 是本实验中最明确的 Refine 成功案例：第一次改写被拒绝后，Manager 利用失败归因重新放宽过度收缩的适用域，第二轮候选在 discovery 上被接受，并在 heldout 上同时提高 ACC 与 support。相比之下，Peripheral 与 Main subject 的条件 ACC 提高包含明显的 `None` 选择效应，因此不能只根据 ACC 上升解释为总体正确判断数量增加。
+
+Heldout-500 的系统级结果如下。`Parent scope ACC` 在 Visual parent 有效输出 A/B 的固定 470 个样本上计算；`Visual subtree all500` 与完整 M1 均以全部 500 个样本为分母。表中的 Parent-only 指完整五-root系统中 Visual root 不带本次 children，而不是只运行单个 root。
+
+| 系统 | Visual subtree all500 ACC | Parent scope ACC | 完整五-root M1 ACC | M1 Coverage |
+|---|---:|---:|---:|---:|
+| Parent-only | 62.60% | 66.60% | 70.00% | 98.80% |
+| Locked child（source） | 69.20% | 71.91% | **71.80%** | 99.00% |
+| Split v2 full children | 71.00% | 72.55% | 71.00% | 99.00% |
+| Locked child（final description） | 70.80% | **73.62%** | 71.00% | 99.20% |
+| Split v2 + Refined children | **72.60%** | 73.40% | 71.60% | 99.00% |
+
+主要对照 `Split v2 + Refined children` 与 `Split v2 full children` 的 paired 结果为：
+
+| 比较层级 | Corrected | Harmed | Net corrected | Exact McNemar $p$ |
+|---|---:|---:|---:|---:|
+| Visual subtree，parent scope | 28 | 24 | +4 | 0.678 |
+| 完整五-root M1，all500 | 9 | 6 | +3 | 0.607 |
+
+因此，Refine 在 heldout 上把完整 Visual subtree 从 71.00% 提高到 72.60%，并把完整 M1 从 71.00% 提高到 71.60%；两项增量方向均为正，但未达到统计显著。相对 Parent-only，最终 Refined subtree 在 parent scope 上净纠正 32 个样本（55 corrected、23 harmed，$p=0.00038$），说明主要可靠收益仍来自 Split 所建立的局部专家子树，而 Refine 提供的是其上的进一步小幅增益。
+
+Refine 还使六对 siblings 的总冲突数从 437 降至 357（下降 18.3%），汇总 conflict rate 从 24.9% 降至 20.6%，而 joint-decisive 数仅下降 1.2%。这表明冲突下降不只是由统一扩大 `None` 造成，description 的适用边界确实变得更清楚。
+
+总体而言，本实验支持：**在固定 Split 结构上继续 Refine children 能改善 sibling 边界，并在 heldout 上提高完整子树与 M1 的点估计。** 同时，原始 locked child 的完整 M1 为 71.80%，仍略高于最终四-child系统的 71.60%；加之 discovery 中出现同步提交后 subtree 下降，结果也表明 child self-ACC 不能完整代表其对子树和全局聚合的实际贡献。
+
+---
+
+### 10.7 Five-root Locked-Split + Role-aware Refine
+
+```shell
+$python = "python"
+$module = "experiments.evolving_structured_rubrics.run_rubric_evolution"
+$config = "experiments/evolving_structured_rubrics/configs/local/rubric_evolution_phase5_8001.json"
+$output = "output/evolving_structured_rubrics/rubric_evolution_phase5"
+
+function Invoke-FiveRootIntegrationStage([string]$Stage) {
+    Write-Host "`n===== $Stage =====" -ForegroundColor Cyan
+    & $python -m $module --config $config --output-dir $output $Stage
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Stage failed with exit code $LASTEXITCODE"
+    }
+}
+
+# Discovery-90：冻结、离线审计、五 epoch 以内的完整演化、冻结 discovery 结果
+Invoke-FiveRootIntegrationStage "five-root-locked-split-refine-freeze"
+Invoke-FiveRootIntegrationStage "five-root-locked-split-refine-audit"
+Invoke-FiveRootIntegrationStage "five-root-locked-split-refine-run"
+Invoke-FiveRootIntegrationStage "five-root-locked-split-refine-report"
+
+# heldout-500:
+Invoke-FiveRootIntegrationStage "five-root-locked-split-refine-heldout"
+Invoke-FiveRootIntegrationStage "five-root-locked-split-refine-final-report"
+
+```
+
+#### 实验目的与冻结协议
+
+前序实验分别验证了 Split-retry 和 Role-aware Refine 的局部作用。本实验从五个初始 roots 重新开始，将支持强-child锁定的 Split-retry、Role-aware Refine 与 `global_rubric_v1` 统一到最多 5 个 epoch 的完整流程中，检验其能否自动演化出更高质量的五-root Rubric。Split 只调度初始 roots，Refine 调度已提交的 children；同一轮 candidates 基于相同的 epoch-start Rubric 独立竞争并同步提交。discovery-90 决定算子接受，heldout-500 只评估最终冻结 Rubric，正式主指标仍为五-root等权 M1。
+
+为避免 ACC 分母混淆，本节中完整 M1 和 root-subtree 的 `full-500 ACC` 均以全部 500 个样本为分母，`None/Tie` 计为未正确；单节点 ACC 仍以该节点自己的 A/B support 为分母；Split Specialized ACC 则继续使用固定 parent scope。
+
+#### 演化轨迹
+
+最终 Rubric 从 5 个 roots 增长到 22 个节点，共新增 17 个 children。前三轮主要建立子树结构，后两轮不再增加节点，只继续改写现有 child descriptions。
+
+| Epoch | Nodes | Split scheduled / accepted | Refine scheduled / accepted | Discovery M1 ACC |
+|---:|---:|---:|---:|---:|
+| 0 | 5 | — | — | 65.56% |
+| 1 | 12 | 5 / 2 | 0 / 0 | 70.00% |
+| 2 | 18 | 3 / 2 | 7 / 5 | 67.78% |
+| 3 | 22 | 1 / 1 | 12 / 9 | 65.56% |
+| 4 | 22 | 0 / 0 | 16 / 5 | 71.11% |
+| 5 | 22 | 0 / 0 | 15 / 4 | **73.33%** |
+
+M1 轨迹 `65.56% → 70.00% → 67.78% → 65.56% → 71.11% → 73.33%` 并不单调：新增 children 与局部 Refine 一度增加投票冲突，直到后两轮继续收紧适用边界后，全局收益才显现。这说明节点 self-competition 的改善不会立即等价为完整 ensemble 的改善。
+
+| Root | Split 轨迹 | 最终 children | 接受时 Specialized ACC delta |
+|---|---|---:|---:|
+| Completeness | 第 1 轮接受 | 3 | 0.00 pp |
+| Visual Grounding | 拒绝 → 拒绝 → 接受 | 4 | 0.00 pp |
+| Factuality | 第 1 轮接受 | 4 | +9.64 pp |
+| Creativity | 拒绝 → 接受 | 3 | +5.81 pp |
+| Clarity | proposal-invalid → 接受 | 3 | +6.90 pp |
+
+Visual Grounding 的三次 Specialized ACC 为 `65.17% → 64.04% → 69.66%`，第三次仅恢复到与 parent 的 69.66% 持平，但它提供了可继续优化的四-child结构；经过后续 Refine，最终 Visual 子树在 heldout-500 上达到 73.0%。这支持“Split 先产生不退化的专家结构，Refine 再修正弱 children”的算子分工。需要明确的是，本轨迹 `locked_retry_count=0`，两次失败中均没有 child 达到锁定门槛，因此本实验不能作为强-child锁定机制的自然证据。
+
+#### 最终结果
+
+| 系统 | Discovery ACC / Coverage | Heldout ACC / Coverage | Heldout correct |
+|---|---:|---:|---:|
+| Initial five-root M1 | 65.56% / 96.67% | 65.00% / 97.20% | 325 / 500 |
+| Split-only + Global Memory | 63.33% / 100.00% | 70.00% / 98.60% | 350 / 500 |
+| Five-root Split+Refine | **73.33% / 100.00%** | **71.40% / 98.60%** | **357 / 500** |
+
+相对 Initial，最终系统在 heldout 上提升 6.4 pp，corrected=67、harmed=35、净增加 32 个正确样本，exact McNemar `p=0.00199`。相对 Split-only + Global Memory，提升为 1.4 pp，corrected=32、harmed=25、净增加 7 个正确样本，但 McNemar `p=0.427`，因此这里只将 Refine 的增量表述为正向 exploratory evidence，而不声称显著优于 Split-only。
+
+Role-aware Refine 共执行 50 次：23 次接受、26 次竞争拒绝、1 次 proposal-invalid。以下五个 children 的重复 Refine 改善最明显；Node ACC 以各自 A/B support 为分母，表中的 support/coverage 同时反映其专家化范围。
+
+| Child criterion | Discovery ACC | Discovery support | ACC delta | Heldout ACC / Coverage |
+|---|---:|---:|---:|---:|
+| `completeness_via_verified_perception` | 66.7% → **82.1%** | 87 → 56 | +15.5 pp | 77.1% / 65.4% |
+| `answer_accuracy_over_descriptive_detail` | 57.1% → **71.2%** | 77 → 52 | +14.1 pp | 68.0% / 55.6% |
+| `visual_grounding_accuracy` | 67.1% → **80.9%** | 79 → 47 | +13.8 pp | **79.4% / 49.6%** |
+| `presence_and_action_verification` | 61.0% → **73.6%** | 82 → 72 | +12.6 pp | 75.1% / 77.0% |
+| `factual_grounding_prerequisite _for_expressiveness` | 55.6% → **65.3%** | 81 → 75 | +9.7 pp | 71.0% / 80.8% |
+
+这些结果表明重复 Refine 能将**宽泛 child 收紧为较高准确率的局部专家**，其中部分提升伴随 support 收缩。但 23 次 accepted Refine 中只有 8 次同步提高 subtree ACC，9 次反而降低 subtree ACC；这再次说明 v1 的 node self-competition 能形成局部专家，却不保证父子树或完整 M1 单调提升。
+
+#### Root 子树与聚合诊断
+
+五个最终子树在固定 500 分母下均优于各自 parent，说明新增 children 整体具有有效信息。
+
+| Root | Parent-only full-500 ACC | Parent + children full-500 ACC |
+|---|---:|---:|
+| Completeness | 60.4% | 69.6% |
+| Visual Grounding | 62.6% | **73.0%** |
+| Factuality | 62.4% | 67.2% |
+| Creativity | 61.0% | 68.4% |
+| Clarity | 57.8% | 70.8% |
+
+Visual Grounding 子树单独使用时达到 365/500=73.0%，高于五-root等权 M1 的 357/500=71.4%。加入另外四个 roots 后，虽然纠正了 27 个 Visual 错误，但同时损伤 35 个原本正确的样本，净损失 8 个，说明当前主要瓶颈已从局部专家生成转向 root aggregation。
+
+采用前序实验预设、未在本次 heldout 上搜索的权重 `Visual Grounding=0.4`、其余四个 roots 各 `0.15`，可进一步得到：
+
+| 聚合方式 | Correct | Full-500 ACC | Coverage |
+|---|---:|---:|---:|
+| 五-root等权 | 357 | 71.4% | 98.6% |
+| Visual Grounding only | 365 | 73.0% | 97.4% |
+| Visual=0.4，其余各0.15 | **367** | **73.4%** | **99.4%** |
+
+该权重使两个其他 roots 的合计票重 0.30 不足以轻易覆盖 Visual，但三个 roots 达成一致时 0.45 仍可纠正它。相对等权聚合，weighted M1 corrected=24、harmed=14、净增加 10 个正确样本；相对 Visual-only 净增加 2 个。
+
+#### 结论
+
+该实验支持完整的 Split+Role-aware Refine 演化链条：它在不降低最终 Coverage 的情况下，将 heldout 等权 M1 从 65.0% 提升到 71.4%，并将五个 parent 都扩展为更强的子树；Visual Grounding 的 parity Split 经后续 Refine 达到 73.0%，进一步说明非退化 Split 可以先建立可优化结构。与此同时，本轨迹没有触发强-child锁定，相对 Split-only 的 1.4 pp 增益也未显著，且局部 Refine 不保证全局单调改善。预设加权聚合达到 73.4%，表明当前最明确的剩余问题是如何利用不同 root 的可靠性差异。
+
+实验 artifact：`output/evolving_structured_rubrics/rubric_evolution_phase5/phase10_five_root_locked_split_refine_v1/`，其中 discovery 汇总为 `final/discovery_report.json`，heldout 汇总为 `heldout500/report.json`，最终报告为 `final_report.json`。
 
 
 
 
 
+
+
+
+
+
+
+---
 
 ## 11. 后续候选
 

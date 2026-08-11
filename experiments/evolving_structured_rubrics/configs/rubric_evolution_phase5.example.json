@@ -158,6 +158,37 @@
     "signature_source": "control_read_only_exact_identity",
     "heldout_protocol": "reuse_exploratory"
   },
+  "refine_role_experiment": {
+    "protocol_version": "refine-role-aware-v2",
+    "source_experiment": "phase6_split_only_evolution_global_memory_v1",
+    "trigger_mode": "role_aware_v2",
+    "candidate_scope": "all_committed_nodes",
+    "rubric_memory_mode": "global_rubric_v1",
+    "min_epochs": 2,
+    "max_epochs": 3,
+    "retry_rejected_nodes": true,
+    "synchronous_epoch_commit": true,
+    "worker_endpoint": "vllm-8001",
+    "heldout_access": "final_stage_only"
+  },
+  "split_retry_experiment": {
+    "variant": "visual_grounding_child_diagnostic_v2",
+    "root_id": "init_02_visual_grounding_and_details",
+    "source_experiment_dir": "phase7_split_refine_evolution_v1",
+    "max_attempts": 3,
+    "pairwise_endpoint": "vllm-8000",
+    "split_retry_feedback_mode": "child_diagnostic_v2"
+  },
+  "split_retry_v2_experiment": {
+    "variant": "visual_grounding_locked_sample_v3",
+    "root_id": "init_02_visual_grounding_and_details",
+    "source_experiment_dir": "phase7_split_refine_evolution_v1",
+    "max_repair_attempts": 2,
+    "pairwise_endpoint": "vllm-8000",
+    "retry_feedback_mode": "locked_sample_v3",
+    "strong_child_min_support": 15,
+    "strong_child_min_net_corrected": 3
+  },
   "evolution_policy": {
     "policy_version": "phase5-v2",
     "trigger_thresholds": {

@@ -222,3 +222,77 @@ of applicability, reliable abstention, discriminability, or expected accuracy.
 
 Return exactly one JSON object:""",
 )
+
+
+# Split-retry treatment prompts.  These are deliberately separate from the
+# frozen Control/Global-Memory prompts above: changing retry feedback must not
+# change the request identity of either completed Phase-6 experiment.
+RETRY_FEEDBACK_GUIDANCE = """
+
+## Child-level diagnostics from rejected Split attempts
+{retry_feedback_json}
+
+Treat these measurements as evidence, not as a new acceptance gate. Preserve
+the semantic boundary and wording of children marked `preserve_exact`; refine
+only children marked `refine`; replace children marked `replace`. Pay special
+attention to parent accuracy on the same child support, target/non-target
+activation, sibling-pair conflicts, and local leave-one-child-out Specialized
+ACC delta. Do not discard a strong child merely because the complete sibling
+set failed collectively.
+"""
+
+SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC_RETRY_V2 = (
+    SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC + RETRY_FEEDBACK_GUIDANCE
+)
+
+CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC_RETRY_V2 = (
+    CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC + RETRY_FEEDBACK_GUIDANCE
+)
+
+SPLIT_FAILURE_ATTRIBUTION_PROMPT_RETRY_V2 = (
+    SPLIT_FAILURE_ATTRIBUTION_PROMPT + RETRY_FEEDBACK_GUIDANCE
+    + """
+
+In `avoid_next_time`, explicitly name which children should be preserved,
+refined, or replaced and cite their diagnostic evidence. The diagnosis must
+explain how individually strong children can coexist with a collectively
+failing sibling set.
+"""
+)
+
+
+# Split-retry v2 is a deliberately narrower treatment than RETRY_V2.  Its
+# clusters are frozen after the source failure and the Manager repairs only the
+# unlocked clusters from a compact packet of boundary examples.
+LOCKED_SAMPLE_RETRY_GUIDANCE = """
+
+## Fixed-cluster locked-child retry protocol
+{retry_feedback_json}
+
+This is a fixed-cluster repair attempt.  Do not propose a new clustering or
+change the semantic territory of any cluster.  Children marked `lock_exact`
+are immutable: do not rename, rewrite, replace, or reconsider them.  Generate
+only the requested repaired child for the current cluster.
+
+The repair context identifies target wrong/None examples, target correct
+boundary examples, and non-target harmed examples.  Use it to make the current
+child more selective and evidence-grounded.  It is valid to output None when
+the criterion is not applicable, but do not obtain selectivity by abstaining
+from clear target cases.
+
+## Repair context for this child
+{repair_context_json}
+"""
+
+CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC_LOCKED_RETRY_V3 = (
+    CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC + LOCKED_SAMPLE_RETRY_GUIDANCE
+)
+
+SPLIT_FAILURE_ATTRIBUTION_PROMPT_LOCKED_RETRY_V3 = (
+    SPLIT_FAILURE_ATTRIBUTION_PROMPT + LOCKED_SAMPLE_RETRY_GUIDANCE
+    + """
+
+State whether each unlocked child should be `rewrite` or `replace` in the next
+fixed-cluster retry.  Do not recommend changing any `lock_exact` child.
+"""
+)

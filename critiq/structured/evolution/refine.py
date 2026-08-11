@@ -158,6 +158,7 @@ def detect_refine_trigger(
     thresholds: Mapping[str, Any],
     *,
     forced: bool = False,
+    trigger_mode: str = "uniform_v1",
 ) -> RefineTriggerDecision:
     node = context.rubric.get_node(node_id)
     feedback = context.feedback.nodes[node_id]
@@ -166,15 +167,31 @@ def detect_refine_trigger(
     required = {"tau_acc", "tau_refine", "tau_cov_high", "N_min_support"}
     if not required.issubset(thresholds):
         raise ValueError("Refine thresholds are incomplete")
+    if trigger_mode not in {"uniform_v1", "role_aware_v2"}:
+        raise ValueError(f"unsupported Refine trigger mode: {trigger_mode}")
     reasons: list[str] = []
-    if feedback.accuracy <= thresholds["tau_acc"]:
-        reasons.append("accuracy_not_above_tau_acc")
-    if feedback.accuracy >= thresholds["tau_refine"]:
-        reasons.append("accuracy_not_below_tau_refine")
-    if feedback.coverage > thresholds["tau_cov_high"]:
-        reasons.append("coverage_above_tau_cov_high")
-    if feedback.support < thresholds["N_min_support"]:
-        reasons.append("support_below_minimum")
+    is_child = context.rubric.parent_id(node_id) is not None
+    if trigger_mode == "role_aware_v2" and is_child:
+        # A Split child is already a local expert.  Its high coverage is not a
+        # reason to suppress Refine; instead require enough decisive mistakes
+        # to make a description rewrite identifiable and testable.
+        if feedback.accuracy <= .50:
+            reasons.append("accuracy_not_above_child_minimum")
+        if feedback.accuracy >= .80:
+            reasons.append("accuracy_not_below_child_maximum")
+        if feedback.support < 15:
+            reasons.append("support_below_child_minimum")
+        if feedback.wrong < 5:
+            reasons.append("wrong_below_child_minimum")
+    else:
+        if feedback.accuracy <= thresholds["tau_acc"]:
+            reasons.append("accuracy_not_above_tau_acc")
+        if feedback.accuracy >= thresholds["tau_refine"]:
+            reasons.append("accuracy_not_below_tau_refine")
+        if feedback.coverage > thresholds["tau_cov_high"]:
+            reasons.append("coverage_above_tau_cov_high")
+        if feedback.support < thresholds["N_min_support"]:
+            reasons.append("support_below_minimum")
     return RefineTriggerDecision(
         node_id=node_id,
         triggered=forced or not reasons,
