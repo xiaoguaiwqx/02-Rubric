@@ -2929,7 +2929,26 @@ def main() -> int:
         "five-root-locked-split-refine-report",
         "five-root-locked-split-refine-heldout",
         "five-root-locked-split-refine-final-report",
-        "vlrb-freeze", "vlrb-smoke", "vlrb-run", "vlrb-report"))
+        "vlrb-freeze", "vlrb-smoke", "vlrb-run", "vlrb-report",
+        "vlrb-phase10-freeze", "vlrb-phase10-audit", "vlrb-phase10-smoke",
+        "vlrb-phase10-run", "vlrb-phase10-report",
+        "vlrb-phase10-capped-freeze", "vlrb-phase10-capped-audit",
+        "vlrb-phase10-capped-promote", "vlrb-phase10-capped-smoke",
+        "vlrb-phase10-capped-run", "vlrb-phase10-capped-report",
+        "vlrb-phase10-capped-format-repair-freeze",
+        "vlrb-phase10-capped-format-repair-run",
+        "vlrb-phase10-capped-format-repair-report",
+        "vlrb-phase10-capped-failure-retry-freeze",
+        "vlrb-phase10-capped-failure-retry-run",
+        "vlrb-phase10-capped-failure-retry-report",
+        "vlrb-phase10-capped-failure-rescue-run",
+        "vlrb-phase10-capped-failure-rescue-report",
+        "vlrb-phase10-capped-native-fallback-freeze",
+        "vlrb-phase10-capped-native-fallback-run",
+        "vlrb-phase10-capped-native-fallback-report",
+        "vlrb-phase10-capped-native-retry-freeze",
+        "vlrb-phase10-capped-native-retry-run",
+        "vlrb-phase10-capped-native-retry-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -2972,6 +2991,12 @@ def main() -> int:
                                 "visual-split-refine-",
                                 "five-root-locked-split-refine-")):
         from .refine_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-phase10-capped-"):
+        from .vl_rewardbench_phase10_capped import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-phase10-"):
+        from .vl_rewardbench_phase10 import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-"):
         from .vl_rewardbench import run_stage

@@ -1248,17 +1248,175 @@ Visual Grounding 子树单独使用时达到 365/500=73.0%，高于五-root等�
 
 
 
+---
 
+## 11. 阶段性结果
 
+### 11.1 Split+Refine heldout-500 结果
 
+现在已经形成了一个清晰的阶段性闭环：
 
+| 结果                                      | heldout-500 ACC |
+| ----------------------------------------- | --------------- |
+| Vanilla 直接偏好判断                      | 59.8%           |
+| Initial five-root M1                      | 65.0%           |
+| 最终 Split+Refine，五-root 等权           | 71.4%           |
+| 最终 Split+Refine，Visual=0.4、其余各0.15 | **73.4%**       |
 
+相对 Vanilla，最终系统提高 **13.6 个百分点**；同时 Split、失败重试、强 child 策略、Global Memory 和 Role-aware Refine 都已有独立实验支撑，适合在这里冻结一个版本。
+
+### 11.2 VL-RewardBench 外部迁移实验
+
+#### 1. 实验设置
+
+本实验检验 Phase10 最终 Rubric 能否从开发期 RLHF-V 风格 heldout-500 迁移到 VL-RewardBench。评测集包含 1,247 个偏好对，Pairwise Worker 固定为 `Qwen3-VL-8B-Instruct`。VL-RewardBench 不参与 checkpoint、criterion、聚合权重或后续演化选择，因此该结果只用于外部迁移评估。
+
+所有方法共享同一请求级协议：每个判断执行 K=3 个 replicates，各 replicate 是否交换 A/B 由预先冻结的 swap schedule 决定，再以三次结果的多数票形成稳定判断。在此基础上，各方法按下表进行系统级聚合：
+
+| 方法 | 判断依据 | 最终系统聚合 |
+|---|---|---|
+| **Initial five-root M1** | Phase 5 初始化的五条 root 准则，不包含演化 children | 五个 roots 等权聚合 |
+| **Native VL-RB prompt** | 不使用结构化 Rubric；按 Accuracy、Completeness、Clarity、Relevance 通用 prompt 直接作整体判断 | 无额外 Rubric 聚合 |
+| **Visual Grounding subtree only** | Phase10 最终 Rubric 中的 `visual_grounding_and_details` root 及其 accepted children | 仅执行该子树的 parent/children specialized 聚合 |
+| **Final weighted** | Phase10 最终完整 Rubric：5 个 roots、17 个 children | 五棵子树聚合；Visual Grounding 权重为 0.4，其余各为 0.15 |
+| **Final five-root equal M1** | 与 Final weighted 相同的完整 Rubric 和 criterion 预测 | 五棵子树等权聚合；这是主要迁移结果 |
+
+其中 Final weighted 的权重来自 heldout-500 上预设的方案，未在 VL-RewardBench 上重新搜索；Final weighted 与 Final equal 只是对同一组 criterion 预测采用不同的离线聚合方式。
+
+指标口径如下：
+
+- `OverallAcc` 是在形成明确最终判断的样本上计算的总体准确率；
+- `MacroAcc` 是 General、Hallucination 和 Reasoning 三个官方类别 ACC 的算术平均；`Coverage` 是形成明确判断的样本比例；
+- `严格 ACC` 固定以全部 1,247 个样本为分母，未决样本计为不正确。
+
+#### 2. 总体结果
+
+| 方法 | OverallAcc | MacroAcc | Coverage | 严格 ACC | 严格正确数 |
+|---|---:|---:|---:|---:|---:|
+| Initial five-root M1 | 45.04% | 47.75% | 97.75% | 44.03% | 549 |
+| Native VL-RB prompt | 54.52% | 53.56% | 99.28% | 54.13% | 675 |
+| Visual Grounding subtree only | 63.19% | 57.69% | 97.59% | 61.67% | 769 |
+| Final weighted（Visual=0.4，其余各0.15） | 62.50% | 57.64% | **99.44%** | 62.15% | 775 |
+| **Final five-root equal M1** | **64.31%** | **59.05%** | 98.64% | **63.43%** | **791** |
+
+Final five-root equal M1 在 OverallAcc、MacroAcc 和严格 ACC 上均为最佳。此前由 heldout-500 预设的 Visual=0.4 权重没有迁移到 VL-RewardBench；其 OverallAcc 比等权聚合低 1.81 个百分点，因此外部结果以未在该 benchmark 上调优的等权 M1 为主。
+
+#### 3. 相比 Initial five-root
+
+| 指标 | Initial | Final Equal | 提升 |
+|---|---:|---:|---:|
+| OverallAcc | 45.04% | 64.31% | **+19.27 pp** |
+| MacroAcc | 47.75% | 59.05% | **+11.30 pp** |
+| Coverage | 97.75% | 98.64% | +0.88 pp |
+| 严格 ACC | 44.03% | 63.43% | **+19.41 pp** |
+| 严格正确数 | 549 | 791 | **+242** |
+
+逐样本比较中，Final Equal 纠正 275 个 Initial 错误，同时损害 33 个 Initial 正确样本，净增加 242 个正确样本；exact McNemar $p=1.12\times10^{-48}$。这说明演化 Rubric 相对初始五条人工准则的提升并非由 Coverage 或少量样本波动造成。
+
+#### 4. 相比 Native 通用 judge
+
+| 指标 | Native | Final Equal | 提升 |
+|---|---:|---:|---:|
+| OverallAcc | 54.52% | 64.31% | **+9.79 pp** |
+| MacroAcc | 53.56% | 59.05% | **+5.49 pp** |
+| 严格 ACC | 54.13% | 63.43% | **+9.30 pp** |
+| 严格正确数 | 675 | 791 | **+116** |
+
+逐样本比较中，Final Equal 纠正 200 个 Native 错误，同时损害 84 个 Native 正确样本，净增加 116 个正确样本；exact McNemar $p=4.48\times10^{-12}$。因此增益不仅来自 Qwen3-VL-8B-Instruct 本身，也来自演化 Rubric 对同一 Worker 判断过程的结构化引导。
+
+#### 5. 官方类别 ACC
+
+下表使用 VL-RewardBench 官方口径：每个类别的正确数除以该类别形成明确最终判断的样本数，即 `covered_accuracy`；这三列的算术平均等于 MacroAcc。
+
+| 方法 | General | Hallucination | Reasoning | MacroAcc |
+|---|---:|---:|---:|---:|
+| Initial five-root | 39.89% | 37.23% | **66.13%** | 47.75% |
+| Native prompt | 43.68% | 53.07% | 63.92% | 53.56% |
+| Visual only | 42.11% | 68.19% | 62.79% | 57.69% |
+| Final weighted | 43.02% | 66.98% | 62.94% | 57.64% |
+| **Final equal** | **43.82%** | **69.42%** | 63.90% | **59.05%** |
+
+主要收益来自 Hallucination：Final Equal 相对 Initial 从 37.23% 提高到 69.42%，提升 32.19 个百分点；相对 Native 的 53.07% 提升 16.34 个百分点。General 小幅改善，而 Reasoning 相对 Initial 从 66.13% 降至 63.90%。因此当前演化 Rubric 的外部迁移收益主要表现为更强的视觉事实性和幻觉识别，而不是所有视觉推理能力的同步提升。
+
+#### 6. 分析
+
+**准则诱导的偏好冲突。** 初始五个 roots 并非都缺乏判断能力，而是在同一样本上经常给出相互冲突的 criterion-conditioned preferences。例如，Factuality 可能正确识别视觉错误，但 Completeness、Creativity 或 Clarity 会因回答更详细、更流畅而支持另一候选，最终形成多数票掩盖（majority masking）。Hallucination 类别上的 root/subtree 变化清楚展示了这一点：
+
+| Root / subtree | Initial Hallucination covered ACC | 演化后 Hallucination covered ACC |
+|---|---:|---:|
+| Completeness | 32.40% | 53.00% |
+| Visual Grounding | 39.31% | 68.19% |
+| Factuality | **74.28%** | 71.10% |
+| Creativity | 22.24% | 65.23% |
+| Clarity | 36.63% | 68.05% |
+| 五-root最终聚合 | 37.23% | **69.42%** |
+
+初始 Factuality 已经达到 74.28%，但被其余 roots 的冲突票稀释；演化后最强专家并未继续提高，整体性能却显著上升。因此主要收益不是“单个最强准则变得更强”，而是原本容易受文本风格影响的准则被重新校准，减少了对正确视觉事实判断的干扰。
+
+**隐含的层级式偏好。** 初始等权 M1 默认准确性、完整性、清晰度和创造性可以相互补偿，但当前偏好数据更接近非补偿式的优先关系：
+
+```text
+先满足视觉事实性
+→ 再比较完整性、清晰度和创造性
+```
+
+Split 与 Refine 使多个 children 都加入视觉事实前置条件，实质上是在恢复“Visual factuality 是其他质量维度 prerequisite”的隐含偏好结构。这种语义收敛一方面改善了 Hallucination 判断，另一方面说明当前 Rubric 表示缺少共享的全局 prerequisite 或 gate，只能把相同约束重复编码进不同 children。
+
+**改变了模型的注意力和决策优先级** 同一个 Qwen3-VL-8B-Instruct，在不同准则下会对同一图像给出不同判断。这说明 Worker 的问题至少有相当一部分不属于“完全看不见”，而属于：
+
+1. 视觉证据被模型感知到了；
+2. 但在长文本推理中没有被放在最高优先级；
+3. 流畅性、回答长度、常识先验或语言置信度覆盖了视觉证据；
+4. 最终投票与其分析过程中出现的视觉事实不一致。
+
+而演化 Rubric 通过指定待检查事实、限制适用范围、精细判断规则并允许证据不足时输出 `None`，提高了已有视觉表征被正确用于最终偏好判断的概率。这一解释与《[Unveiling the Ignorance of MLLMs: Seeing Clearly, Answering Incorrectly](https://openaccess.thecvf.com/content/CVPR2025/html/Liu_Unveiling_the_Ignorance_of_MLLMs_Seeing_Clearly_Answering_Incorrectly_CVPR_2025_paper.html)》观察到的视觉 token 注意力弱于系统和问题 token，以及《[Multi-Modal Hallucination Control by Visual Information Grounding](https://openaccess.thecvf.com/content/CVPR2024/papers/Favero_Multi-Modal_Hallucination_Control_by_Visual_Information_Grounding_CVPR_2024_paper.pdf)》揭示的生成过程中图像条件依赖下降、语言先验增强现象一致。
+
+后续可以验证一下是否改变了模型内部 attention；需视觉 token attention、图像扰动或 conditioned/unconditioned logits 等机制实验验证。
+
+**Test-time compute 与 ensemble。** Final 系统对每个样本执行 22 个 criteria × 3 replicates，而 Native 只执行 3 次整体判断，因此在缺少 compute-matched 对照时，无法排除额外推理预算和 ensemble 对增益的贡献。不过，计算量并非充分解释：Initial five-root 同样执行多准则判断却只有 45.04% OverallAcc，而仅包含一个 root 及其 children 的 Visual Grounding subtree 已达到 63.19%。当前结果更合理的归因是“有效的 criterion 语义、结构化聚合和额外 test-time compute”共同作用，而不是单纯增加请求数。
+
+**数据分布与权重迁移。** VL-RewardBench 的 1,247 个样本中有 749 个属于 Hallucination，和 discovery-90 的视觉事实性错误高度对齐，因此 Visual-only 表现很强。与此同时，VL-RewardBench 还包含 General 和 Reasoning，解释了 heldout-500 上预设的 Visual=0.4 权重没有迁移成功，以及等权五子树能够在 Visual subtree 错误或弃权时提供补充判断。固定 root 权重不是 Rubric 的固有属性，而是与评测分布相关的校准参数。
+
+#### 7. 本质问题、研究定位与证据边界
+
+当前结果也暴露出四个尚未解决的问题：
+
+1. 多个 children 都加入视觉事实前置条件，可能形成语义同质化和重复推理；更自然的表示可能是共享 prerequisite、条件边或层级 gate。
+2. 当前节点和子树基本采用固定聚合，局部 ACC 提升不保证全局 ACC 提升；强专家仍可能被较弱但相关的多数票掩盖。
+4. discovery 只有 90 条视觉事实性幻觉样本，未覆盖开放式生成、General preference 和多步视觉推理；
+
+基于这些结果，当前方法的核心叙事可以凝练为：
+
+> 传统奖励学习通常将每条人类偏好视为一个独立监督标签。我们认为，少量偏好样本及其错误反馈中还隐含着可泛化的判断依据。为此，我们将偏好经验抽象为一个结构化、可执行且持续演化的 Rubric，使其显式编码跨样本复用的决策模式、适用边界和偏好优先关系，并作为自然语言奖励程序引导固定的多模态 Worker 作出判断。
+
+这里学习的不是 90 个样本的独立答案，而是“先验证存在性”“流畅性不能补偿视觉错误”“证据不足时弃权”等可复用规则：
+
+$$
+\boxed{
+\text{Sparse Human Preferences}
+\rightarrow
+\text{Failure Experience}
+\rightarrow
+\text{Structured Evolving Rubric}
+\rightarrow
+\text{Reusable Decision Patterns}
+\rightarrow
+\text{Reward Judgement}
+}
+$$
+这一定位与《[A Survey of Reinforcement Learning for Large Language Models under Data Scarcity](https://arxiv.org/abs/2604.17312)》关注的稀缺高质量监督相契合：本工作将每条偏好从一次性标签转化为可反复执行的显式奖励规则，可理解为对稀缺偏好监督的语义放大（semantic amplification）。但当前完成的是 sparse-preference reward specification discovery，而不是已经完成强化学习。
+
+《[Welcome to the Era of Experience](https://storage.googleapis.com/deepmind-media/Era-of-Experience%20/The%20Era%20of%20Experience%20Paper.pdf)》为“从错误、归因和重试经验中学习可复用规则”提供了更长远的研究视角；不过当前仍是固定离线偏好上的 evaluative experience，而非智能体与环境长期交互产生的自主经验。《[Discovering State-of-the-art Reinforcement Learning Algorithms](https://www.nature.com/articles/s41586-025-09761-x)》自动发现的是 policy/prediction update rule，本工作自动发现的则是可解释的 reward/evaluation rule：前者研究“如何学习”，后者研究“什么是好”。
+
+进行 DPO 等偏好后训练。只有当这些奖励信号能够在无重叠、覆盖生成与推理的数据上改善被训练模型，才能把结论从“可演化的 judge”进一步扩展为“数据稀缺条件下从经验中发现并扩展奖励信号的方法”。
+
+实验 artifact 位于 `output/evolving_structured_rubrics/vl_rewardbench_phase10_transfer_v2_max2048/`；最终 Native 重试报告为 `native_retry_max10/report.json`，全部系统的最终逐样本投票为 `native_retry_max10/combined/logical_votes.json`。
 
 
 
 ---
 
-## 11. 后续候选
+## 12. 后续候选
 
 - **Merge / Drop**：在前三个算子稳定后再处理节点重挂接和历史生存状态；
 - **删除 parent 的 Split 消融**：与正式的“保留 parent 并挂载 children”Split 分开；
@@ -1267,7 +1425,7 @@ Visual Grounding 子树单独使用时达到 365/500=73.0%，高于五-root等�
 
 ---
 
-## 12. Review Checklist
+## 13. Review Checklist
 
 - [x] 正式聚合 vote 只来自 Pairwise Worker
 - [x] Gate 只控制 status-dependent edges，不覆盖 Pairwise vote
