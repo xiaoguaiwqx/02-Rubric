@@ -210,7 +210,38 @@
     }
   },
   "worker_request_kwargs": {
-    "temperature": 0.5
+    "temperature": 0.5,
+    "max_tokens": 2048
+  },
+  "pairwise_cache_prompt_ablation": {
+    "protocol_version": "pairwise-cache-prompt-ablation-v1",
+    "source_experiment": "phase10_five_root_locked_split_refine_v1",
+    "source_rubric_sha256": "17ad7a0b6350338b100384b701303008746463911662f4a628b90c4632cdf7ef",
+    "source_node_count": 22,
+    "endpoint_ids": ["vllm-8000", "vllm-8001"],
+    "active_samples_per_endpoint": 2,
+    "smoke_sample_count": 10,
+    "cache_control_mode": "external_observation_no_reset",
+    "cache_reset_paths": [],
+    "discovery_variants": ["s0_control", "s1_scheduler_only", "s2_prompt_v2"],
+    "heldout_variants": ["s0_control", "s2_prompt_v2"],
+    "heldout_access": "final_stage_only"
+  },
+  "vlrb_prompt_v2_transfer": {
+    "protocol_version": "vlrb-phase10-prompt-v2-transfer-v1",
+    "source_experiment": "phase10_five_root_locked_split_refine_v1",
+    "source_rubric_sha256": "17ad7a0b6350338b100384b701303008746463911662f4a628b90c4632cdf7ef",
+    "source_node_count": 22,
+    "source_v1_experiment": "vl_rewardbench_phase10_transfer_v2_max2048",
+    "source_v1_logical": "native_retry_max10/combined/logical_votes.json",
+    "endpoint_ids": ["vllm-8000", "vllm-8001"],
+    "scheduler": "available_slot_dynamic",
+    "prompt_version": "1.1.0-cache-pilot",
+    "smoke_sample_count": 20,
+    "max_retry_attempts": 10,
+    "k": 3,
+    "seed": 42,
+    "selection_after_benchmark_forbidden": true
   },
   "structured_max_retries": 1,
   "api_retry_attempts": 3

@@ -33,6 +33,7 @@ class AgentCallMetrics:
     usage_complete: bool = True
     latency_seconds: float = 0.0
     error_count: int = 0
+    cached_input_tokens: int | None = None
 
 
 class Agent:
@@ -85,6 +86,7 @@ class Agent:
         self._total_tokens = 0
         self._usage_complete = False
         self._error_count = 0
+        self._cached_input_tokens: int | None = None
         self._last_call_metrics = AgentCallMetrics()
 
     @property
@@ -103,6 +105,7 @@ class Agent:
         # and must not permanently poison a later successful retry.
         self._usage_complete = False
         self._error_count = 0
+        self._cached_input_tokens = None
 
     def _record_usage(self, usage: object | None) -> None:
         if usage is None:
@@ -120,6 +123,10 @@ class Agent:
         self._output_tokens += values[1]
         self._total_tokens += values[2]
         self._usage_complete = True
+        details = getattr(usage, "prompt_tokens_details", None)
+        cached_tokens = getattr(details, "cached_tokens", None)
+        if isinstance(cached_tokens, int) and not isinstance(cached_tokens, bool):
+            self._cached_input_tokens = cached_tokens
 
     @staticmethod
     def _extract_status_code(error: Exception) -> int | None:
@@ -249,6 +256,7 @@ class Agent:
                 usage_complete=self._usage_complete,
                 latency_seconds=time.perf_counter() - started_at,
                 error_count=self._error_count,
+                cached_input_tokens=self._cached_input_tokens,
             )
             return None
         self.history.append({"role": "assistant", "content": response})
@@ -282,6 +290,7 @@ class Agent:
             usage_complete=self._usage_complete,
             latency_seconds=time.perf_counter() - started_at,
             error_count=self._error_count,
+            cached_input_tokens=self._cached_input_tokens,
         )
         return response
 

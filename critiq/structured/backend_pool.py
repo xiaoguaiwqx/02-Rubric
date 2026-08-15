@@ -106,6 +106,7 @@ class PoolCallRecord:
     usage_complete: bool
     latency_seconds: float
     error_count: int
+    cached_input_tokens: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return dict(self.__dict__)
@@ -176,7 +177,8 @@ class AvailableSlotBackendPool:
                     input_tokens=metrics.input_tokens, output_tokens=metrics.output_tokens,
                     total_tokens=metrics.total_tokens, usage_complete=metrics.usage_complete,
                     latency_seconds=metrics.latency_seconds,
-                    error_count=metrics.error_count))
+                    error_count=metrics.error_count,
+                    cached_input_tokens=metrics.cached_input_tokens))
             return raw, metrics
         finally:
             self._slots.put(endpoint_id)

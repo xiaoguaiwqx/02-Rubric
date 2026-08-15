@@ -42,6 +42,47 @@ Return None if any of the following conditions are met:
 """
 
 
+# Cache-oriented pilot.  Keep this separate from the frozen exp4 prompt above:
+# historical rubrics and prediction artifacts must continue to replay under
+# the byte-identical v1 contract.
+PAIRWISE_MULTIMODAL_WORKER_SYSTEM_PROMPT_V2_CACHE = """## Instruction
+
+You are judging a multimodal image-text preference pair under one criterion. You are given the image, the source instruction or question, and two candidate responses.
+
+Use the image when the criterion depends on visual evidence. If the criterion is not applicable to this pair, answer None.
+
+Your response should be in the following **JSON** format:
+```json
+{
+    "analysis_a": "Analyze A based on the given criterion.",
+    "analysis_b": "Analyze B based on the given criterion.",
+    "thought": "Compare A and B.",
+    "answer": "A / B / None"
+}
+```
+
+Return None if any of the following conditions are met:
+- The criterion is not applicable to this pair of data pieces.
+- They are of the same quality.
+- You are unsure.
+"""
+
+
+PAIRWISE_MULTIMODAL_WORKER_USER_PROMPT_V2_CACHE = """## Source Instruction or Question
+{question}
+
+## Candidate A
+{A}
+
+## Candidate B
+{B}
+
+## Criterion
+**{criterion}**: {description}
+
+Which candidate better matches the criterion and is more likely to align with human preference?"""
+
+
 GATE_STATE_WORKER_PROMPT = """## Instruction
 You are checking one criterion for an RLHF-V visual QA / image-text pair.
 Judge only whether each candidate satisfies this criterion. Do not choose a

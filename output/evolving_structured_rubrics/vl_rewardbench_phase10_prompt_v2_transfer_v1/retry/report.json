@@ -1,0 +1,7 @@
+{
+  "target_count": 70,
+  "recovered_count": 70,
+  "still_failed_count": 0,
+  "new_model_requests": 122,
+  "max_retry_attempts": 10
+}

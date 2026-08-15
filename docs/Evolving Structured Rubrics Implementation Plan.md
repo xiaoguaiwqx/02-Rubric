@@ -1412,11 +1412,214 @@ $$
 
 实验 artifact 位于 `output/evolving_structured_rubrics/vl_rewardbench_phase10_transfer_v2_max2048/`；最终 Native 重试报告为 `native_retry_max10/report.json`，全部系统的最终逐样本投票为 `native_retry_max10/combined/logical_votes.json`。
 
+---
+
+## 12. Prompt 优化
+
+### 12.1 Pairwise Worker Prompt v2 + 动态调度
+
+**Pairwise Worker Prompt v1**
+
+````shell
+PAIRWISE_MULTIMODAL_WORKER_PROMPT = """## Instruction
+You are judging an RLHF-V visual QA / image-text preference pair under one criterion. You are given the image, the source question, and two candidate answers.
+
+Use the image when the criterion depends on visual evidence. If the criterion is not applicable to this pair, answer None.
+
+## Question
+{question}
+
+## Criterion
+**{criterion}**: {description}
+
+## Candidate A
+{A}
+
+## Candidate B
+{B}
+
+Which candidate better matches the criterion and is more likely to align with human preference?"""
+
+PAIRWISE_WORKER_PROMPT_POSTFIX = """
+Your response should be in the following **JSON** format:
+```json
+{
+    "analysis_a": "Analyze A based on the given criterion.",
+    "analysis_b": "Analyze B based on the given criterion.",
+    "thought": "Compare A and B.",
+    "answer": "A / B / None"
+}
+```
+Return None if any of the following conditions are met:
+- The criterion is not applicable to this pair of data pieces.
+- They are of the same quality.
+- You are unsure.
+"""
+````
+
+#### 实验目的与设计
+
+Phase 10 的 Pairwise Worker 将 instruction、question、criterion 和 A/B 全部放在同一条动态 User prompt 中，可变 criterion 位于候选之前，既不利于 vLLM 复用公共前缀，也可能使紧邻最终问题的 Candidate B 获得位置优势。本实验在不修改 Phase 10 Rubric、M1 聚合、模型或解码温度的前提下，将稳定任务说明移入 System prompt，并把 User content 调整为：
+
+````shell
+PAIRWISE_MULTIMODAL_WORKER_SYSTEM_PROMPT_V2_CACHE = """## Instruction
+
+You are judging a multimodal image-text preference pair under one criterion. You are given the image, the source instruction or question, and two candidate responses.
+
+Use the image when the criterion depends on visual evidence. If the criterion is not applicable to this pair, answer None.
+
+Your response should be in the following **JSON** format:
+```json
+{
+    "analysis_a": "Analyze A based on the given criterion.",
+    "analysis_b": "Analyze B based on the given criterion.",
+    "thought": "Compare A and B.",
+    "answer": "A / B / None"
+}
+```
+
+Return None if any of the following conditions are met:
+- The criterion is not applicable to this pair of data pieces.
+- They are of the same quality.
+- You are unsure.
+"""
+
+PAIRWISE_MULTIMODAL_WORKER_USER_PROMPT_V2_CACHE = """## Source Instruction or Question
+{question}
+
+## Candidate A
+{A}
+
+## Candidate B
+{B}
+
+## Criterion
+**{criterion}**: {description}
+
+Which candidate better matches the criterion and is more likely to align with human preference?"""
+````
+
+比较的主要协议为：
+
+| 系统 | Prompt       | 调度                    | 作用                            |
+| ---- | ------------ | ----------------------- | ------------------------------- |
+| S0   | 原 Prompt v1 | available-slot 动态调度 | Phase 10 已有结果，作为性能基线 |
+| S3   | Prompt v2    | available-slot 动态调度 | 新 Prompt 部署候选              |
+
+`available-slot` 动态调度是指：所有请求进入同一个待处理队列，哪个 API 端点或并发槽位先空闲，就立即领取下一条请求；系统不会预先把某个样本或 criterion 固定绑定到特定端点，因此能够减少快慢请求不均造成的空闲等待。
+
+两个系统使用相同的 Phase 10 最终 Rubric（5 roots、17 children，rubric SHA-256=`17ad7a0...7ef`）、`Qwen3-VL-8B-Instruct`、`temperature=0.5` 和单 replicate。S3 将 `max_tokens` 固定为2048，并继续使用原 available-slot 动态 backend pool。S0 的性能直接引用10.7中已经冻结的 Phase 10 结果，避免将一次带随机采样波动的重跑误作新的基线；另行执行的原 Prompt 全量重跑只用于比较耗时、尾延迟与位置偏置。heldout-500 已被前序实验多次查看，因此本节属于 exploratory Prompt/执行协议诊断。
+
+#### Discovery-90 结果
+
+| 系统           |     M1 ACC | Coverage |
+| -------------- | ---------: | -------: |
+| S0（Phase 10） | **73.33%** |  100.00% |
+| S3             | **73.33%** |  100.00% |
+
+S3 在 discovery-90 上完整复现 Phase 10 的73.33% ACC，并保持100% Coverage，说明新 Prompt 没有破坏已演化 Rubric 在发现集上的整体决策能力。
+
+#### Heldout-500 结果
+
+| 系统           |       Correct |     M1 ACC |   Coverage |
+| -------------- | ------------: | ---------: | ---------: |
+| S0（Phase 10） |     357 / 500 |     71.40% |     98.60% |
+| S3             | **383 / 500** | **76.60%** | **99.40%** |
+
+S3 相对 Phase 10 的 S0 提高 **5.2 pp**；逐样本比较为58 corrected、32 harmed、净纠正26条，exact McNemar $p=0.0080$。22个节点中，21个节点的 full-500 strict ACC 提高，唯一未提高的 `completeness_via_verified_perception` 仅下降0.2 pp，同时其 covered ACC 从74.4%提高到82.4%，表现为更保守的适用域。
+
+#### 效率与位置偏置分析
+
+| 指标          | 原 Prompt timing |       S3 |       变化 |
+| ------------- | ---------------: | -------: | ---------: |
+| 总耗时        |         64.6 min | 42.0 min | **-35.0%** |
+| 推理次数/分钟 |            170.4 |    262.1 | **+53.8%** |
+| P50 latency   |          11.92 s |   8.49 s | **-28.8%** |
+| P90 latency   |          18.29 s |  11.07 s | **-39.5%** |
+| P99 latency   |          66.34 s |  15.85 s | **-76.1%** |
+| 额外模型调用  |              136 |       36 | **-73.5%** |
+| 输出 tokens   |           3.30 M |   2.76 M | **-16.2%** |
+
+这里每次推理对应一个 criterion-conditioned Pairwise Worker 请求。S3将推理吞吐从每分钟170.4次提高到262.1次。输入 tokens 仅减少0.3%，说明加速并非来自缩短输入，而主要与输出更简洁、解析重试减少和长尾延迟收敛有关。这里的原 Prompt 全量重跑只作为同规模 timing control，不替代 Phase 10 的71.4%性能基线。实验未重置服务端 prefix cache，且原 Prompt先于S3运行，因此35%的端到端加速不能全部归因于 prefix-cache 命中；但吞吐、重试和尾延迟改善均由真实运行记录支持。
+
+进一步分析发现，原 Prompt 存在明显的 Candidate B 偏置，而 Prompt v2 将A/B表现校准到近似对称。heldout gold 本身基本均衡（A=244、B=256）：
+
+| 系统          | 预测 A / B / Tie | gold-A ACC | gold-B ACC |
+| ------------- | ---------------: | ---------: | ---------: |
+| 原 Prompt重跑 |    212 / 282 / 6 |     62.70% |     75.78% |
+| S3            |    247 / 250 / 3 | **77.05%** | **76.17%** |
+
+S3主要将 gold-A ACC 提高14.35 pp，而gold-B基本保持不变。最合理的解释是：原 Prompt 中 Candidate B 紧邻最终问题，**产生了 recency/position bias**；Prompt v2 将 criterion 放在两个候选之后，使最终判断**重新围绕 criterion**，并降低候选位置不对称。
+
+#### 结论与证据边界
+
+当前结果支持将 **Prompt v2 + available-slot动态调度 + `max_tokens=2048`** 作为后续默认 Pairwise Worker 协议：它没有破坏已演化 Rubric 的语义执行，反而**相对历史 Phase 10 提高5.2 pp**，并显著降低运行时间和长尾不稳定性。更准确的表述不是“输出行为没有漂移”，而是“Prompt v2产生了显著但净收益为正的决策校准”。
+
+实验 artifact：`output/evolving_structured_rubrics/rubric_evolution_phase5/pairwise_worker_cache_prompt_ablation_v1/`；discovery S3报告为 `discovery90/s3_report.json`，heldout报告为 `heldout500/s3_report.json`。
+
+### 12.2 Prompt v2 的 VL-RewardBench 外部迁移验证
+
+#### 实验目的与冻结协议
+
+12.1 已在 discovery-90 和 heldout-500 上验证 Prompt v2 能提高 Phase 10 Rubric 的执行性能。本实验进一步检验该收益能否迁移到外部 VL-RewardBench，而不是只适用于开发期的 RLHF-V 风格数据。
+
+评测集固定为 VL-RewardBench 的1,247个偏好对，包含 General、Hallucination 和 Reasoning 三类。Pairwise Worker 固定为 `Qwen3-VL-8B-Instruct`、`temperature=0.5`、`max_tokens=2048`，使用8000和8001两个端点的 available-slot 动态调度。每个偏好对执行 $K=3$ 次随机 A/B 顺序评测，再按多数投票恢复为原始偏好方向。结构化系统使用同一份 Phase 10 最终 Rubric（5 roots、17 children，共22个节点）；22个节点的预测同时离线构造 Initial five-root、Visual-only、Final weighted 和 Final equal，避免为不同聚合方案重复调用模型。Prompt v1 指标直接读取已经完成的历史实验，Prompt v2 的技术失败最多额外重试10次。
+
+指标口径如下：`OverallAcc` 是形成明确最终判断的样本上的总体准确率；`MacroAcc` 是 General、Hallucination 和 Reasoning 三类 covered accuracy 的算术平均；`Strict ACC` 以全部1,247个样本为分母，将未覆盖样本计为错误。
+
+#### 总体结果
+
+| 方法 | OverallAcc | MacroAcc | Coverage | Strict ACC |
+| --- | ---: | ---: | ---: | ---: |
+| Native VL-RewardBench Prompt | 54.52% | 53.56% | 99.28% | 54.13% |
+| Initial five-root，Prompt v1 | 45.04% | 47.75% | 97.75% | 44.03% |
+| Initial five-root，Prompt v2 | 58.12% | 54.60% | 98.24% | 57.10% |
+| Phase 10 Final equal，Prompt v1 | 64.31% | 59.05% | 98.64% | 63.43% |
+| **Phase 10 Final equal，Prompt v2** | **69.53%** | **63.37%** | **98.96%** | **68.81%** |
+| Phase 10 Final weighted，Prompt v2 | 68.66% | 62.25% | 99.28% | 68.16% |
+| Phase 10 Visual-only，Prompt v2 | 68.85% | 62.31% | 96.79% | 66.64% |
+
+最终等权系统在1,234个明确判断中正确858个，因此 `OverallAcc=858/1234=69.53%`；以全部样本计分仍有 `Strict ACC=858/1247=68.81%`。其 Coverage 接近99%，结果不是通过大量输出 `None` 获得。Prompt v2 下等权聚合比预设 Visual=0.4 的 weighted 聚合高0.87 pp，但两者的配对差异不显著（净差8条，exact McNemar $p=0.332$），因此本实验不足以判定等权聚合普遍优于加权聚合。
+
+#### Prompt 与 Rubric 演化的独立贡献
+
+| 配对比较 | Corrected | Harmed | Net corrected | Exact McNemar $p$ |
+| --- | ---: | ---: | ---: | ---: |
+| Initial v2 $\rightarrow$ Phase 10 Final equal v2 | 158 | 12 | **+146** | $1.18\times10^{-33}$ |
+| Phase 10 Final equal v1 $\rightarrow$ v2 | 141 | 74 | **+67** | $5.73\times10^{-6}$ |
+| Initial five-root v1 $\rightarrow$ v2 | 217 | 54 | **+163** | $2.51\times10^{-24}$ |
+
+固定 Prompt v2 后，Rubric 演化仍将 OverallAcc 从58.12%提高到69.53%，提升11.41 pp；MacroAcc提高8.77 pp，Strict ACC提高11.71 pp。固定 Phase 10 Rubric 后，Prompt v2 相对 Prompt v1 又提高5.22 pp OverallAcc。因而最终性能不是单独由 Prompt 改写或 Rubric 演化造成，而是二者的叠加：Prompt v2 提高单准则执行的稳定性，演化 Rubric 则提供更有效的结构化决策模式。
+
+Prompt v2 对 Initial five-root 的增益（+13.09 pp OverallAcc）大于对最终 Rubric 的增益（+5.22 pp），说明详细的演化 criterion 已经能够部分补偿旧 Prompt 的执行偏差；新 Prompt 对较粗的初始 roots 校准作用更强。
+
+#### 类别结果
+
+| 类别 | Initial v2 | Final equal v2 | Rubric 演化增益 | Final equal v1 $\rightarrow$ v2 |
+| --- | ---: | ---: | ---: | ---: |
+| General | 37.71% | 46.89% | +9.18 pp | +3.07 pp |
+| Hallucination | 59.32% | **75.81%** | **+16.48 pp** | **+6.39 pp** |
+| Reasoning | 66.77% | 67.41% | +0.64 pp | +3.51 pp |
+
+Rubric 演化带来的146条净纠正中，General、Hallucination 和 Reasoning 分别贡献17、125和4条，即约85.6%的净收益来自 Hallucination。这与 discovery-90 主要包含视觉事实性和幻觉错误相一致。与此同时，Final equal 的 MacroAcc 仍相对 Prompt v1 提高4.33 pp，说明收益并非只由 Hallucination 样本在 VL-RewardBench 中占比较高造成；但 General 的46.89%和较小的 Reasoning 演化增益也表明，当前 Rubric 的主要能力边界仍是视觉事实性偏好判断。
+
+#### 技术可靠性与证据边界
+
+完整评测包含 $1247\times22\times3=82{,}302$ 次 criterion-conditioned Pairwise Worker 判断。初次运行留下70条技术失败，占0.085%；专门重试新增122次模型请求，最终70/70全部恢复，未解决技术失败为0。完整运行记录的平均吞吐为236.9次推理/分钟；动态调度分别向8000和8001端点分配38,334和44,517次实际模型调用，较快端点自动承担了更多请求。
+
+综合而言，VL-RewardBench 结果支持将 **Prompt v2 + available-slot 动态调度 + `max_tokens=2048`** 作为后续默认 Pairwise Worker 协议：它在外部数据上保留了 Rubric 演化的显著收益，并使 Phase 10 Final equal 相对 Prompt v1 再提高5.22 pp。
+
+实验 artifact：`output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/`；最终报告为 `final_report.json` 和 `final_report.md`，技术重试报告为 `retry/report.json`。
+
+
+
+
+
 
 
 ---
 
-## 12. 后续候选
+## 13. 后续候选
 
 - **Merge / Drop**：在前三个算子稳定后再处理节点重挂接和历史生存状态；
 - **删除 parent 的 Split 消融**：与正式的“保留 parent 并挂载 children”Split 分开；
@@ -1425,7 +1628,7 @@ $$
 
 ---
 
-## 13. Review Checklist
+## 14. Review Checklist
 
 - [x] 正式聚合 vote 只来自 Pairwise Worker
 - [x] Gate 只控制 status-dependent edges，不覆盖 Pairwise vote

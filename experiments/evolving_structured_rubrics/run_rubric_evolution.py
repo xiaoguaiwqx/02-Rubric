@@ -298,7 +298,9 @@ def _config(path: Path) -> dict[str, Any]:
                        "refine_operator", "split_retry_experiment",
                        "split_retry_v2_experiment", "refine_role_experiment",
                        "visual_split_refine_experiment",
-                       "five_root_locked_split_refine_experiment"}
+                       "five_root_locked_split_refine_experiment",
+                       "pairwise_cache_prompt_ablation",
+                       "vlrb_prompt_v2_transfer"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -331,6 +333,7 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("refine_role_experiment", None)
     value.pop("visual_split_refine_experiment", None)
     value.pop("five_root_locked_split_refine_experiment", None)
+    value.pop("vlrb_prompt_v2_transfer", None)
     return value
 
 
@@ -2948,7 +2951,18 @@ def main() -> int:
         "vlrb-phase10-capped-native-fallback-report",
         "vlrb-phase10-capped-native-retry-freeze",
         "vlrb-phase10-capped-native-retry-run",
-        "vlrb-phase10-capped-native-retry-report"))
+        "vlrb-phase10-capped-native-retry-report",
+        "pairwise-cache-freeze", "pairwise-cache-audit",
+        "pairwise-cache-smoke", "pairwise-cache-discovery-run",
+        "pairwise-cache-discovery-report", "pairwise-cache-heldout-run",
+        "pairwise-cache-final-report", "pairwise-cache-s3-freeze",
+        "pairwise-cache-s3-run", "pairwise-cache-s3-report",
+        "pairwise-cache-s3-heldout-freeze",
+        "pairwise-cache-s3-heldout-run",
+        "pairwise-cache-s3-heldout-report",
+        "vlrb-prompt-v2-freeze", "vlrb-prompt-v2-audit",
+        "vlrb-prompt-v2-smoke", "vlrb-prompt-v2-run",
+        "vlrb-prompt-v2-retry", "vlrb-prompt-v2-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -2998,8 +3012,14 @@ def main() -> int:
     elif args.stage.startswith("vlrb-phase10-"):
         from .vl_rewardbench_phase10 import run_stage
         run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-prompt-v2-"):
+        from .vl_rewardbench_prompt_v2 import run_stage
+        run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-"):
         from .vl_rewardbench import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("pairwise-cache-"):
+        from .pairwise_cache_ablation import run_stage
         run_stage(config, output, args.stage)
     else:
         actions[args.stage]()

@@ -13,6 +13,8 @@ from .dual_worker_prompts import (
     GATE_STATE_WORKER_PROMPT_V2_1,
     GATE_STATE_WORKER_PROMPT_POSTFIX,
     PAIRWISE_MULTIMODAL_WORKER_PROMPT,
+    PAIRWISE_MULTIMODAL_WORKER_SYSTEM_PROMPT_V2_CACHE,
+    PAIRWISE_MULTIMODAL_WORKER_USER_PROMPT_V2_CACHE,
     PAIRWISE_WORKER_PROMPT_POSTFIX,
 )
 from .evaluator import MultiModalPairEvaluator
@@ -207,6 +209,73 @@ class PairwiseVoteMultiModalEvaluator(_DualMultimodalEvaluator):
             tuple(self.sample_fingerprint(row) for row in self.dataset),
             tuple(StructuredCriterionSnapshot(item.name, item.description) for item in criteria),
             rows, answers, self.request_spec())
+
+
+class CacheOptimizedPairwiseVoteMultiModalEvaluator(PairwiseVoteMultiModalEvaluator):
+    """Pilot evaluator with a stable System prefix and sample-first content.
+
+    The image and all sample-specific text precede the variable criterion so
+    repeated criterion judgements for one sample can share the longest exact
+    multimodal prefix.  The frozen v1 evaluator above remains unchanged.
+    """
+
+    system_prompt = PAIRWISE_MULTIMODAL_WORKER_SYSTEM_PROMPT_V2_CACHE
+    user_prompt = PAIRWISE_MULTIMODAL_WORKER_USER_PROMPT_V2_CACHE
+    content_order = "image_then_sample_text_then_criterion"
+
+    def __init__(self, *, worker_args: dict[str, Any], dataset: Sequence[PairData],
+                 backend_id: str, max_concurrent: int = 1,
+                 max_retries: int = 1, **kwargs: Any) -> None:
+        if "system" in worker_args and worker_args["system"] != self.system_prompt:
+            raise ValueError("cache pilot System prompt is frozen")
+        selected_args = dict(worker_args)
+        selected_args["system"] = self.system_prompt
+        _DualMultimodalEvaluator.__init__(
+            self,
+            worker_args=selected_args,
+            dataset=dataset,
+            backend_id=backend_id,
+            worker_prompt=self.user_prompt,
+            worker_postfix="",
+            max_concurrent=max_concurrent,
+            max_retries=max_retries,
+            **kwargs,
+        )
+
+    def request_spec(self) -> DualWorkerRequestSpec:
+        decoding = self.worker_args.get("request_kwargs") or {}
+        decoding = json.loads(json.dumps(decoding, ensure_ascii=False, allow_nan=False))
+        prompt_contract = json.dumps({
+            "system": self.system_prompt,
+            "user": self.user_prompt,
+            "content_order": self.content_order,
+        }, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        return DualWorkerRequestSpec(
+            model=str(self.worker_args.get("model", "gpt-4o-mini")),
+            backend_id=self.backend_id,
+            prompt_sha256=worker_prompt_sha256(prompt_contract, ""),
+            max_data_chars=self.max_data_chars,
+            encode_local_image=self.encode_local_image,
+            image_field=self.image_field,
+            question_field=self.question_field,
+            sample_id_field=self.sample_id_field,
+            decoding_config=decoding,
+        )
+
+    def _make_user_content(self, data, criterion):
+        prompt = self._make_prompt(data, criterion)
+        image_path = data.get(self.image_field)
+        image_path = "" if image_path is None else str(image_path)
+        if not image_path:
+            return prompt
+        image_url = (
+            self._image_path_to_data_url(image_path)
+            if self.encode_local_image else image_path
+        )
+        return [
+            {"type": "image_url", "image_url": {"url": image_url}},
+            {"type": "text", "text": prompt},
+        ]
 
 
 class GateStateMultiModalEvaluator(_DualMultimodalEvaluator):

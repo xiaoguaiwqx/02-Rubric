@@ -21,6 +21,7 @@ from .version import (
     GATE_WORKER_SCHEMA_VERSION,
     PAIRWISE_WORKER_PARSER_VERSION,
     PAIRWISE_WORKER_PROMPT_VERSION,
+    PAIRWISE_WORKER_PROMPT_V2_CACHE_PILOT_VERSION,
     PAIRWISE_WORKER_SCHEMA_VERSION,
     STRUCTURED_SEMANTICS_VERSION,
 )
@@ -339,9 +340,13 @@ class PairwisePredictionOutput:
         self._validate()
 
     def _validate(self) -> None:
-        if (self.semantics_version, self.schema_version, self.prompt_version, self.parser_version) != (
-            STRUCTURED_SEMANTICS_VERSION, PAIRWISE_WORKER_SCHEMA_VERSION,
-            PAIRWISE_WORKER_PROMPT_VERSION, PAIRWISE_WORKER_PARSER_VERSION):
+        if (self.semantics_version != STRUCTURED_SEMANTICS_VERSION
+                or self.schema_version != PAIRWISE_WORKER_SCHEMA_VERSION
+                or self.prompt_version not in {
+                    PAIRWISE_WORKER_PROMPT_VERSION,
+                    PAIRWISE_WORKER_PROMPT_V2_CACHE_PILOT_VERSION,
+                }
+                or self.parser_version != PAIRWISE_WORKER_PARSER_VERSION):
             raise ValueError("pairwise artifact version mismatch")
         if not self.sample_ids or len(set(self.sample_ids)) != len(self.sample_ids):
             raise ValueError("pairwise sample IDs must be non-empty and unique")

@@ -1,0 +1,145 @@
+{
+  "schema_version": "1.0.0",
+  "experiment": "vl_rewardbench_phase10_prompt_v2_transfer_v1",
+  "protocol": {
+    "protocol_version": "vlrb-phase10-prompt-v2-transfer-v1",
+    "source_experiment": "phase10_five_root_locked_split_refine_v1",
+    "source_rubric_sha256": "17ad7a0b6350338b100384b701303008746463911662f4a628b90c4632cdf7ef",
+    "source_node_count": 22,
+    "source_v1_experiment": "vl_rewardbench_phase10_transfer_v2_max2048",
+    "source_v1_logical": "native_retry_max10/combined/logical_votes.json",
+    "endpoint_ids": [
+      "vllm-8000",
+      "vllm-8001"
+    ],
+    "scheduler": "available_slot_dynamic",
+    "prompt_version": "1.1.0-cache-pilot",
+    "smoke_sample_count": 20,
+    "max_retry_attempts": 10,
+    "k": 3,
+    "seed": 42,
+    "selection_after_benchmark_forbidden": true
+  },
+  "exploratory": true,
+  "dataset": {
+    "path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\data\\VL_RewardBench\\data\\test-00000-of-00001.parquet",
+    "sha256": "500a33ecbeb6ddd4cbbb6de24b325815330c75c1f7b14e3043c1418fd285fb59",
+    "count": 1247,
+    "record_sha256": "42ff026cd7f2955004860c996669e1598287d80e623df74543b2d769886e3f20"
+  },
+  "order_schedule_sha256": "d0636fa7e4f409589ec4d36ce9917f20cf7fe1feedd3f37a4522d31579d8ce57",
+  "counterbalance": {
+    "k": 3,
+    "seed": 42,
+    "protocol": "balanced_b_1minusb_b"
+  },
+  "structured_worker_request_spec": {
+    "model": "Qwen/Qwen3-VL-8B-Instruct",
+    "backend_id": "pool:qwen3vl8b-vllm-pool-v1:18e69e72502b9e8eba34fad78dcd68728d5b3dd342c06ca65c3ca163e980bb31",
+    "prompt_sha256": "7b94a9b5133bd0fed7a0d853a62c62469671673859f2275494375fee9c9827df",
+    "max_data_chars": null,
+    "encode_local_image": true,
+    "image_field": "image_path",
+    "question_field": "question",
+    "sample_id_field": "sample_id",
+    "decoding_config": {
+      "temperature": 0.5,
+      "max_tokens": 2048
+    }
+  },
+  "prompt_version": "1.1.0-cache-pilot",
+  "source": {
+    "phase10_rubric_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\phase10_five_root_locked_split_refine_v1\\final\\rubric.json",
+    "phase10_rubric_file_sha256": "8d42affa31dca6feae010c6889462900e749596619125126a54e5a5bf44a7727",
+    "phase10_rubric_sha256": "17ad7a0b6350338b100384b701303008746463911662f4a628b90c4632cdf7ef",
+    "prompt_v1_manifest_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\vl_rewardbench_phase10_transfer_v2_max2048\\frozen_manifest.json",
+    "prompt_v1_manifest_sha256": "42eb19737afeda7c0f01746fd9f72bc513277a352a0fb26f5fc557b6328ee301",
+    "prompt_v1_logical_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\vl_rewardbench_phase10_transfer_v2_max2048\\native_retry_max10\\combined\\logical_votes.json",
+    "prompt_v1_logical_sha256": "f9508d828cbd92a92f409e465c53b743bcdc82eadfc58725cb0b8d8aec1df511",
+    "heldout_prompt_v2_manifest_path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\output\\evolving_structured_rubrics\\rubric_evolution_phase5\\pairwise_worker_cache_prompt_ablation_v1\\s3_heldout_manifest.json",
+    "heldout_prompt_v2_manifest_sha256": "ef4fdf01d5c2c9c5dd8ab6e66efca989e85fa970f1f1e5f65425506e362cab81"
+  },
+  "systems": {
+    "initial_five_root_equal": {
+      "node_count": 5,
+      "root_weights": {
+        "init_01_completeness_and_coverage": 0.2,
+        "init_02_visual_grounding_and_details": 0.2,
+        "init_03_factuality_no_hallucination": 0.2,
+        "init_04_creativity_and_expressiveness": 0.2,
+        "init_05_clarity_and_coherence": 0.2
+      }
+    },
+    "phase10_final_equal": {
+      "node_count": 22,
+      "root_weights": {
+        "init_01_completeness_and_coverage": 0.2,
+        "init_02_visual_grounding_and_details": 0.2,
+        "init_03_factuality_no_hallucination": 0.2,
+        "init_04_creativity_and_expressiveness": 0.2,
+        "init_05_clarity_and_coherence": 0.2
+      }
+    },
+    "phase10_final_weighted": {
+      "prediction_source": "phase10_final_equal",
+      "root_weights": {
+        "init_01_completeness_and_coverage": 0.15,
+        "init_02_visual_grounding_and_details": 0.4,
+        "init_03_factuality_no_hallucination": 0.15,
+        "init_04_creativity_and_expressiveness": 0.15,
+        "init_05_clarity_and_coherence": 0.15
+      }
+    },
+    "phase10_visual_only": {
+      "prediction_source": "phase10_final_equal",
+      "root_id": "init_02_visual_grounding_and_details"
+    }
+  },
+  "root_prediction_reuse": {
+    "completeness_and_coverage": "init_01_completeness_and_coverage",
+    "visual_grounding_and_details": "init_02_visual_grounding_and_details",
+    "factuality_no_hallucination": "init_03_factuality_no_hallucination",
+    "creativity_and_expressiveness": "init_04_creativity_and_expressiveness",
+    "clarity_and_coherence": "init_05_clarity_and_coherence"
+  },
+  "endpoint_pool": {
+    "pool_id": "qwen3vl8b-vllm-pool-v1",
+    "common_checkpoint_id": "Qwen/Qwen3-VL-8B-Instruct",
+    "global_request_concurrency": 40,
+    "endpoints": [
+      {
+        "endpoint_id": "vllm-8000",
+        "base_url": "http://localhost:8000/v1",
+        "checkpoint_root": "/media/disk12T/2022-sgh/ModelWeight/Qwen3-VL-8B-Instruct",
+        "max_concurrency": 20
+      },
+      {
+        "endpoint_id": "vllm-8001",
+        "base_url": "http://localhost:8001/v1",
+        "checkpoint_root": "/media/oem/12T1/WQX/02_DD_LLM/local-llm-inference/ModelWeight/Qwen3-VL-8B-Instruct",
+        "max_concurrency": 20
+      }
+    ]
+  },
+  "selection_after_benchmark_forbidden": true,
+  "endpoint_identities": [
+    {
+      "endpoint_id": "vllm-8000",
+      "base_url": "http://localhost:8000/v1",
+      "vllm_version": "0.11.0",
+      "model": "Qwen/Qwen3-VL-8B-Instruct",
+      "checkpoint_root": "/media/disk12T/2022-sgh/ModelWeight/Qwen3-VL-8B-Instruct",
+      "max_model_len": 25800,
+      "max_concurrency": 20
+    },
+    {
+      "endpoint_id": "vllm-8001",
+      "base_url": "http://localhost:8001/v1",
+      "vllm_version": "0.11.0",
+      "model": "Qwen/Qwen3-VL-8B-Instruct",
+      "checkpoint_root": "/media/oem/12T1/WQX/02_DD_LLM/local-llm-inference/ModelWeight/Qwen3-VL-8B-Instruct",
+      "max_model_len": 25800,
+      "max_concurrency": 20
+    }
+  ]
+}
