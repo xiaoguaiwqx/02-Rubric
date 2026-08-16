@@ -1615,11 +1615,83 @@ Rubric 演化带来的146条净纠正中，General、Hallucination 和 Reasoning
 
 
 
+## 13. Gate Worker
+
+### 13.1 设计与评估协议
+
+Gate Worker 不直接判断 A/B 偏好，只根据图像、问题、候选回答以及同一 parent 下各 child 的 `Applicable only when` / `Not applicable when` 条件，输出每个 child 的 `applicable` 或 `not_applicable`。Parent 仍参与判断；被激活 child 的偏好票仍由 Pairwise Worker 产生，Gate 只控制哪些 child 进入当前父子树的聚合。
+
+当前实验采用以下冻结设置：
+
+- 暂不使用 Root Gate，五个 roots 始终参与最终 M1；
+- 每个 root 独立路由其 direct children，不跨 root 激活；
+- Gate prompt 采用与 Pairwise Worker Prompt v2 一致的固定 System Prompt + 动态 User Prompt 组织方式；同一个root的 gate worker 提示词是一样的，推理不同样本的时前面大量的Prompt命中缓存，加速推理
+- `temperature=0.2`，`max_tokens=2048`，使用8000和8001两个端点动态调度；
+- 非法 JSON 最多重试5次；最终失败记录解析错误并回退 all children，不中断整批实验；
+- RLHF-V 实验复用冻结的 Phase 10 Pairwise predictions，仅新增 Gate 判断，从而将性能变化归因于路由。
+
+### 13.2 Visual Grounding Gate-only
+
+第一组实验只对 `visual_grounding_and_details` 的4个 children 进行动态路由，其他 roots 保持不变。实验用于验证：criterion description 中自然形成的适用与不适用条件，能否直接作为可执行 edge contract。
+
+| 数据与系统 | Visual 子树 ACC | 完整五-root M1 ACC |
+| --- | ---: | ---: |
+| discovery-90：Parent only | 68.89% | 71.11% |
+| discovery-90：All children | 71.11% | 73.33% |
+| discovery-90：Best fixed subset | **77.78%** | 73.33% |
+| discovery-90：Dynamic Gate | 76.67% | **75.56%** |
+| discovery-90：Oracle routing | 88.89% | 76.67% |
+| heldout-500：Parent only | 75.80% | 76.20% |
+| heldout-500：All children | **77.60%** | **76.60%** |
+| heldout-500：Best fixed subset | 75.20% | 75.80% |
+| heldout-500：Dynamic Gate | 74.20% | 75.40% |
+| heldout-500：Oracle routing | 88.80% | 78.20% |
+
+Discovery 上 Dynamic Gate 相对 All children 在 Visual 子树中 corrected 7、harmed 2，并把完整 M1 提高2.22 pp；但 heldout 上该优势没有泛化，Visual 子树和完整 M1 分别下降3.40 pp和1.20 pp。与此同时，Gate 将**平均激活量降至0.76/4**，并将 heldout sibling conflicts 从110次降至6次；该实验说明 Gate 能形成稀疏且有语义的局部路由，但仅依赖现有适用性文本还不足以稳定提升未见数据 ACC。
+
+实验 artifact：`output/evolving_structured_rubrics/rubric_evolution_phase5/phase13_visual_grounding_gate_only_v3/`。
+
+### 13.3 完整 Rubric Child-Gate
+
+第二组实验将同一 Gate 机制扩展至五个 roots：五个 roots 仍全部参与，每个 root 分别选择其 direct children。Phase 10 Rubric 共包含17个 children。
+
+| 数据与系统 | Parent only | All children | Visual-only Gate | Full Child-Gate | Oracle routing |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| discovery-90 M1 ACC | 72.22% | 73.33% | **75.56%** | 70.00% | 82.22% |
+| heldout-500 M1 ACC | 75.80% | **76.60%** | 75.40% | 75.80% | 88.20% |
+
+Heldout 上 Full Child-Gate 相对 All children corrected 17、harmed 21、净差−4，**ACC 只下降0.80 pp**，exact McNemar $p=0.627$；Coverage 从99.4%降至98.6%。在结构和计算量方面，平均激活 children 从17个降至3.566个，**减少79.0%**；sibling conflicts 从530次降至13次，减少97.5%；2,500次 Gate 路由的解析成功率为100%。按请求数量估计，完整执行由每样本22次 Pairwise 判断变为约 $5\text{ roots}+5\text{ Gates}+3.566\text{ children}=13.566$ 次请求，对应约1.62倍的理论请求级加速；实际端到端加速仍需在线短路执行验证。
+
+该结果表明 Full Child-Gate 在 RLHF-V heldout 上形成了较好的**精度—效率折中**，但它没有提高 ACC。Oracle 的88.20%同时说明，children 之间存在很大的动态路由上限，主要瓶颈是 Gate 的选择质量，而不是稀疏路由本身。
+
+实验 artifact：`output/evolving_structured_rubrics/rubric_evolution_phase5/phase14_full_rubric_child_gate_v1/`。
+
+### 13.4 VL-RewardBench 外部迁移
+
+第三组实验在 VL-RewardBench 1,247条样本上评估完整 Child-Gate。Pairwise predictions 与第12章 Prompt v2 的 K=3 结果完全冻结；Gate 同样独立运行3次后聚合，因此差异只来自 child routing。
+
+| 系统 | OverallAcc | MacroAcc | Coverage | Strict ACC |
+| --- | ---: | ---: | ---: | ---: |
+| Parent only | 58.12% | 54.60% | 98.24% | 57.10% |
+| All children | **69.53%** | **63.37%** | 98.96% | **68.81%** |
+| Full Child-Gate | 60.99% | 56.71% | 98.48% | 60.06% |
+
+Full Child-Gate 相对 All children 的 OverallAcc 下降8.54 pp：corrected 17、harmed 126、净差−109，exact McNemar $p=9.45\times10^{-22}$。下降主要集中在 Hallucination（75.81%→63.48%）和 General（46.89%→39.66%），Reasoning 基本持平（67.41%→66.99%）。解析不是主要问题：18,705次逻辑路由中只有4次最终失败，解析率为99.979%。
+
+Gate 仍把平均激活 children 从17个降至3.297个，减少80.61%，并把 sibling conflicts 从4,597次降至200次。**单独只对一个 root 使用 Gate 时 OverallAcc 仍为67.69%–69.29%**，但五个 roots 同时 Gate 后降至60.99%，说明多个局部剪枝在最终多数投票中发生了非线性叠加。当前 Gate 学习的是“criterion 在语义上是否适用”，尚未建模 child 对最终 M1 投票方向和票差的边际贡献；五个 roots 又始终无条件参与，因此跨-root 冲突也没有得到处理。当前零样本 edge contract 尚不能跨数据分布稳定替代 All children。
+
+因此，现阶段证据支持将 Gate 定位为有效的稀疏化机制，而不是已经完成的精度优化机制。后续 Discovery 应保留全部 child 的**反事实预测**，同时记录 Gate 的**误激活和漏激活**，用实际边际贡献反馈优化 `Applicable only when` / `Not applicable when`；Root Gate 则应作为独立变量验证，避免与 Child Gate 的误差叠加后无法归因。
+
+实验 artifact：`output/evolving_structured_rubrics/vl_rewardbench_phase14_full_child_gate_v1/`；最终报告为 `final_report.json` 和 `final_report.md`。
+
+
+
+
 
 
 ---
 
-## 13. 后续候选
+## 14. 后续候选
 
 - **Merge / Drop**：在前三个算子稳定后再处理节点重挂接和历史生存状态；
 - **删除 parent 的 Split 消融**：与正式的“保留 parent 并挂载 children”Split 分开；
@@ -1628,7 +1700,7 @@ Rubric 演化带来的146条净纠正中，General、Hallucination 和 Reasoning
 
 ---
 
-## 14. Review Checklist
+## 15. Review Checklist
 
 - [x] 正式聚合 vote 只来自 Pairwise Worker
 - [x] Gate 只控制 status-dependent edges，不覆盖 Pairwise vote

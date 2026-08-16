@@ -300,7 +300,10 @@ def _config(path: Path) -> dict[str, Any]:
                        "visual_split_refine_experiment",
                        "five_root_locked_split_refine_experiment",
                        "pairwise_cache_prompt_ablation",
-                       "vlrb_prompt_v2_transfer"}
+                       "vlrb_prompt_v2_transfer",
+                       "visual_gate_experiment",
+                       "full_child_gate_experiment",
+                       "vlrb_full_child_gate_experiment"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -334,6 +337,9 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("visual_split_refine_experiment", None)
     value.pop("five_root_locked_split_refine_experiment", None)
     value.pop("vlrb_prompt_v2_transfer", None)
+    value.pop("visual_gate_experiment", None)
+    value.pop("full_child_gate_experiment", None)
+    value.pop("vlrb_full_child_gate_experiment", None)
     return value
 
 
@@ -2960,9 +2966,20 @@ def main() -> int:
         "pairwise-cache-s3-heldout-freeze",
         "pairwise-cache-s3-heldout-run",
         "pairwise-cache-s3-heldout-report",
+        "visual-gate-freeze", "visual-gate-smoke",
+        "visual-gate-discovery", "visual-gate-report",
+        "visual-gate-heldout", "visual-gate-heldout-exploratory",
+        "visual-gate-final-report",
+        "full-child-gate-freeze", "full-child-gate-smoke",
+        "full-child-gate-discovery", "full-child-gate-report",
+        "full-child-gate-heldout-exploratory",
+        "full-child-gate-final-report",
         "vlrb-prompt-v2-freeze", "vlrb-prompt-v2-audit",
         "vlrb-prompt-v2-smoke", "vlrb-prompt-v2-run",
-        "vlrb-prompt-v2-retry", "vlrb-prompt-v2-report"))
+        "vlrb-prompt-v2-retry", "vlrb-prompt-v2-report",
+        "vlrb-child-gate-freeze", "vlrb-child-gate-audit",
+        "vlrb-child-gate-smoke", "vlrb-child-gate-run",
+        "vlrb-child-gate-retry", "vlrb-child-gate-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -3012,6 +3029,9 @@ def main() -> int:
     elif args.stage.startswith("vlrb-phase10-"):
         from .vl_rewardbench_phase10 import run_stage
         run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-child-gate-"):
+        from .vl_rewardbench_child_gate import run_stage
+        run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-prompt-v2-"):
         from .vl_rewardbench_prompt_v2 import run_stage
         run_stage(config, output, args.stage)
@@ -3020,6 +3040,12 @@ def main() -> int:
         run_stage(config, output, args.stage)
     elif args.stage.startswith("pairwise-cache-"):
         from .pairwise_cache_ablation import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("visual-gate-"):
+        from .visual_gate import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("full-child-gate-"):
+        from .full_child_gate import run_stage
         run_stage(config, output, args.stage)
     else:
         actions[args.stage]()
