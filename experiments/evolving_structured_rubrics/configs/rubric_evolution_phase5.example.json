@@ -189,6 +189,48 @@
     "strong_child_min_support": 15,
     "strong_child_min_net_corrected": 3
   },
+  "five_root_locked_split_refine_experiment": {
+    "protocol_version": "five-root-locked-split-role-aware-refine-v1",
+    "candidate_scope": "initial_roots_split_all_committed_nodes_refine",
+    "rubric_memory_mode": "global_rubric_v1",
+    "min_epochs": 3,
+    "max_epochs": 5,
+    "split_retry_reuse_clusters": true,
+    "split_retry_max_locked_children": 1,
+    "strong_child_min_support": 15,
+    "strong_child_min_net_corrected": 3,
+    "child_refine_trigger_mode": "role_aware_v2",
+    "retry_rejected_operations": true,
+    "synchronous_epoch_commit": true,
+    "worker_endpoint": "vllm-8001",
+    "heldout_access": "final_stage_only",
+    "partial_split_acceptance": false,
+    "exploratory": true
+  },
+  "root_boundary_pre_refine_experiment": {
+    "protocol_version": "root-boundary-pre-refine-split-refine-v3",
+    "source": "phase5_initial_five_roots",
+    "root_pre_refine_candidate_scope": "all_initial_roots_forced",
+    "root_pre_refine_min_epochs": 1,
+    "root_pre_refine_max_epochs": 3,
+    "accepted_root_locked": true,
+    "retry_rejected_roots": true,
+    "synchronous_epoch_commit": true,
+    "rubric_memory_mode": "global_rubric_v1",
+    "downstream_protocol": "five-root-locked-split-role-aware-refine-v1",
+    "split_min_epochs": 3,
+    "split_max_epochs": 5,
+    "worker_pool": "configured_available_slot_pool",
+    "worker_endpoints": [
+      "vllm-8000",
+      "vllm-8001"
+    ],
+    "worker_max_tokens": 2048,
+    "initial_baseline_policy": "regenerate_five_roots_under_capped_identity",
+    "gate_worker": false,
+    "heldout_access": "final_stage_only",
+    "exploratory": true
+  },
   "evolution_policy": {
     "policy_version": "phase5-v2",
     "trigger_thresholds": {

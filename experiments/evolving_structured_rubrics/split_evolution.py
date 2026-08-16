@@ -520,10 +520,23 @@ def _require_split_clusters(cluster):
    'required_minimum':2,'cluster_ids':[x.cluster_id for x in cluster.clusters],
    'unclustered_count':len(cluster.unclustered_sample_ids)})
 
+
+def _phase5_output_from_experiment(target: Path) -> Path:
+ """Resolve the Phase-5 output root for both top-level and nested experiments."""
+ current=target.resolve()
+ while current.name!=PHASE5_OUTPUT_DIR and current.parent!=current:
+  current=current.parent
+ if current.name!=PHASE5_OUTPUT_DIR:
+  # Unit tests and reusable callers may place an experiment in an arbitrary
+  # temporary root.  Preserve the historical top-level layout in that case.
+  return target.parent
+ return current
+
 def _signatures(target,manager,parent,trigger,node_feedback,rows_by_id,identity,spec,
-                protocol:EvolutionProtocol=CONTROL_PROTOCOL):
- cache=target/'signature_cache'/root_shard(parent.node_id)/identity[:16];cache.mkdir(parents=True,exist_ok=True);v1_cache=target.parent/'phase6_split_only_evolution_v1'/'signature_cache'/root_shard(parent.node_id)/identity[:16]
- control_cache=target.parent/CONTROL_EXPERIMENT_DIR/'signature_cache'/root_shard(parent.node_id)/identity[:16]
+                 protocol:EvolutionProtocol=CONTROL_PROTOCOL):
+ phase5_output=_phase5_output_from_experiment(target)
+ cache=target/'signature_cache'/root_shard(parent.node_id)/identity[:16];cache.mkdir(parents=True,exist_ok=True);v1_cache=phase5_output/'phase6_split_only_evolution_v1'/'signature_cache'/root_shard(parent.node_id)/identity[:16]
+ control_cache=phase5_output/CONTROL_EXPERIMENT_DIR/'signature_cache'/root_shard(parent.node_id)/identity[:16]
  errors={x.sample_id:x for x in node_feedback.errors if x.outcome=='wrong'};values={};total=len(trigger.decisive_wrong_sample_ids);reuse={'same_run':0,'v1_identity_match':0,'generated':0};pending=[]
  if protocol.read_only_control_signatures:reuse['control_v2_exact_identity']=0
  if protocol.is_retry_treatment:

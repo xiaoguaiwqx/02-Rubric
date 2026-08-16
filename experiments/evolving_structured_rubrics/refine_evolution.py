@@ -505,13 +505,16 @@ def _prepare_refine_attempt(
     rubric_memory: Mapping[str, Any],
     rubric_memory_sha256: str,
     trigger_mode: str = "uniform_v1",
+    forced: bool = False,
+    evidence_extension: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     attempt_dir = _refine_attempt(epoch_dir, node_id, attempt_no)
     attempt_dir.mkdir(parents=True, exist_ok=True)
     context = EvolutionContext(rubric, feedback)
     thresholds = config["evolution_policy"]["trigger_thresholds"]
     trigger = detect_refine_trigger(
-        context, node_id, thresholds, trigger_mode=trigger_mode)
+        context, node_id, thresholds, forced=forced,
+        trigger_mode=trigger_mode)
     _write(attempt_dir / "trigger.json", trigger.to_dict())
     if not trigger.triggered:
         return {"node_id": node_id, "decision": "not_eligible",
@@ -525,6 +528,12 @@ def _prepare_refine_attempt(
     })
     evidence, representative_rows = build_refine_evidence(
         rubric, prediction, rows, node_id, REFINE_V1)
+    if evidence_extension:
+        overlap = set(evidence).intersection(evidence_extension)
+        if overlap:
+            raise ValueError(
+                f"Refine evidence extension overwrites frozen fields: {sorted(overlap)}")
+        evidence.update(dict(evidence_extension))
     _write(attempt_dir / "evidence.json", evidence)
     prior = _refine_history_projection(history, node_id)
     _write(attempt_dir / "history_projection.json", {
@@ -3617,39 +3626,36 @@ def five_root_locked_split_refine_audit(
     print(json.dumps(value, indent=2, ensure_ascii=False))
 
 
-def five_root_locked_split_refine_run(
-    config: Mapping[str, Any], output: Path,
+def _run_five_root_locked_split_refine_impl(
+    config: Mapping[str, Any],
+    *,
+    target: Path,
+    manifest: Mapping[str, Any],
+    history: dict[str, Any],
+    settings: Mapping[str, Any],
+    protocol: split.EvolutionProtocol,
+    log_prefix: str,
+    execution_backend_pool: Mapping[str, Any] | None = None,
 ) -> None:
-    """Run synchronous five-root Split/locked-retry/role-aware-Refine evolution."""
-    settings = _five_root_locked_split_refine_config(config)
-    _validate_output(output)
-    target = _five_root_locked_split_refine_target(output)
-    if not (target / "offline_audit.json").exists():
-        raise RuntimeError(
-            "run five-root-locked-split-refine-freeze and "
-            "five-root-locked-split-refine-audit first")
-    manifest = load_json(target / "frozen_manifest.json")
-    history = load_json(target / "evolution_history.json")
-    if history.get("completed"):
-        print("five-root-locked-split-refine-run already completed")
-        return
+    """Shared synchronous Locked-Split/role-aware-Refine implementation."""
     rows = _rows(config, "discovery")
     managers, _, specs, _ = split._managers(
-        config, FIVE_ROOT_LOCKED_SPLIT_REFINE_PROTOCOL)
+        config, protocol)
     specs["error_signature"] = manifest["manager_request_specs"]["error_signature"]
     for stage in ("semantic_cluster", "child_generation"):
         if specs[stage] != manifest["manager_request_specs"][stage]:
-            raise RuntimeError(f"Phase 10 Manager request identity drift: {stage}")
+            raise RuntimeError(f"{log_prefix} Manager request identity drift: {stage}")
     retry_managers, retry_specs = _integrated_retry_specs(config)
     if retry_specs != manifest["locked_retry_manager_request_specs"]:
-        raise RuntimeError("Phase 10 locked-retry Manager request identity drift")
+        raise RuntimeError(f"{log_prefix} locked-retry Manager request identity drift")
     refine_manager, _ = _manager(config)
     expected_refine_specs = {
         key: value.to_dict()
         for key, value in refine_manager.request_specs().items()}
     if expected_refine_specs != manifest["refine_manager_request_specs"]:
-        raise RuntimeError("Phase 10 Refine Manager request identity drift")
-    pool = split_pool(config)
+        raise RuntimeError(f"{log_prefix} Refine Manager request identity drift")
+    pool = (split_pool(config) if execution_backend_pool is None
+            else dict(execution_backend_pool))
     max_epochs = settings["max_epochs"]
 
     for epoch_no in range(history["current_epoch"] + 1, max_epochs + 1):
@@ -3665,7 +3671,7 @@ def five_root_locked_split_refine_run(
         refine_scheduled = _integrated_refine_schedule(
             rubric, feedback, config, split_scheduled)
         print(
-            f"five-root integration epoch={epoch_no} "
+            f"{log_prefix} epoch={epoch_no} "
             f"split={list(split_scheduled)} refine={list(refine_scheduled)}",
             flush=True,
         )
@@ -3691,7 +3697,7 @@ def five_root_locked_split_refine_run(
                     result = split._prepare(
                         config, target, epoch_dir, root_id, attempt_no, rubric,
                         prediction, feedback, rows, history, managers, specs,
-                        FIVE_ROOT_LOCKED_SPLIT_REFINE_PROTOCOL,
+                        protocol,
                         memory, memory_hash)
                 split_results[root_id] = result
             except split.TransportFailed as exc:
@@ -3754,7 +3760,7 @@ def five_root_locked_split_refine_run(
                 result = split._evaluate(
                     config, epoch_dir, rows, rubric, prediction,
                     split_results[root_id], pool, managers["semantic_cluster"],
-                    feedback, FIVE_ROOT_LOCKED_SPLIT_REFINE_PROTOCOL)
+                    feedback, protocol)
                 _integrated_add_lock_diagnostics(
                     result, rubric=rubric, rows=rows, settings=settings)
                 split_results[root_id] = result
@@ -3837,7 +3843,7 @@ def five_root_locked_split_refine_run(
             "epoch_wall_seconds": time.monotonic() - started_epoch})
         _write(target / "evolution_history.json", history)
         print(
-            f"five-root integration epoch={epoch_no} "
+            f"{log_prefix} epoch={epoch_no} "
             f"split_accept={sorted(accepted_split)} "
             f"refine_accept={sorted(accepted_refine)} "
             f"m1_acc={metrics['accuracy']:.4f}",
@@ -3852,6 +3858,28 @@ def five_root_locked_split_refine_run(
                     "stop_reason": history["stop_reason"]},
     }
     _write(target / "stage_status.json", status)
+
+
+def five_root_locked_split_refine_run(
+    config: Mapping[str, Any], output: Path,
+) -> None:
+    """Run synchronous five-root Split/locked-retry/role-aware-Refine evolution."""
+    settings = _five_root_locked_split_refine_config(config)
+    _validate_output(output)
+    target = _five_root_locked_split_refine_target(output)
+    if not (target / "offline_audit.json").exists():
+        raise RuntimeError(
+            "run five-root-locked-split-refine-freeze and "
+            "five-root-locked-split-refine-audit first")
+    manifest = load_json(target / "frozen_manifest.json")
+    history = load_json(target / "evolution_history.json")
+    if history.get("completed"):
+        print("five-root-locked-split-refine-run already completed")
+        return
+    _run_five_root_locked_split_refine_impl(
+        config, target=target, manifest=manifest, history=history,
+        settings=settings, protocol=FIVE_ROOT_LOCKED_SPLIT_REFINE_PROTOCOL,
+        log_prefix="five-root integration")
 
 
 def five_root_locked_split_refine_report(

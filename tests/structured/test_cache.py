@@ -60,6 +60,28 @@ def node_output():
 
 
 class JsonPredictionCacheTest(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "Windows extended path behavior")
+    def test_round_trip_when_compact_cache_file_exceeds_legacy_max_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prospective = root / "node" / ("f" * 32 + ".json")
+            while len(str(prospective)) <= 260:
+                root /= "nested-cache-segment"
+                prospective = root / "node" / ("f" * 32 + ".json")
+            self.assertLess(len(str(root / "node")), 260)
+            cache = JsonPredictionCache(root)
+            payload = node_cache_key_payload(
+                sample_fingerprint="e" * 64, criterion_name="c",
+                criterion_description="desc", request_spec=worker_spec(),
+            )
+
+            cache.put_node(payload, node_output(), ModelCallMetrics())
+
+            self.assertEqual(node_output(), cache.get_node(payload).output)
+            digest = canonical_sha256(payload)
+            extended = Path("\\\\?\\" + str(cache._path("node", digest).resolve()))
+            extended.unlink()
+
     def test_compact_filename_avoids_windows_max_path_without_changing_identity(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -299,6 +299,7 @@ def _config(path: Path) -> dict[str, Any]:
                        "split_retry_v2_experiment", "refine_role_experiment",
                        "visual_split_refine_experiment",
                        "five_root_locked_split_refine_experiment",
+                       "root_boundary_pre_refine_experiment",
                        "pairwise_cache_prompt_ablation",
                        "vlrb_prompt_v2_transfer",
                        "visual_gate_experiment",
@@ -336,6 +337,7 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("refine_role_experiment", None)
     value.pop("visual_split_refine_experiment", None)
     value.pop("five_root_locked_split_refine_experiment", None)
+    value.pop("root_boundary_pre_refine_experiment", None)
     value.pop("vlrb_prompt_v2_transfer", None)
     value.pop("visual_gate_experiment", None)
     value.pop("full_child_gate_experiment", None)
@@ -2938,6 +2940,13 @@ def main() -> int:
         "five-root-locked-split-refine-report",
         "five-root-locked-split-refine-heldout",
         "five-root-locked-split-refine-final-report",
+        "root-pre-refine-freeze", "root-pre-refine-baseline",
+        "root-pre-refine-audit",
+        "root-pre-refine-smoke",
+        "root-pre-refine-run", "root-pre-refine-report",
+        "root-pre-refine-split-refine-run",
+        "root-pre-refine-split-refine-report",
+        "root-pre-refine-heldout", "root-pre-refine-final-report",
         "vlrb-freeze", "vlrb-smoke", "vlrb-run", "vlrb-report",
         "vlrb-phase10-freeze", "vlrb-phase10-audit", "vlrb-phase10-smoke",
         "vlrb-phase10-run", "vlrb-phase10-report",
@@ -3028,6 +3037,9 @@ def main() -> int:
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-phase10-"):
         from .vl_rewardbench_phase10 import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("root-pre-refine-"):
+        from .root_boundary_evolution import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-child-gate-"):
         from .vl_rewardbench_child_gate import run_stage

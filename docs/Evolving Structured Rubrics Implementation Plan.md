@@ -1691,7 +1691,63 @@ Gate 仍把平均激活 children 从17个降至3.297个，减少80.61%，并把 
 
 ---
 
-## 14. 后续候选
+## 14. Root Boundary Pre-Refine 探索实验（暂停）
+
+### 14.1 实验动机与设计
+
+该实验尝试在正式 Split+Refine 之前，先对五个初始 roots 执行 Refine，使每个 root 的 description 显式包含 `Criterion focus`、`Applicable only when`、`Not applicable when` 和 `Decision rule`。预期作用是降低五个 roots 接近全覆盖所造成的语义冗余和投票冲突，再以更新后的 roots 作为后续 Split 起点。
+
+实验产物位于 `output/evolving_structured_rubrics/rubric_evolution_phase5/phase15_root_boundary_pre_refine_split_refine_v3/root_pre_refine/`，冻结协议如下：
+
+- 数据为 discovery-90，候选选择阶段不访问 heldout-500；
+- 397B Refine Manager 使用 epoch-start `global_rubric_v1`、当前 root 的错误/正确/弃权证据和完整失败历史，每次只生成一个新 description；
+- Pairwise Worker 使用 Qwen3-VL-8B-Instruct，`temperature=0.5`、`max_tokens=2048`，通过8000和8001 available-slot pool执行；
+- 同一 epoch 的所有 root 基于同一个起始 Rubric 独立评估，接受项在 epoch 末同步提交；
+- 接受条件保持 Refine v1 不变：新 criterion 在自身 A/B 支持集上的条件 ACC 严格提高，且 support 不低于15；Coverage、subtree ACC 和完整 M1 只作诊断；
+- 接受 root 立即锁定；拒绝 root 携带自然语言失败归因重试，最多3个 epoch。
+
+### 14.2 三轮演化结果
+
+实验共形成11次候选：Epoch 1 调度全部5个 roots，接受 Factuality 和 Creativity；其余3个 roots 在 Epoch 2–3继续重试但全部失败，最终状态为2个 accepted、3个 exhausted。
+
+| Root | 初始 ACC / Coverage | 最终 ACC / Coverage | 尝试次数 | 最终状态 |
+| --- | ---: | ---: | ---: | --- |
+| Completeness and Coverage | 68.29% / 91.11% | 68.29% / 91.11% | 3 | exhausted，保留原文 |
+| Visual Grounding and Details | 67.42% / 98.89% | 67.42% / 98.89% | 3 | exhausted，保留原文 |
+| Factuality, No Hallucination | 59.26% / 90.00% | **62.35% / 94.44%** | 1 | accepted |
+| Creativity and Expressiveness | 57.30% / 98.89% | **60.00% / 61.11%** | 1 | accepted |
+| Clarity and Coherence | 56.82% / 97.78% | 56.82% / 97.78% | 3 | exhausted，保留原文 |
+
+Factuality 是本次最明确的正向结果：正确数由48/81提高到53/85，节点 corrected/harmed 为7/2；单独替换该 root 时，完整五-root M1 从62.22%提高到65.56%，M1 corrected/harmed 为3/0。Creativity 则主要通过收窄适用域提高条件 ACC：正确数由51/89降至33/55，corrected/harmed 为3/21；单独替换时完整 M1 保持62.22%不变。两项同步提交后的最终 discovery M1 如下。
+
+| 指标 | 初始五-root | Root Pre-Refine 最终 | 变化 |
+| --- | ---: | ---: | ---: |
+| M1 ACC | 62.22%（56/90） | **64.44%（58/90）** | +2.22 pp |
+| M1 Coverage | 97.78% | 95.56% | -2.22 pp |
+| Covered ACC | 63.64% | **67.44%** | +3.80 pp |
+| 平均激活 roots | 4.77 | 4.43 | -0.34 |
+| 五个 roots 全部激活 | 73/90 | 49/90 | -24 |
+| 存在 root 冲突的样本 | 44/90 | 45/90 | +1 |
+
+三个失败 root 的条件 ACC 轨迹如下；失败历史没有产生逐轮改善。
+
+| Root | 原 ACC | Epoch 1 | Epoch 2 | Epoch 3 |
+| --- | ---: | ---: | ---: | ---: |
+| Completeness | **68.29%** | 63.64% | 60.24% | 58.46% |
+| Visual Grounding | **67.42%** | 62.03% | 60.24% | 62.20% |
+| Clarity | **56.82%** | 43.14% | 38.89% | 41.03% |
+
+### 14.3 分析与阶段决策
+
+本实验说明 Root Refine 可以产生局部收益，但尚不能稳定优化所有 roots。Factuality 与当前视觉事实/幻觉数据分布高度匹配，因此获得了 ACC、Coverage 和 M1 同向提升；Creativity 的适用域虽然明显专业化，但其条件 ACC 提升主要来自大量弃权，暴露出仅以条件 ACC 接受 root 候选可能奖励 coverage collapse。Completeness、Visual Grounding 和 Clarity 的重试则持续出现过度 `None`、偏好方向反转以及与 Factuality 的边界混淆。
+
+结构上，平均激活量和两两激活重叠有所下降，但改善主要由 Creativity 的 Coverage 从98.89%降至61.11%贡献；冲突样本没有减少，说明实验尚未实现五个 roots 的全面职责分离。更根本的限制是 discovery-90 主要由视觉事实性幻觉样本构成，能够为 Factuality/Visual Grounding 提供反馈，却缺少足够的 Clarity、Creativity、Completeness 和推理类偏好证据。强行让所有 roots 从同一错误分布学习边界，容易把“非目标错误”误写成排除条件。
+
+因此，**Root Boundary Pre-Refine 暂停，不纳入当前主方法，也不将本实验接受的两个 root patches 带入后续主实验**。现阶段主链路继续采用已验证的 Global Memory、Locked-Child Split 和 Role-aware Child Refine。本实验保留为负向探索证据：Root-level 边界学习需要与各 root 匹配的多领域 discovery 数据，以及能够区分真实专业化与选择性弃权的竞争指标；满足这些条件后再单独恢复验证。本阶段不继续执行其后的 Split+Refine，也不据此声称 heldout 泛化收益。
+
+---
+
+## 15. 后续候选
 
 - **Merge / Drop**：在前三个算子稳定后再处理节点重挂接和历史生存状态；
 - **删除 parent 的 Split 消融**：与正式的“保留 parent 并挂载 children”Split 分开；
@@ -1700,7 +1756,7 @@ Gate 仍把平均激活 children 从17个降至3.297个，减少80.61%，并把 
 
 ---
 
-## 15. Review Checklist
+## 16. Review Checklist
 
 - [x] 正式聚合 vote 只来自 Pairwise Worker
 - [x] Gate 只控制 status-dependent edges，不覆盖 Pairwise vote
