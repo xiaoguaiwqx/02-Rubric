@@ -1615,11 +1615,218 @@ Rubric 演化带来的146条净纠正中，General、Hallucination 和 Reasoning
 
 
 
+## 13. Gate Worker
+
+### 13.1 设计与评估协议
+
+Gate Worker 不直接判断 A/B 偏好，只根据图像、问题、候选回答以及同一 parent 下各 child 的 `Applicable only when` / `Not applicable when` 条件，输出每个 child 的 `applicable` 或 `not_applicable`。Parent 仍参与判断；被激活 child 的偏好票仍由 Pairwise Worker 产生，Gate 只控制哪些 child 进入当前父子树的聚合。
+
+当前实验采用以下冻结设置：
+
+- 暂不使用 Root Gate，五个 roots 始终参与最终 M1；
+- 每个 root 独立路由其 direct children，不跨 root 激活；
+- Gate prompt 采用与 Pairwise Worker Prompt v2 一致的固定 System Prompt + 动态 User Prompt 组织方式；同一个root的 gate worker 提示词是一样的，推理不同样本的时前面大量的Prompt命中缓存，加速推理
+- `temperature=0.2`，`max_tokens=2048`，使用8000和8001两个端点动态调度；
+- 非法 JSON 最多重试5次；最终失败记录解析错误并回退 all children，不中断整批实验；
+- RLHF-V 实验复用冻结的 Phase 10 Pairwise predictions，仅新增 Gate 判断，从而将性能变化归因于路由。
+
+### 13.2 Visual Grounding Gate-only
+
+第一组实验只对 `visual_grounding_and_details` 的4个 children 进行动态路由，其他 roots 保持不变。实验用于验证：criterion description 中自然形成的适用与不适用条件，能否直接作为可执行 edge contract。
+
+| 数据与系统 | Visual 子树 ACC | 完整五-root M1 ACC |
+| --- | ---: | ---: |
+| discovery-90：Parent only | 68.89% | 71.11% |
+| discovery-90：All children | 71.11% | 73.33% |
+| discovery-90：Best fixed subset | **77.78%** | 73.33% |
+| discovery-90：Dynamic Gate | 76.67% | **75.56%** |
+| discovery-90：Oracle routing | 88.89% | 76.67% |
+| heldout-500：Parent only | 75.80% | 76.20% |
+| heldout-500：All children | **77.60%** | **76.60%** |
+| heldout-500：Best fixed subset | 75.20% | 75.80% |
+| heldout-500：Dynamic Gate | 74.20% | 75.40% |
+| heldout-500：Oracle routing | 88.80% | 78.20% |
+
+Discovery 上 Dynamic Gate 相对 All children 在 Visual 子树中 corrected 7、harmed 2，并把完整 M1 提高2.22 pp；但 heldout 上该优势没有泛化，Visual 子树和完整 M1 分别下降3.40 pp和1.20 pp。与此同时，Gate 将**平均激活量降至0.76/4**，并将 heldout sibling conflicts 从110次降至6次；该实验说明 Gate 能形成稀疏且有语义的局部路由，但仅依赖现有适用性文本还不足以稳定提升未见数据 ACC。
+
+实验 artifact：`output/evolving_structured_rubrics/rubric_evolution_phase5/phase13_visual_grounding_gate_only_v3/`。
+
+### 13.3 完整 Rubric Child-Gate
+
+第二组实验将同一 Gate 机制扩展至五个 roots：五个 roots 仍全部参与，每个 root 分别选择其 direct children。Phase 10 Rubric 共包含17个 children。
+
+| 数据与系统 | Parent only | All children | Visual-only Gate | Full Child-Gate | Oracle routing |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| discovery-90 M1 ACC | 72.22% | 73.33% | **75.56%** | 70.00% | 82.22% |
+| heldout-500 M1 ACC | 75.80% | **76.60%** | 75.40% | 75.80% | 88.20% |
+
+Heldout 上 Full Child-Gate 相对 All children corrected 17、harmed 21、净差−4，**ACC 只下降0.80 pp**，exact McNemar $p=0.627$；Coverage 从99.4%降至98.6%。在结构和计算量方面，平均激活 children 从17个降至3.566个，**减少79.0%**；sibling conflicts 从530次降至13次，减少97.5%；2,500次 Gate 路由的解析成功率为100%。按请求数量估计，完整执行由每样本22次 Pairwise 判断变为约 $5\text{ roots}+5\text{ Gates}+3.566\text{ children}=13.566$ 次请求，对应约1.62倍的理论请求级加速；实际端到端加速仍需在线短路执行验证。
+
+该结果表明 Full Child-Gate 在 RLHF-V heldout 上形成了较好的**精度—效率折中**，但它没有提高 ACC。Oracle 的88.20%同时说明，children 之间存在很大的动态路由上限，主要瓶颈是 Gate 的选择质量，而不是稀疏路由本身。
+
+实验 artifact：`output/evolving_structured_rubrics/rubric_evolution_phase5/phase14_full_rubric_child_gate_v1/`。
+
+### 13.4 VL-RewardBench 外部迁移
+
+第三组实验在 VL-RewardBench 1,247条样本上评估完整 Child-Gate。Pairwise predictions 与第12章 Prompt v2 的 K=3 结果完全冻结；Gate 同样独立运行3次后聚合，因此差异只来自 child routing。
+
+| 系统 | OverallAcc | MacroAcc | Coverage | Strict ACC |
+| --- | ---: | ---: | ---: | ---: |
+| Parent only | 58.12% | 54.60% | 98.24% | 57.10% |
+| All children | **69.53%** | **63.37%** | 98.96% | **68.81%** |
+| Full Child-Gate | 60.99% | 56.71% | 98.48% | 60.06% |
+
+Full Child-Gate 相对 All children 的 OverallAcc 下降8.54 pp：corrected 17、harmed 126、净差−109，exact McNemar $p=9.45\times10^{-22}$。下降主要集中在 Hallucination（75.81%→63.48%）和 General（46.89%→39.66%），Reasoning 基本持平（67.41%→66.99%）。解析不是主要问题：18,705次逻辑路由中只有4次最终失败，解析率为99.979%。
+
+Gate 仍把平均激活 children 从17个降至3.297个，减少80.61%，并把 sibling conflicts 从4,597次降至200次。**单独只对一个 root 使用 Gate 时 OverallAcc 仍为67.69%–69.29%**，但五个 roots 同时 Gate 后降至60.99%，说明多个局部剪枝在最终多数投票中发生了非线性叠加。当前 Gate 学习的是“criterion 在语义上是否适用”，尚未建模 child 对最终 M1 投票方向和票差的边际贡献；五个 roots 又始终无条件参与，因此跨-root 冲突也没有得到处理。当前零样本 edge contract 尚不能跨数据分布稳定替代 All children。
+
+因此，现阶段证据支持将 Gate 定位为有效的稀疏化机制，而不是已经完成的精度优化机制。后续 Discovery 应保留全部 child 的**反事实预测**，同时记录 Gate 的**误激活和漏激活**，用实际边际贡献反馈优化 `Applicable only when` / `Not applicable when`；Root Gate 则应作为独立变量验证，避免与 Child Gate 的误差叠加后无法归因。
+
+实验 artifact：`output/evolving_structured_rubrics/vl_rewardbench_phase14_full_child_gate_v1/`；最终报告为 `final_report.json` 和 `final_report.md`。
+
+---
+
+## 14. Root Boundary Pre-Refine 探索实验（暂停）
+
+### 14.1 实验动机与设计
+
+该实验尝试在正式 Split+Refine 之前，先对五个初始 roots 执行 Refine，使每个 root 的 description 显式包含 `Criterion focus`、`Applicable only when`、`Not applicable when` 和 `Decision rule`。预期作用是降低五个 roots 接近全覆盖所造成的语义冗余和投票冲突，再以更新后的 roots 作为后续 Split 起点。
+
+实验产物位于 `output/evolving_structured_rubrics/rubric_evolution_phase5/phase15_root_boundary_pre_refine_split_refine_v3/root_pre_refine/`，冻结协议如下：
+
+- 数据为 discovery-90，候选选择阶段不访问 heldout-500；
+- 397B Refine Manager 使用 epoch-start `global_rubric_v1`、当前 root 的错误/正确/弃权证据和完整失败历史，每次只生成一个新 description；
+- Pairwise Worker 使用 Qwen3-VL-8B-Instruct，`temperature=0.5`、`max_tokens=2048`，通过8000和8001 available-slot pool执行；
+- 同一 epoch 的所有 root 基于同一个起始 Rubric 独立评估，接受项在 epoch 末同步提交；
+- 接受条件保持 Refine v1 不变：新 criterion 在自身 A/B 支持集上的条件 ACC 严格提高，且 support 不低于15；Coverage、subtree ACC 和完整 M1 只作诊断；
+- 接受 root 立即锁定；拒绝 root 携带自然语言失败归因重试，最多3个 epoch。
+
+### 14.2 三轮演化结果
+
+实验共形成11次候选：Epoch 1 调度全部5个 roots，接受 Factuality 和 Creativity；其余3个 roots 在 Epoch 2–3继续重试但全部失败，最终状态为2个 accepted、3个 exhausted。
+
+| Root | 初始 ACC / Coverage | 最终 ACC / Coverage | 尝试次数 | 最终状态 |
+| --- | ---: | ---: | ---: | --- |
+| Completeness and Coverage | 68.29% / 91.11% | 68.29% / 91.11% | 3 | exhausted，保留原文 |
+| Visual Grounding and Details | 67.42% / 98.89% | 67.42% / 98.89% | 3 | exhausted，保留原文 |
+| Factuality, No Hallucination | 59.26% / 90.00% | **62.35% / 94.44%** | 1 | accepted |
+| Creativity and Expressiveness | 57.30% / 98.89% | **60.00% / 61.11%** | 1 | accepted |
+| Clarity and Coherence | 56.82% / 97.78% | 56.82% / 97.78% | 3 | exhausted，保留原文 |
+
+Factuality 是本次最明确的正向结果：正确数由48/81提高到53/85，节点 corrected/harmed 为7/2；单独替换该 root 时，完整五-root M1 从62.22%提高到65.56%，M1 corrected/harmed 为3/0。Creativity 则主要通过收窄适用域提高条件 ACC：正确数由51/89降至33/55，corrected/harmed 为3/21；单独替换时完整 M1 保持62.22%不变。两项同步提交后的最终 discovery M1 如下。
+
+| 指标 | 初始五-root | Root Pre-Refine 最终 | 变化 |
+| --- | ---: | ---: | ---: |
+| M1 ACC | 62.22%（56/90） | **64.44%（58/90）** | +2.22 pp |
+| M1 Coverage | 97.78% | 95.56% | -2.22 pp |
+| Covered ACC | 63.64% | **67.44%** | +3.80 pp |
+| 平均激活 roots | 4.77 | 4.43 | -0.34 |
+| 五个 roots 全部激活 | 73/90 | 49/90 | -24 |
+| 存在 root 冲突的样本 | 44/90 | 45/90 | +1 |
+
+三个失败 root 的条件 ACC 轨迹如下；失败历史没有产生逐轮改善。
+
+| Root | 原 ACC | Epoch 1 | Epoch 2 | Epoch 3 |
+| --- | ---: | ---: | ---: | ---: |
+| Completeness | **68.29%** | 63.64% | 60.24% | 58.46% |
+| Visual Grounding | **67.42%** | 62.03% | 60.24% | 62.20% |
+| Clarity | **56.82%** | 43.14% | 38.89% | 41.03% |
+
+### 14.3 分析与阶段决策
+
+本实验说明 Root Refine 可以产生局部收益，但尚不能稳定优化所有 roots。Factuality 与当前视觉事实/幻觉数据分布高度匹配，因此获得了 ACC、Coverage 和 M1 同向提升；Creativity 的适用域虽然明显专业化，但其条件 ACC 提升主要来自大量弃权，暴露出仅以条件 ACC 接受 root 候选可能奖励 coverage collapse。Completeness、Visual Grounding 和 Clarity 的重试则持续出现过度 `None`、偏好方向反转以及与 Factuality 的边界混淆。
+
+结构上，平均激活量和两两激活重叠有所下降，但改善主要由 Creativity 的 Coverage 从98.89%降至61.11%贡献；冲突样本没有减少，说明实验尚未实现五个 roots 的全面职责分离。更根本的限制是 discovery-90 主要由视觉事实性幻觉样本构成，能够为 Factuality/Visual Grounding 提供反馈，却缺少足够的 Clarity、Creativity、Completeness 和推理类偏好证据。强行让所有 roots 从同一错误分布学习边界，容易把“非目标错误”误写成排除条件。
+
+因此，**Root Boundary Pre-Refine 暂停，不纳入当前主方法，也不将本实验接受的两个 root patches 带入后续主实验**。现阶段主链路继续采用已验证的 Global Memory、Locked-Child Split 和 Role-aware Child Refine。本实验保留为负向探索证据：Root-level 边界学习需要与各 root 匹配的多领域 discovery 数据，以及能够区分真实专业化与选择性弃权的竞争指标；满足这些条件后再单独恢复验证。本阶段不继续执行其后的 Split+Refine，也不据此声称 heldout 泛化收益。
+
+
+
 
 
 ---
 
-## 13. 后续候选
+## 15. Prompt v2 全链路 Split+Refine 演化（Phase16）
+
+### 15.1 实验动机与冻结对照
+
+第12章说明：保持 Phase10 Rubric 不变，仅将 Pairwise Worker 切换为 Prompt v2，heldout-500 M1 已由71.4%提升至76.6%。Phase16 进一步检验的不是 Prompt v2 的**执行端**收益，而是：让它从 discovery 的初始 Pairwise、错误样本、Split/Refine 竞争和失败历史开始全程参与后，能否演化出更好的 Rubric。
+
+| 系统 | Rubric 来源 | Pairwise Worker Prompt | 作用 |
+| --- | --- | --- | --- |
+| Initial five-root | 初始五 roots | Prompt v2 | 初始化基线 |
+| Phase10 + Prompt v2 | 旧 Prompt 演化的 Phase10 Rubric | Prompt v2 | 主 Control |
+| **Phase16 + Prompt v2** | Prompt v2 全链路演化 | Prompt v2 | Treatment |
+
+Phase16 保持 Global Memory、Locked-Child Split、Role-aware Child Refine、局部 Specialized Accuracy 接受规则以及 397B Manager 不变；不引入 Gate、Root Boundary Pre-Refine、权重搜索或新的聚合规则。为使五个初始 roots 都能够被检验，Split 触发阈值设为 `ACC < 0.75` 且 `Coverage > 0.80`。Pairwise Worker 使用 Prompt v2、`temperature=0.5`、`max_tokens=2048`，通过8000和8001 available-slot pool 执行。
+
+### 15.2 五轮演化轨迹
+
+Epoch 1 的五个 roots 全部进入 Split：Completeness、Visual Grounding 和 Clarity 直接接受；Factuality 与 Creativity 在拒绝后携带失败历史重试，并于 Epoch 2 接受，其中 Creativity 保留了已识别的强 child。随后只调度满足 role-aware 条件的 children Refine。Rubric 节点数由5增长到23。
+
+| Epoch | Split 调度 / 接受 | Refine 调度 / 接受 | 提交后节点数 | Discovery M1 ACC / Coverage |
+| --- | ---: | ---: | ---: | ---: |
+| 0（初始） | – | – | 5 | 72.22% / 97.78% |
+| 1 | 5 / 3 | 0 / 0 | 15 | 74.44% / 100.00% |
+| 2 | 2 / 2 | 10 / 5 | 23 | 73.33% / 100.00% |
+| 3 | 0 / 0 | 14 / 6 | 23 | 73.33% / 98.89% |
+| 4 | 0 / 0 | 14 / 1 | 23 | 73.33% / 98.89% |
+| 5（最终） | 0 / 0 | 13 / 2 | 23 | 71.11% / 98.89% |
+
+这条轨迹表明 Prompt v2 能支持局部 Split 和 Refine 的接受，但 discovery 最终值并未单调上升：后期重复 Refine 的接受率由 Epoch 2–3 的5/10、6/14下降至 Epoch 4–5 的1/14、2/13，反映当前90条 discovery 反馈不足以稳定选择更深的局部改写。
+
+### 15.3 Heldout-500 checkpoint 诊断
+
+heldout 仅在各 epoch Rubric 固定后进行探索性、后验诊断，不参与任何候选选择。Epoch 1–4 中仅对相对于最终 Rubric 改变的14个 unique description 补充预测，其余节点预测严格复用。
+
+| Checkpoint | Heldout ACC | 正确数 | Coverage |
+| --- | ---: | ---: | ---: |
+| Epoch 0：Initial five-root Prompt v2 | 75.80% | 379 / 500 | 98.80% |
+| Epoch 1 | 76.00% | 380 / 500 | 99.00% |
+| Epoch 2 | 76.00% | 380 / 500 | 99.20% |
+| **Epoch 3** | **78.20%** | **391 / 500** | **99.80%** |
+| **Epoch 4** | **78.20%** | **391 / 500** | **99.80%** |
+| Epoch 5：最终 Rubric | 78.00% | 390 / 500 | 99.80% |
+| Phase10 + Prompt v2 Control | 76.60% | 383 / 500 | 99.40% |
+
+因此，Prompt v2 全链路演化相对 Prompt v2 Control 在最终 epoch 有+1.4 pp heldout 增益；最佳观察值出现在 Epoch 3–4（+1.6 pp）。但这是在已被多次访问的同一 heldout-500 上进行的 exploratory checkpoint 分析，只能说明该轨迹中的局部收益，不能据此重新选择“正式”epoch。
+
+### 15.4 VL-RewardBench 外部迁移与 checkpoint 对照
+
+为检查 heldout 峰值是否是更普适的改进，使用相同的 Prompt v2、K=3 counterbalanced A/B 顺序和完整1247对 VL-RewardBench，比较初始、Phase10 Control，以及 Phase16 的 Epoch 2、3、5。`OverallAcc`和`MacroAcc`均在有明确最终判断的样本上按该 benchmark 协议计算；Coverage 另行报告。
+
+| 系统 | OverallAcc | MacroAcc | Strict ACC | Coverage | 正确数 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Initial five-root Prompt v2 | 58.12% | 54.60% | 57.10% | 98.24% | 712 |
+| Phase10 + Prompt v2 Control | **69.53%** | **63.37%** | **68.81%** | 98.96% | **858** |
+| Phase16 Epoch 2 | 66.02% | **60.65%** | 65.44% | 99.12% | 816 |
+| Phase16 Epoch 3 | 66.29% | 60.48% | 65.60% | 98.96% | 818 |
+| Phase16 Epoch 5 | 66.50% | 60.58% | 65.92% | **99.12%** | 822 |
+
+Phase16 相比 Initial Prompt v2 在外部基准上仍有明显正向迁移（Epoch 5 OverallAcc +8.38 pp，110个额外正确样本），说明全链路演化并未失效；但其仍低于“Phase10 Rubric + Prompt v2 推理”Control 3.03 pp。Epoch 3 的 heldout 峰值也没有转化为 VL-RewardBench 最优点：E2、E3、E5 的 OverallAcc 仅在66.02%–66.50%之间变化。该不一致与 discovery-90 主要覆盖视觉事实/幻觉，而 VL-RewardBench 同时包含 General、Hallucination 与 Reasoning 的分布差异一致。
+
+### 15.5 Phase16 E5 的 Root Router + Child Gate 推理诊断
+
+本节进一步固定 Phase16 E5 的23-node Rubric，测试其在外部部署时能否通过两层路由稀疏化：Root Router 从五个 roots 中选择应参与聚合的模块；Child Gate 再在已选 root 内选择 direct children。Pairwise Worker 的 Prompt v2、K=3 counterbalanced A/B 顺序和全部节点预测完全复用；仅新生成路由，因此系统差异只来自路由，而不是 Rubric 或 Pairwise 判断。
+
+| 系统 | OverallAcc | MacroAcc | Strict ACC | Coverage | 正确数 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| All roots + all children | **66.50%** | **60.58%** | **65.92%** | **99.12%** | **822** |
+| Root Router only | 66.21% | 60.34% | 62.23% | 93.99% | 776 |
+| Child Gate only | 60.59% | 56.94% | 59.66% | 98.48% | 744 |
+| Root Router + Child Gate | 62.22% | 58.13% | 57.98% | 93.18% | 723 |
+
+Root Router 将平均 active roots 由5降至3.207（−35.9%）；联合路由后平均 active children 为3.044/18。若按路由结果再执行 Pairwise，每样本理论上仅需 $3.207+3.044=6.251$ 个节点判断，而非23个，具有72.8%的节点级稀疏化潜力；本实验复用了全量 Pairwise artifact，故不将其表述为实测端到端加速。
+
+但当前路由会丢失全量投票中的交叉补偿：相对全量集成，Root Router only 的 corrected/harmed 为9/55（净−46），Child Gate only 为13/91（净−78），联合路由为14/113（净−99）。22,446次逻辑路由中只有5次 Child Gate 在重试后仍不合法（99.978%有效，按协议回退 all children），因此退化并非主要由解析失败造成。该结果将 Gate/Router 定位为 E5 的稀疏化证据，而不是可直接替代全量聚合的精度方案。
+
+实验 artifact：`output/evolving_structured_rubrics/vl_rewardbench_phase16_e5_root_child_router_v1/`；最终报告为 `final_report.json` 和 `final_report.md`。
+
+**阶段结论。** Prompt v2 不仅提升既有 Rubric 的执行，也能够支撑从错误反馈出发的 Split+Refine 全链路演化，并在 heldout-500 上得到75.8%→78.0%的提升；但在现有单一视觉幻觉 discovery 分布下，更多 epoch 的局部优化尚未超过 Phase10 Control 的外部泛化。后续应优先扩展 discovery 的生成、推理和通用偏好覆盖，而不是把 Epoch 3–4 的 heldout 峰值直接作为新的正式模型选择依据。
+
+---
+
+## 16. 后续候选
 
 - **Merge / Drop**：在前三个算子稳定后再处理节点重挂接和历史生存状态；
 - **删除 parent 的 Split 消融**：与正式的“保留 parent 并挂载 children”Split 分开；
@@ -1628,12 +1835,12 @@ Rubric 演化带来的146条净纠正中，General、Hallucination 和 Reasoning
 
 ---
 
-## 14. Review Checklist
+## 17. Review Checklist
 
 - [x] 正式聚合 vote 只来自 Pairwise Worker
 - [x] Gate 只控制 status-dependent edges，不覆盖 Pairwise vote
 - [x] 第一版采用单 parent Forest，多前提依赖保存在 lineage
-- [x] discovery-90 用于反馈、筛选和接受；heldout-500 只用于 Init/Final
+- [x] discovery-90 用于反馈、筛选和接受；heldout-500 不参与选择。Init/Final 之外的 checkpoint 结果均标记为 exploratory 后验诊断
 - [x] Init Rubric 使用 Multi-Crit Open-ended 五条原文，结构为 5 roots / 0 edges
 - [x] Gap 从 all-node Pairwise artifact 计算，不受 traversal 隐藏节点影响
 - [x] Split 使用 ErrorSignature → Cluster → Child，并保留 parent

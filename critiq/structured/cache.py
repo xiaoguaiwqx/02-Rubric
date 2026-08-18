@@ -55,6 +55,25 @@ class CacheCorruptionError(ValueError):
 CACHE_FILENAME_HASH_HEX_LENGTH = 32
 
 
+def _io_path(path: Path) -> Path:
+    """Return a Windows extended-length path for filesystem operations.
+
+    Experiment artifacts intentionally retain readable directory names, so a
+    deeply nested cache file can exceed the legacy 260-character Windows
+    limit even though its filename digest is compact.  Prefixing only the path
+    used for I/O keeps the public/cache layout unchanged and avoids treating a
+    valid parent directory as missing.
+    """
+    if os.name != "nt":
+        return path
+    absolute = str(path.resolve())
+    if absolute.startswith("\\\\?\\"):
+        return Path(absolute)
+    if absolute.startswith("\\\\"):
+        return Path("\\\\?\\UNC\\" + absolute[2:])
+    return Path("\\\\?\\" + absolute)
+
+
 def canonical_sha256(value: object) -> str:
     try:
         encoded = json.dumps(
@@ -215,10 +234,10 @@ class JsonPredictionCache:
 
     def _existing_path(self, kind: str, key_sha256: str) -> Path | None:
         path = self._path(kind, key_sha256)
-        if path.exists():
+        if _io_path(path).exists():
             return path
         legacy = self._legacy_path(kind, key_sha256)
-        return legacy if legacy.exists() else None
+        return legacy if _io_path(legacy).exists() else None
 
     def _read(self, kind: str, key_payload: Mapping[str, Any]) -> dict[str, Any] | None:
         if self.mode in {CacheMode.DISABLED, CacheMode.REFRESH}:
@@ -229,7 +248,7 @@ class JsonPredictionCache:
         if path is None:
             return None
         try:
-            value = json.loads(path.read_text(encoding="utf-8"))
+            value = json.loads(_io_path(path).read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
             raise CacheCorruptionError(f"failed to read cache entry {path}: {exc}") from exc
         expected = {
@@ -258,9 +277,11 @@ class JsonPredictionCache:
         key_payload = dict(key_payload)
         key_sha256 = canonical_sha256(key_payload)
         path = self._path(kind, key_sha256)
-        if path.exists():
+        io_path = _io_path(path)
+        io_path.parent.mkdir(parents=True, exist_ok=True)
+        if io_path.exists():
             try:
-                existing = json.loads(path.read_text(encoding="utf-8"))
+                existing = json.loads(io_path.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError) as exc:
                 if self.mode is not CacheMode.REFRESH:
                     raise CacheCorruptionError(
@@ -282,7 +303,7 @@ class JsonPredictionCache:
         }
         # Both the durable and temporary names are bounded.  The full digest is
         # stored in the payload above and remains the authoritative identity.
-        temporary = path.with_name(f".{uuid.uuid4().hex}.tmp")
+        temporary = io_path.with_name(f".{uuid.uuid4().hex}.tmp")
         try:
             temporary.write_text(
                 json.dumps(payload, indent=2, ensure_ascii=False, allow_nan=False),
@@ -290,7 +311,7 @@ class JsonPredictionCache:
             )
             for retry in range(20):
                 try:
-                    os.replace(temporary, path)
+                    os.replace(temporary, io_path)
                     break
                 except PermissionError:
                     if retry == 19:

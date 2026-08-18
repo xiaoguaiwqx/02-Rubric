@@ -320,6 +320,9 @@ def assemble_specialized_pairwise_prediction(
         raise ValueError("base and child sample fingerprints differ")
     if base_prediction.request_spec != child_prediction.request_spec:
         raise ValueError("base and child Pairwise request specs differ")
+    if (base_prediction.prompt_version != child_prediction.prompt_version
+            or base_prediction.parser_version != child_prediction.parser_version):
+        raise ValueError("base and child Pairwise protocol versions differ")
     base_criteria = {item.name: item.description for item in base_prediction.criteria}
     child_criteria = {item.name: item.description for item in child_prediction.criteria}
     if set(base_criteria) & set(child_criteria):
@@ -341,7 +344,11 @@ def assemble_specialized_pairwise_prediction(
     return PairwisePredictionOutput(base_prediction.sample_ids,
                                     base_prediction.sample_fingerprints,
                                     criteria, tuple(rows), answers,
-                                    base_prediction.request_spec)
+                                    base_prediction.request_spec,
+                                    semantics_version=base_prediction.semantics_version,
+                                    schema_version=base_prediction.schema_version,
+                                    prompt_version=base_prediction.prompt_version,
+                                    parser_version=base_prediction.parser_version)
 
 
 def project_pairwise_prediction(prediction: PairwisePredictionOutput,
@@ -358,7 +365,11 @@ def project_pairwise_prediction(prediction: PairwisePredictionOutput,
     return PairwisePredictionOutput(prediction.sample_ids, prediction.sample_fingerprints,
                                     tuple(StructuredCriterionSnapshot(name, descriptions[name])
                                           for name in expected), rows, answers,
-                                    prediction.request_spec)
+                                    prediction.request_spec,
+                                    semantics_version=prediction.semantics_version,
+                                    schema_version=prediction.schema_version,
+                                    prompt_version=prediction.prompt_version,
+                                    parser_version=prediction.parser_version)
 
 
 def execute_offline_m1(rubric: StructuredRubric, prediction: PairwisePredictionOutput,
