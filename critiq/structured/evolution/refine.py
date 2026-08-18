@@ -242,6 +242,9 @@ def assemble_refined_pairwise_prediction(
             or before_prediction.sample_fingerprints != candidate_prediction.sample_fingerprints
             or before_prediction.request_spec != candidate_prediction.request_spec):
         raise ValueError("Refine prediction identities do not match")
+    if (before_prediction.prompt_version != candidate_prediction.prompt_version
+            or before_prediction.parser_version != candidate_prediction.parser_version):
+        raise ValueError("Refine prediction protocol versions do not match")
     target = after_rubric.get_node(node_id).criterion
     if (len(candidate_prediction.criteria) != 1
             or candidate_prediction.criteria[0].name != target.name
@@ -268,6 +271,10 @@ def assemble_refined_pairwise_prediction(
         rows,
         answers,
         before_prediction.request_spec,
+        semantics_version=before_prediction.semantics_version,
+        schema_version=before_prediction.schema_version,
+        prompt_version=before_prediction.prompt_version,
+        parser_version=before_prediction.parser_version,
     )
 
 

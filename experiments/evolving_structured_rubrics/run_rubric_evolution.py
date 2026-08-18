@@ -168,7 +168,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from critiq.dual_evaluator import PairwiseVoteMultiModalEvaluator
+from critiq.dual_evaluator import (
+    CacheOptimizedPairwiseVoteMultiModalEvaluator,
+    PairwiseVoteMultiModalEvaluator,
+)
 from critiq.structured import (
     AvailableSlotBackendPool,
     BackendPoolSpec,
@@ -210,6 +213,10 @@ from critiq.structured import (
     project_pairwise_prediction,
 )
 from critiq.structured.aggregation import aggregate_flat_votes
+from critiq.structured.version import (
+    PAIRWISE_WORKER_PROMPT_V2_CACHE_PILOT_VERSION,
+    PAIRWISE_WORKER_PROMPT_VERSION,
+)
 
 from .experiment_utils import (
     atomic_write_json,
@@ -299,12 +306,16 @@ def _config(path: Path) -> dict[str, Any]:
                        "split_retry_v2_experiment", "refine_role_experiment",
                        "visual_split_refine_experiment",
                        "five_root_locked_split_refine_experiment",
+                       "prompt_v2_aligned_evolution",
                        "root_boundary_pre_refine_experiment",
                        "pairwise_cache_prompt_ablation",
                        "vlrb_prompt_v2_transfer",
+                       "vlrb_prompt_v2_evolved",
+                       "vlrb_phase16_checkpoint_transfer",
                        "visual_gate_experiment",
                        "full_child_gate_experiment",
-                       "vlrb_full_child_gate_experiment"}
+                       "vlrb_full_child_gate_experiment",
+                       "vlrb_phase16_root_child_router"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -337,8 +348,10 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("refine_role_experiment", None)
     value.pop("visual_split_refine_experiment", None)
     value.pop("five_root_locked_split_refine_experiment", None)
+    value.pop("prompt_v2_aligned_evolution", None)
     value.pop("root_boundary_pre_refine_experiment", None)
     value.pop("vlrb_prompt_v2_transfer", None)
+    value.pop("vlrb_prompt_v2_evolved", None)
     value.pop("visual_gate_experiment", None)
     value.pop("full_child_gate_experiment", None)
     value.pop("vlrb_full_child_gate_experiment", None)
@@ -539,7 +552,14 @@ def _pairwise_evaluator(
 ):
     request = dict(config["worker_request_kwargs"])
     request["temperature"] = 0.5
-    return PairwiseVoteMultiModalEvaluator(
+    prompt_mode = config.get("_pairwise_prompt_mode", "v1")
+    evaluator_type = {
+        "v1": PairwiseVoteMultiModalEvaluator,
+        "v2_cache": CacheOptimizedPairwiseVoteMultiModalEvaluator,
+    }.get(prompt_mode)
+    if evaluator_type is None:
+        raise ValueError(f"unsupported Pairwise prompt mode: {prompt_mode!r}")
+    evaluator = evaluator_type(
         worker_args={
             "model": config["model"],
             "api_keys": "EMPTY",
@@ -554,6 +574,10 @@ def _pairwise_evaluator(
         encode_local_image=True,
         call_backend=pool,
     )
+    evaluator.prompt_version = (
+        PAIRWISE_WORKER_PROMPT_V2_CACHE_PILOT_VERSION
+        if prompt_mode == "v2_cache" else PAIRWISE_WORKER_PROMPT_VERSION)
+    return evaluator
 
 
 def _expected_pairwise_request_spec(
@@ -605,6 +629,8 @@ def _pairwise_cached(
         tuple(outputs),
         answers,
         evaluator.request_spec(),
+        prompt_version=getattr(
+            evaluator, "prompt_version", PAIRWISE_WORKER_PROMPT_VERSION),
     )
 
 def _metrics(answers: Sequence[FinalPreference], rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
@@ -2940,6 +2966,15 @@ def main() -> int:
         "five-root-locked-split-refine-report",
         "five-root-locked-split-refine-heldout",
         "five-root-locked-split-refine-final-report",
+        "prompt-v2-evolution-freeze", "prompt-v2-evolution-audit",
+        "prompt-v2-evolution-smoke", "prompt-v2-evolution-run",
+        "prompt-v2-evolution-report", "prompt-v2-evolution-heldout",
+        "prompt-v2-evolution-final-report",
+        "prompt-v2-evolution-checkpoint-heldout-freeze",
+        "prompt-v2-evolution-checkpoint-heldout-audit",
+        "prompt-v2-evolution-checkpoint-heldout-smoke",
+        "prompt-v2-evolution-checkpoint-heldout-run",
+        "prompt-v2-evolution-checkpoint-heldout-report",
         "root-pre-refine-freeze", "root-pre-refine-baseline",
         "root-pre-refine-audit",
         "root-pre-refine-smoke",
@@ -2986,9 +3021,18 @@ def main() -> int:
         "vlrb-prompt-v2-freeze", "vlrb-prompt-v2-audit",
         "vlrb-prompt-v2-smoke", "vlrb-prompt-v2-run",
         "vlrb-prompt-v2-retry", "vlrb-prompt-v2-report",
+        "vlrb-prompt-v2-evolved-freeze", "vlrb-prompt-v2-evolved-audit",
+        "vlrb-prompt-v2-evolved-smoke", "vlrb-prompt-v2-evolved-run",
+        "vlrb-prompt-v2-evolved-retry", "vlrb-prompt-v2-evolved-report",
+        "vlrb-phase16-checkpoint-freeze", "vlrb-phase16-checkpoint-audit",
+        "vlrb-phase16-checkpoint-smoke", "vlrb-phase16-checkpoint-run",
+        "vlrb-phase16-checkpoint-retry", "vlrb-phase16-checkpoint-report",
         "vlrb-child-gate-freeze", "vlrb-child-gate-audit",
         "vlrb-child-gate-smoke", "vlrb-child-gate-run",
-        "vlrb-child-gate-retry", "vlrb-child-gate-report"))
+        "vlrb-child-gate-retry", "vlrb-child-gate-report",
+        "vlrb-phase16-router-freeze", "vlrb-phase16-router-audit",
+        "vlrb-phase16-router-smoke", "vlrb-phase16-router-run",
+        "vlrb-phase16-router-retry", "vlrb-phase16-router-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -3041,8 +3085,20 @@ def main() -> int:
     elif args.stage.startswith("root-pre-refine-"):
         from .root_boundary_evolution import run_stage
         run_stage(config, output, args.stage)
+    elif args.stage.startswith("prompt-v2-evolution-"):
+        from .prompt_v2_aligned_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-phase16-router-"):
+        from .vl_rewardbench_phase16_root_child_router import run_stage
+        run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-child-gate-"):
         from .vl_rewardbench_child_gate import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-prompt-v2-evolved-"):
+        from .vl_rewardbench_prompt_v2_evolved import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-phase16-checkpoint-"):
+        from .vl_rewardbench_phase16_checkpoints import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-prompt-v2-"):
         from .vl_rewardbench_prompt_v2 import run_stage

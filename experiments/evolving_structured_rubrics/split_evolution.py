@@ -223,7 +223,14 @@ def merge_predictions(base_prediction,children,rubric):
  if set(desc)!={x.name for x in ordered}:raise ValueError('predictions do not cover committed rubric')
  rows=tuple({c.name:r[c.name] for c in ordered} for r in rows)
  answers=tuple(aggregate_flat_votes(x.vote for x in r.values()) for r in rows)
- return PairwisePredictionOutput(base_prediction.sample_ids,base_prediction.sample_fingerprints,tuple(StructuredCriterionSnapshot(c.name,c.description) for c in ordered),rows,answers,base_prediction.request_spec)
+ return PairwisePredictionOutput(
+  base_prediction.sample_ids,base_prediction.sample_fingerprints,
+  tuple(StructuredCriterionSnapshot(c.name,c.description) for c in ordered),
+  rows,answers,base_prediction.request_spec,
+  semantics_version=base_prediction.semantics_version,
+  schema_version=base_prediction.schema_version,
+  prompt_version=base_prediction.prompt_version,
+  parser_version=base_prediction.parser_version)
 
 def _epoch(target,n):return target/'epochs'/f'epoch_{n:02d}'
 def root_shard(root):
@@ -610,7 +617,10 @@ def _prepare(config,target,epoch_dir,root,attempt_no,rubric,pred,feedback,rows,h
  cluster_path=d/'cluster_proposal.json'
  if protocol.is_memory_treatment:
   if rubric_memory is None or rubric_memory_sha256!=canonical_sha256(rubric_memory):raise RuntimeError('missing or invalid epoch rubric memory')
-  _write(d/'rubric_memory_ref.json',{'rubric_memory_mode':protocol.rubric_memory_mode,'rubric_memory_sha256':rubric_memory_sha256,'control_signature_source':protocol.source_experiment_dir if protocol.is_retry_treatment else CONTROL_EXPERIMENT_DIR,'semantic_cluster_request_spec':specs['semantic_cluster'],'child_generation_request_spec':specs['child_generation']})
+  signature_source=(protocol.source_experiment_dir if protocol.is_retry_treatment
+                    else CONTROL_EXPERIMENT_DIR if protocol.read_only_control_signatures
+                    else 'same_trajectory_exact_identity_or_generated')
+  _write(d/'rubric_memory_ref.json',{'rubric_memory_mode':protocol.rubric_memory_mode,'rubric_memory_sha256':rubric_memory_sha256,'signature_source':signature_source,'control_signature_source':signature_source if protocol.read_only_control_signatures else None,'semantic_cluster_request_spec':specs['semantic_cluster'],'child_generation_request_spec':specs['child_generation']})
  cluster=ClusterProposal.from_dict(load_json(cluster_path)) if cluster_path.exists() else managers['semantic_cluster'].cluster(tuple(signatures.values()),criterion_name=pname,min_cluster_size=thresholds['N_min_cluster'],max_clusters=t.remaining_capacity,prior_failures=prior,rubric_memory=rubric_memory,retry_feedback=retry_feedback)
  if not cluster_path.exists():_write(cluster_path,cluster.to_dict())
  _require_split_clusters(cluster)

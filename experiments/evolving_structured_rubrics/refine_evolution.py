@@ -486,7 +486,11 @@ def _merge_epoch_predictions(
     return PairwisePredictionOutput(
         baseline.sample_ids, baseline.sample_fingerprints,
         tuple(StructuredCriterionSnapshot(item.name, item.description)
-              for item in ordered), rows, answers, baseline.request_spec)
+              for item in ordered), rows, answers, baseline.request_spec,
+        semantics_version=baseline.semantics_version,
+        schema_version=baseline.schema_version,
+        prompt_version=baseline.prompt_version,
+        parser_version=baseline.parser_version)
 
 
 def _prepare_refine_attempt(
@@ -1109,7 +1113,11 @@ def _combine_heldout_predictions(
     return PairwisePredictionOutput(
         source.sample_ids, source.sample_fingerprints,
         tuple(StructuredCriterionSnapshot(item.name, item.description)
-              for item in ordered), tuple(rows), answers, source.request_spec)
+              for item in ordered), tuple(rows), answers, source.request_spec,
+        semantics_version=source.semantics_version,
+        schema_version=source.schema_version,
+        prompt_version=source.prompt_version,
+        parser_version=source.parser_version)
 
 
 def split_refine_heldout(config: Mapping[str, Any], output: Path) -> None:
@@ -2863,7 +2871,11 @@ def _merge_visual_changed_predictions(
     return PairwisePredictionOutput(
         reference.sample_ids, reference.sample_fingerprints,
         tuple(StructuredCriterionSnapshot(name, descriptions[name]) for name in names),
-        node_outputs, answers, reference.request_spec)
+        node_outputs, answers, reference.request_spec,
+        semantics_version=reference.semantics_version,
+        schema_version=reference.schema_version,
+        prompt_version=reference.prompt_version,
+        parser_version=reference.parser_version)
 
 
 def visual_split_refine_heldout(config: Mapping[str, Any], output: Path) -> None:
@@ -3125,10 +3137,12 @@ def visual_split_refine_final_report(config: Mapping[str, Any], output: Path) ->
 
 # Phase 10: five-root locked Split retry plus role-aware Refine.
 
-def _integrated_retry_specs(config: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+def _integrated_retry_specs(
+    config: Mapping[str, Any],
+    protocol: split.EvolutionProtocol = FIVE_ROOT_LOCKED_SPLIT_REFINE_PROTOCOL,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """Build the dedicated locked-retry prompt identities without mutating v1."""
-    managers, _, _, _ = split._managers(
-        config, FIVE_ROOT_LOCKED_SPLIT_REFINE_PROTOCOL)
+    managers, _, _, _ = split._managers(config, protocol)
     child = managers["child_generation"]
     attribution = managers["semantic_cluster"]
     child.retry_feedback_mode = "locked_sample_v3"
@@ -3192,7 +3206,7 @@ def _integrated_retry_feedback(
         "prior_failure_attributions": [
             record["history_payload"]["natural_language_attribution"]
             for record in history.get("attempts", [])
-            if record.get("history_payload", {}).get(
+            if (record.get("history_payload") or {}).get(
                 "natural_language_attribution")
         ],
         "instructions": {
@@ -3237,7 +3251,7 @@ def _integrated_add_lock_diagnostics(
                 "strong_child_min_net_corrected"]
         ],
     })
-    attribution = result.get("history_payload", {}).get(
+    attribution = (result.get("history_payload") or {}).get(
         "natural_language_attribution")
     result["history_payload"] = split._failure(
         result,
@@ -3645,7 +3659,7 @@ def _run_five_root_locked_split_refine_impl(
     for stage in ("semantic_cluster", "child_generation"):
         if specs[stage] != manifest["manager_request_specs"][stage]:
             raise RuntimeError(f"{log_prefix} Manager request identity drift: {stage}")
-    retry_managers, retry_specs = _integrated_retry_specs(config)
+    retry_managers, retry_specs = _integrated_retry_specs(config, protocol)
     if retry_specs != manifest["locked_retry_manager_request_specs"]:
         raise RuntimeError(f"{log_prefix} locked-retry Manager request identity drift")
     refine_manager, _ = _manager(config)

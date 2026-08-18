@@ -22,6 +22,7 @@ from experiments.evolving_structured_rubrics.refine_evolution import (
     VISUAL_SPLIT_REFINE_V1,
     _checkpoint_description_map,
     _checkpoint_v2_description_map,
+    _integrated_retry_feedback,
     _integrated_select_locked_child,
     _trigger_audit_rows,
     _visual_child_ids,
@@ -221,6 +222,21 @@ class RoleAwareRefineTriggerTests(unittest.TestCase):
         self.assertEqual(selected["cluster_id"], "a")
         self.assertIsNone(_integrated_select_locked_child(
             {"children": [diagnostics["children"][2]]}, settings))
+
+    def test_integrated_retry_feedback_ignores_null_success_history(self):
+        feedback = _integrated_retry_feedback(
+            lock={"criterion_name": "locked"},
+            diagnostics={"children": [], "sibling_pairs": []},
+            history={"attempts": [
+                {"decision": "accepted", "history_payload": None},
+                {"decision": "competition_rejected", "history_payload": {
+                    "natural_language_attribution": {"attribution": "too broad"}}},
+            ]},
+        )
+        self.assertEqual(
+            feedback["prior_failure_attributions"],
+            [{"attribution": "too broad"}],
+        )
 
     def test_visual_child_scope_is_exact_and_role_aware_schedules_locked_child(self):
         root = RubricNode("init_02_visual_grounding_and_details",
