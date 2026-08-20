@@ -315,7 +315,8 @@ def _config(path: Path) -> dict[str, Any]:
                        "visual_gate_experiment",
                        "full_child_gate_experiment",
                        "vlrb_full_child_gate_experiment",
-                       "vlrb_phase16_root_child_router"}
+                       "vlrb_phase16_root_child_router",
+                       "discovery_data_v2"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -355,6 +356,7 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("visual_gate_experiment", None)
     value.pop("full_child_gate_experiment", None)
     value.pop("vlrb_full_child_gate_experiment", None)
+    value.pop("discovery_data_v2", None)
     return value
 
 
@@ -3032,7 +3034,26 @@ def main() -> int:
         "vlrb-child-gate-retry", "vlrb-child-gate-report",
         "vlrb-phase16-router-freeze", "vlrb-phase16-router-audit",
         "vlrb-phase16-router-smoke", "vlrb-phase16-router-run",
-        "vlrb-phase16-router-retry", "vlrb-phase16-router-report"))
+        "vlrb-phase16-router-retry", "vlrb-phase16-router-report",
+        "discovery-v2-source-lock", "discovery-v2-ingest",
+        "discovery-v2-selection-freeze",
+        "discovery-v2-generic-screen-smoke",
+        "discovery-v2-generic-screen",
+        "discovery-v2-adjudication-freeze",
+        "discovery-v2-adjudication-smoke",
+        "discovery-v2-adjudication-run",
+        "discovery-v2-adjudication-report",
+        "discovery-v2-review-v2-export",
+        "discovery-v2-demo-freeze",
+        "discovery-v2-demo-smoke",
+        "discovery-v2-demo-adjudicate",
+        "discovery-v2-demo-report",
+        "discovery-v2-demo-review-export",
+        "discovery-v2-demo-finalize",
+        "discovery-v2-demo-export",
+        "discovery-v2-screen-smoke", "discovery-v2-screen",
+        "discovery-v2-adjudicate", "discovery-v2-review-export",
+        "discovery-v2-finalize", "discovery-v2-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -3067,7 +3088,10 @@ def main() -> int:
         "specialize-evaluate": lambda: specialize_evaluate(config, output),
         "specialize-report": lambda: specialize_report(config, output),
     }
-    if args.stage.startswith(("split-evolution-", "split-memory-",
+    if args.stage.startswith("discovery-v2-"):
+        from .discovery_data_v2 import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith(("split-evolution-", "split-memory-",
                               "split-retry-visual-", "split-retry-v2-")):
         from .split_evolution import run_stage
         run_stage(config, output, args.stage)

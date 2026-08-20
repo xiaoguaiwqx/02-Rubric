@@ -25,6 +25,7 @@ data/**/*.json*
 data/**/*.csv*
 data/**/*.xlsx*
 data/**/*.arrow
+data/discovery_v2_demo_v3/
 
 # Phase 4 runtime artifacts (keep frozen manifest, rubrics, and compact reports)
 output/evolving_structured_rubrics/**/cache/
@@ -39,6 +40,17 @@ output/evolving_structured_rubrics/**/progress.json
 output/evolving_structured_rubrics/**/run.log
 output/evolving_structured_rubrics/**/heldout_started.lock
 experiments/evolving_structured_rubrics/configs/local/
+
+# Discovery-v2 runtime data. Keep code, templates, and compact reviewed
+# manifests/reports only; raw candidates, images, predictions, and review
+# queues can contain licensed or sensitive source data.
+output/**/discovery_data_v2/image_store/
+output/**/discovery_data_v2/ingest/
+output/**/discovery_data_v2/candidates/
+output/**/discovery_data_v2/screen/
+output/**/discovery_data_v2/adjudication/
+output/**/discovery_data_v2/review/
+output/**/discovery_data_v2/final/*.jsonl
 
 # Phase 5 evolution runtime artifacts; summarize reviewed findings in docs only.
 output/evolving_structured_rubrics/rubric_evolution_phase5/

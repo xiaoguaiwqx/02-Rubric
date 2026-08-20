@@ -417,6 +417,161 @@
     "selection_after_benchmark_forbidden": true,
     "exploratory": true
   },
+  "discovery_data_v2": {
+    "protocol_version": "discovery-data-v2-v1",
+    "dedup_policy_version": "image-question-v2-benchmark-schema-v2",
+    "seed": 42,
+    "vl_rewardbench_path": "data/VL_RewardBench",
+    "sources": [
+      {
+        "name": "rlhf_v",
+        "source_family": "rlhf_v",
+        "adapter": "rlhf_v",
+        "repo_id": "openbmb/RLHF-V-Dataset",
+        "split": "train",
+        "revision": "main",
+        "enabled": true,
+        "domain": "visual",
+        "license": "verify_from_locked_dataset_card",
+        "data_files": ["RLHF-V-Dataset.parquet"],
+        "image_archives": []
+      },
+      {
+        "name": "mm_rlhf",
+        "source_family": "mm_rlhf",
+        "adapter": "mm_rlhf",
+        "repo_id": "yifanzhang114/MM-RLHF",
+        "split": "train",
+        "revision": "main",
+        "enabled": true,
+        "domain": "visual",
+        "license": "verify_from_locked_dataset_card",
+        "data_files": ["dpo_pairs.jsonl"],
+        "image_archives": ["long.zip", "mcq.zip", "safety.zip", "short.zip"]
+      },
+      {
+        "name": "vilreward_73k",
+        "source_family": "vilreward",
+        "adapter": "vilreward",
+        "repo_id": "UCSC-VLAA/ViLReward-73K",
+        "split": "train",
+        "revision": "main",
+        "enabled": true,
+        "domain": "reasoning",
+        "license": "verify_from_locked_dataset_card",
+        "data_files": ["vilreward_73k_train.json"],
+        "image_archives": ["images.zip"]
+      },
+      {
+        "name": "mmpr_v1_2",
+        "source_family": "mmpr",
+        "adapter": "mmpr",
+        "repo_id": "OpenGVLab/MMPR-v1.2",
+        "split": "train",
+        "revision": "main",
+        "enabled": true,
+        "domain": "reasoning",
+        "license": "mit",
+        "data_files": ["annotations.zip"],
+        "image_archives": ["images.zip_aa", "images.zip_ab", "images.zip_ac"]
+      },
+      {
+        "name": "vision_arena_battle",
+        "source_family": "vision_arena",
+        "adapter": "vision_arena",
+        "repo_id": "lmarena-ai/VisionArena-Battle",
+        "split": "train",
+        "revision": "main",
+        "enabled": true,
+        "domain": "general",
+        "license": "VisionArena data agreement",
+        "data_files": [],
+        "image_archives": []
+      },
+      {
+        "name": "mm_ifdpo",
+        "source_family": "mm_ifdpo",
+        "adapter": "mm_ifdpo",
+        "repo_id": "ChrisDing1105/MMIF-23k",
+        "split": "train",
+        "revision": "main",
+        "enabled": true,
+        "domain": "general",
+        "license": "verify_from_locked_dataset_card",
+        "data_files": ["v2/dpo/mmif_23k_4o_qwen2_5.json"],
+        "image_archives": ["images/allava.tar", "images/cc3m.zip", "images/diversity.zip", "images/multiui.zip"]
+      }
+    ],
+    "candidate_limits": {
+      "raw_rows_per_source": 8000,
+      "screen_candidates_per_domain": 300,
+      "dev_candidates_per_domain": 100,
+      "adjudication_discovery_per_domain": 100,
+      "max_answer_chars": 16000,
+      "max_length_ratio": 8.0,
+      "near_identical_jaccard": 0.96,
+      "vilreward_min_value_gap": 0.25
+    },
+    "quotas": {
+      "evolve": {"visual": 25, "reasoning": 25, "general": 25},
+      "boundary": {
+        "cross_root_non_applicable": 10,
+        "criterion_conflict": 8,
+        "insufficient_visual_evidence": 4,
+        "target_equal_other_dimension": 3
+      },
+      "dev": {
+        "visual": {"regular": 40, "boundary": 10},
+        "reasoning": {"regular": 40, "boundary": 10},
+        "general": {"regular": 40, "boundary": 10}
+      }
+    },
+    "screening": {
+      "prompt_mode": "v2_cache",
+      "temperature": 0.5,
+      "max_tokens": 2048,
+      "swap_orders": 2,
+      "initial_root_count": 5
+    },
+    "generic_screening": {
+      "prompt_version": "generic-multimodal-preference-v1",
+      "temperature": 0.5,
+      "max_tokens": 2048,
+      "seed": 42,
+      "max_attempts": 5,
+      "smoke_sample_count": 20,
+      "hard_candidates_per_source": 15,
+      "exclude_coverage_candidates": true
+    },
+    "adjudicator": {
+      "protocol_version": "criterion-agnostic-double-order-v2",
+      "prompt_version": "multimodal-preference-preadjudication-v2",
+      "structured_max_attempts": 5,
+      "smoke_samples_per_source_role": 1,
+      "allow_uncertain": true,
+      "backend_pool": {
+        "pool_id": "siliconflow-qwen35-397b-discovery-v2",
+        "common_checkpoint_id": "Qwen/Qwen3.5-397B-A17B",
+        "global_request_concurrency": 30,
+        "endpoints": [
+          {
+            "endpoint_id": "siliconflow-cn",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "checkpoint_root": "provider:Qwen/Qwen3.5-397B-A17B",
+            "max_concurrency": 30
+          }
+        ]
+      },
+      "api_key_env": "GUIJI_API_KEY",
+      "api_retry_attempts": 3,
+      "request_kwargs": {
+        "temperature": 0.2,
+        "max_tokens": 4096,
+        "seed": 42,
+        "extra_body": {"enable_thinking": true, "thinking_budget": 2048}
+      }
+    }
+  },
   "structured_max_retries": 1,
   "api_retry_attempts": 3
 }

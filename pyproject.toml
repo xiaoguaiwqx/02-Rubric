@@ -31,6 +31,13 @@ train = [
   "accelerate",
 ]
 dev = ["torch-tb-profiler", "ipykernel", "ipywidgets", ]
+data = [
+  "datasets",
+  "huggingface_hub",
+  "pillow",
+  "pandas",
+  "pyarrow",
+]
 
 [tool.setuptools.packages.find]
 include = ["critiq*"]
