@@ -1826,7 +1826,112 @@ Root Router 将平均 active roots 由5降至3.207（−35.9%）；联合路由�
 
 ---
 
-## 16. 后续候选
+## 16. Discovery-v2 Prompt v2 Split+Refine 演化（Phase17）
+
+### 16.1 实验动机与数据集
+
+Phase16 证明 Prompt v2 全链路演化能够提高 RLHF-V heldout-500，但其 discovery-90 几乎全部来自视觉事实性幻觉，难以为通用偏好、指令遵循和多模态推理提供充分反馈。Phase17 因此不再修改算子或聚合规则，而是单独检验：**当 discovery 数据覆盖更多偏好类型后，同一套 Prompt v2、Locked-Child Split 和 Role-aware Refine 能否获得更好的外部迁移。**
+
+本实验使用新构造的 `Discovery-v2 demo v3`：
+
+| 子集 | 文件 | 数量与分布 | 在演化中的用途 |
+| --- | --- | --- | --- |
+| Discovery100 | `data/discovery_v2_demo_v3/discovery_100.jsonl` | 100条；Visual/Reasoning/General 为34/33/33；A/B gold 为50/50 | ErrorSignature、Split/Refine 生成与候选接受 |
+| Dev150 | `data/discovery_v2_demo_v3/dev_150.jsonl` | 150条；三个领域各50条；六个来源各25条；A/B gold 为75/75 | 每个 epoch 的只读泛化诊断 |
+
+数据来自 RLHF-V、MM-RLHF、ViLReward-73K、MMPR-v1.2、VisionArena-Battle 和 MMIF-23K v2 六个 source family。原始记录经过图片可恢复性、答案完整性、长度异常、近相同回答过滤，并按 source ID、image、question 和 unordered answer pair 与 VL-RewardBench 去重。Discovery100 由70条 coverage core 与30条 hard core 组成，以兼顾分布覆盖和具有判别价值的困难偏好；Dev150 仅按数据属性分层冻结，不使用 Worker 错误选样。数据来源、版本、下载、清洗、去重、筛选和质量分析详见 [Discovery-v2 数据构造文档](<Discovery-v2 Data Collection.md>)。
+
+需要特别区分：Dev150 对 Manager 不可见，不生成 ErrorSignature，不参与候选接受、早停或 checkpoint 选择；它只用于观察演化轨迹是否跨样本泛化。
+
+### 16.2 冻结协议与演化过程
+
+Phase17 从相同的五个初始 roots 独立开始，保持 Phase16 的核心算法不变：
+
+- Pairwise Worker 为 Qwen3-VL-8B-Instruct，使用 Prompt v2 `1.1.0-cache-pilot`、`temperature=0.5`、`max_tokens=2048`，通过8000与8001 available-slot pool 执行；
+- Manager 为 Qwen3.5-397B-A17B，并默认使用 `global_rubric_v1`；
+- Split 只调度初始 roots，失败后可锁定强 child 并继续优化其他 children；Refine 使用 role-aware child trigger；
+- 所有候选只由 Discovery100 决定接受，epoch 内同步提交，固定运行3–5轮；
+- 不使用 Gate、Root Router、Root Boundary Pre-Refine、权重搜索或 VL-RewardBench 反馈。
+
+五个 roots 均完成 Split 接受：Visual Grounding 在 Epoch 1 接受；Factuality、Creativity 和 Clarity 在 Epoch 2 接受；Completeness 在 Epoch 4 接受。最终 Rubric 从5个 nodes 增长到27个 nodes，其中22个为 children。共发生11次 Split attempts（5 accepted、5 rejected、1 proposal-invalid）和61次 Refine attempts（21 accepted、38 rejected、2 invalid）。
+
+| Epoch | Nodes | Discovery100 M1 ACC / Coverage | Dev150 M1 ACC / Coverage |
+| --- | ---: | ---: | ---: |
+| 0：Initial five-root | 5 | 64.00% / 98.00% | 72.67% / 97.33% |
+| 1 | 10 | 62.00% / 97.00% | 72.00% / 98.67% |
+| **2** | **23** | 65.00% / 99.00% | **75.33% / 100.00%** |
+| 3 | 23 | **66.00% / 99.00%** | 74.00% / 99.33% |
+| 4 | 27 | 65.00% / 98.00% | 73.33% / 99.33% |
+| 5：Final | 27 | 65.00% / 98.00% | 70.67% / 98.67% |
+
+Discovery100 从 Epoch 0 到最终仅提高1.0 pp，且过程不单调；Dev150 在 Epoch 2 达到75.33%后连续下降，最终低于初始2.0 pp。由于协议明确禁止用 Dev150 选 checkpoint，正式输出仍为 Epoch 5。该轨迹说明前两轮结构扩展具有泛化收益，但后期重复局部 Refine 开始过拟合有限的100条演化数据。
+
+### 16.3 Heldout-500 探索性回归
+
+RLHF-V heldout-500 仅用于与既有实验做 exploratory regression，不参与演化或 checkpoint 选择。Discovery-v2 与该 heldout 存在少量已知重叠（Discovery100 为2条、Dev150 为6条），因此本节不是新的无偏测试。
+
+| 系统 | Strict ACC | 正确数 | Coverage | Covered ACC |
+| --- | ---: | ---: | ---: | ---: |
+| Initial five-root Prompt v2 | 75.80% | 379 / 500 | 98.80% | 76.72% |
+| Phase10 + Prompt v2 | 76.60% | 383 / 500 | 99.40% | 77.06% |
+| Phase16 E5 | **78.00%** | **390 / 500** | **99.80%** | **78.16%** |
+| Phase17 Final | 74.00% | 370 / 500 | 99.40% | 74.45% |
+
+Phase17 相对 Initial、Phase10 和 Phase16 E5 分别净减少9、13和20个正确样本；其中相对 Phase16 的 paired corrected/harmed 为11/31，exact McNemar `p=0.0029`。这与 Discovery-v2 不再专门围绕 RLHF-V 视觉幻觉分布构造相符：数据覆盖扩展改善了外部 benchmark 迁移，但牺牲了同域 heldout 表现。
+
+### 16.4 VL-RewardBench 主要外部结果
+
+主要外部测试使用完整 VL-RewardBench 1247对样本、Prompt v2 和 K=3 counterbalanced A/B 顺序。`OverallAcc`是在产生明确最终 A/B 判断的覆盖范围内计算，`MacroAcc`为 General、Hallucination、Reasoning 三类 covered accuracy 的宏平均；`Strict ACC`以全部1247对为分母。
+
+| 系统 | OverallAcc | MacroAcc | Coverage | Strict ACC | 正确数 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Initial five-root Prompt v2 | 58.12% | 54.60% | 98.24% | 57.10% | 712 |
+| Phase16 E5 | 66.50% | 60.58% | 99.12% | 65.92% | 822 |
+| Phase10 + Prompt v2 Control | 69.53% | 63.37% | 98.96% | 68.81% | 858 |
+| **Phase17 Discovery-v2 Final** | **69.91%** | **64.06%** | **99.68%** | **69.69%** | **869** |
+
+Phase17 相对 Phase10 Control 的 OverallAcc、MacroAcc 和 Strict ACC 分别提高0.38、0.69和0.88 pp，多正确11条；paired corrected/harmed 为52/41，`p=0.300`，因此应表述为正向 pilot evidence，而不是显著优于 Control。相对 Initial five-root，Phase17 净纠正157条（182 corrected / 25 harmed，`p<10^-29`）；相对 Phase16 E5 净纠正47条（79/32，`p<10^-5`）。
+
+| 类别 | Phase10 Control | Phase17 Final | 变化 |
+| --- | ---: | ---: | ---: |
+| General | 46.89% | **50.00%** | **+3.11 pp** |
+| Hallucination | 75.81% | **76.47%** | +0.66 pp |
+| Reasoning | **67.41%** | 65.71% | -1.70 pp |
+
+主要增益来自 General 和 Hallucination，Reasoning 尚未改善。按来源看，POVID 提高约2.97 pp、WildVision 提高约2.67 pp，而 RLHF 子集下降约8.52 pp；因此“分布更宽”已经带来外部总体收益，但100条数据仍不足以稳定覆盖所有推理与偏好子域。
+
+### 16.5 Root 子树与聚合诊断
+
+固定 Phase17 Final Rubric，在 VL-RewardBench 上分别执行每个 root 及其 children，可得到：
+
+| Root subtree | OverallAcc | MacroAcc | Coverage | Strict ACC |
+| --- | ---: | ---: | ---: | ---: |
+| Completeness | 71.27% | 65.17% | 98.80% | 70.41% |
+| Visual Grounding | 63.88% | 59.85% | 97.92% | 62.55% |
+| Factuality | 69.95% | 62.77% | 98.48% | 68.89% |
+| Creativity | **71.59%** | **66.07%** | **99.36%** | **71.13%** |
+| Clarity | 67.88% | 62.95% | 99.12% | 67.28% |
+
+Creativity 和 Completeness 子树单独执行时均高于完整五-root 的 OverallAcc，说明当前等权 root 聚合仍存在错误投票稀释。为理解这一现象，额外进行了不改变任何模型预测的 post-hoc 组合诊断：
+
+| 聚合诊断 | OverallAcc | MacroAcc | Coverage | Strict ACC | 正确数 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 完整五 roots | 69.91% | 64.06% | 99.68% | 69.69% | 869 |
+| 去掉 Visual Grounding | 72.13% | 65.44% | 92.94% | 67.04% | 836 |
+| 去掉 Visual Grounding + Clarity | **71.28%** | **64.85%** | 99.12% | **70.65%** | **881** |
+
+仅去掉 Visual Grounding 时 OverallAcc 虽提高2.22 pp，但四个 roots 容易产生2:2平票，Coverage 降低6.74 pp、总正确数减少33，因此这是选择性弃权造成的表面提升。保留 Completeness、Factuality 和 Creativity 三个 roots 时 Coverage 基本保持，Strict ACC 相对完整五 roots 提高0.96 pp、增加12个正确样本（23 corrected / 11 harmed，`p=0.058`）。不过该组合是在 VL-RewardBench 结果可见后选择的，只能作为“聚合仍有优化空间”的诊断，不能替代 Phase17 完整五-root 主结果。
+
+VL-RewardBench 共执行101,007个逻辑请求；技术重试后仅剩2个 unresolved predictions，最终 Coverage 为99.68%。主要 artifact 位于：
+
+- `output/evolving_structured_rubrics/rubric_evolution_phase5/phase17_discovery_v2_prompt_v2_split_refine_v1/`
+- `output/evolving_structured_rubrics/vl_rewardbench_phase17_discovery_v2_prompt_v2_v1/`
+
+**阶段结论。** Discovery-v2 将少量偏好经验从单一视觉幻觉分布扩展到视觉、推理和通用偏好后，Phase17 在 VL-RewardBench 上达到当前完整五-root 系统的最佳外部结果：OverallAcc 69.91%、MacroAcc 64.06%、Strict ACC 69.69%。与此同时，Dev150 后期下降和 heldout-500 回退表明100条 discovery 仍不足以支撑五轮持续 Refine；当前证据支持“更均衡的数据分布改善外部迁移”，但也暴露出后期过拟合与等权 root 投票稀释仍是主要瓶颈。
+
+---
+
+## 17. 后续候选
 
 - **Merge / Drop**：在前三个算子稳定后再处理节点重挂接和历史生存状态；
 - **删除 parent 的 Split 消融**：与正式的“保留 parent 并挂载 children”Split 分开；
@@ -1835,7 +1940,7 @@ Root Router 将平均 active roots 由5降至3.207（−35.9%）；联合路由�
 
 ---
 
-## 17. Review Checklist
+## 18. Review Checklist
 
 - [x] 正式聚合 vote 只来自 Pairwise Worker
 - [x] Gate 只控制 status-dependent edges，不覆盖 Pairwise vote

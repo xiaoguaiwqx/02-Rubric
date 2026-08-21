@@ -311,8 +311,12 @@ def _source_discovery_paths(source: Path) -> tuple[Path, Path, Path]:
 
 
 def _rows(config: Mapping[str, Any], split: str):
-    count = 90 if split == "discovery" else 500
-    return load_jsonl_dataset(base._path(config[f"{split}_dataset"]), expected_count=count)
+    dataset_paths = config.get("_experiment_dataset_paths", {})
+    dataset_counts = config.get("_experiment_dataset_counts", {})
+    path = (dataset_paths[split] if split in dataset_paths
+            else config[f"{split}_dataset"])
+    count = dataset_counts.get(split, 90 if split == "discovery" else 500)
+    return load_jsonl_dataset(base._path(path), expected_count=int(count))
 
 
 def _same_pairwise_scientific_identity(

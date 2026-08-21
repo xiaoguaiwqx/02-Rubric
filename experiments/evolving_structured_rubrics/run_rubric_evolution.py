@@ -307,10 +307,12 @@ def _config(path: Path) -> dict[str, Any]:
                        "visual_split_refine_experiment",
                        "five_root_locked_split_refine_experiment",
                        "prompt_v2_aligned_evolution",
+                       "discovery_v2_prompt_v2_evolution",
                        "root_boundary_pre_refine_experiment",
                        "pairwise_cache_prompt_ablation",
                        "vlrb_prompt_v2_transfer",
                        "vlrb_prompt_v2_evolved",
+                       "vlrb_discovery_v2",
                        "vlrb_phase16_checkpoint_transfer",
                        "visual_gate_experiment",
                        "full_child_gate_experiment",
@@ -2977,6 +2979,10 @@ def main() -> int:
         "prompt-v2-evolution-checkpoint-heldout-smoke",
         "prompt-v2-evolution-checkpoint-heldout-run",
         "prompt-v2-evolution-checkpoint-heldout-report",
+        "discovery-v2-evolution-freeze", "discovery-v2-evolution-audit",
+        "discovery-v2-evolution-smoke", "discovery-v2-evolution-run",
+        "discovery-v2-evolution-report", "discovery-v2-evolution-heldout",
+        "discovery-v2-evolution-final-report",
         "root-pre-refine-freeze", "root-pre-refine-baseline",
         "root-pre-refine-audit",
         "root-pre-refine-smoke",
@@ -3026,6 +3032,9 @@ def main() -> int:
         "vlrb-prompt-v2-evolved-freeze", "vlrb-prompt-v2-evolved-audit",
         "vlrb-prompt-v2-evolved-smoke", "vlrb-prompt-v2-evolved-run",
         "vlrb-prompt-v2-evolved-retry", "vlrb-prompt-v2-evolved-report",
+        "vlrb-discovery-v2-freeze", "vlrb-discovery-v2-audit",
+        "vlrb-discovery-v2-smoke", "vlrb-discovery-v2-run",
+        "vlrb-discovery-v2-retry", "vlrb-discovery-v2-report",
         "vlrb-phase16-checkpoint-freeze", "vlrb-phase16-checkpoint-audit",
         "vlrb-phase16-checkpoint-smoke", "vlrb-phase16-checkpoint-run",
         "vlrb-phase16-checkpoint-retry", "vlrb-phase16-checkpoint-report",
@@ -3088,7 +3097,10 @@ def main() -> int:
         "specialize-evaluate": lambda: specialize_evaluate(config, output),
         "specialize-report": lambda: specialize_report(config, output),
     }
-    if args.stage.startswith("discovery-v2-"):
+    if args.stage.startswith("discovery-v2-evolution-"):
+        from .discovery_v2_prompt_v2_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("discovery-v2-"):
         from .discovery_data_v2 import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith(("split-evolution-", "split-memory-",
@@ -3120,6 +3132,9 @@ def main() -> int:
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-prompt-v2-evolved-"):
         from .vl_rewardbench_prompt_v2_evolved import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-discovery-v2-"):
+        from .vl_rewardbench_discovery_v2 import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-phase16-checkpoint-"):
         from .vl_rewardbench_phase16_checkpoints import run_stage

@@ -34,6 +34,9 @@ CONTROL_EXPERIMENT = control.EXPERIMENT_DIR
 ENDPOINT_IDS = control.ENDPOINT_IDS
 SMOKE_COUNT = 20
 MAX_RETRY_ATTEMPTS = 10
+TREATMENT_SYSTEM = "prompt_v2_evolved_final_equal"
+SCHEDULER = "available_slot_dynamic"
+EXTRA_BASELINE_REPORTS: dict[str, tuple[Path, str]] = {}
 
 STAGE_FREEZE = "vlrb-prompt-v2-evolved-freeze"
 STAGE_AUDIT = "vlrb-prompt-v2-evolved-audit"
@@ -77,7 +80,7 @@ def _protocol(config: Mapping[str, Any]) -> dict[str, Any]:
         "source_experiment": evolution.EXPERIMENT_DIR,
         "control_experiment": CONTROL_EXPERIMENT,
         "endpoint_ids": list(ENDPOINT_IDS),
-        "scheduler": "available_slot_dynamic",
+        "scheduler": SCHEDULER,
         "prompt_version": PAIRWISE_WORKER_PROMPT_V2_CACHE_PILOT_VERSION,
         "smoke_sample_count": SMOKE_COUNT,
         "max_retry_attempts": MAX_RETRY_ATTEMPTS,
@@ -198,13 +201,30 @@ def _manifest(config: Mapping[str, Any], output: Path, records, schedule,
         "systems": {
             "initial_five_root_prompt_v2": "read_only_control",
             "phase10_final_equal_prompt_v2": "read_only_control",
-            "prompt_v2_evolved_final_equal": "treatment",
+            **{name: "read_only_external_baseline"
+               for name in EXTRA_BASELINE_REPORTS},
+            TREATMENT_SYSTEM: "treatment",
         },
         "selection_after_benchmark_forbidden": True,
         "run_regardless_of_heldout_result": True,
     }
     if include_endpoints:
         value["endpoint_identities"] = phase10._inspect_endpoints(config)
+    if EXTRA_BASELINE_REPORTS:
+        frozen_baselines = {}
+        for name, (report_path, metric_name) in EXTRA_BASELINE_REPORTS.items():
+            if not report_path.is_file():
+                raise RuntimeError(f"completed external baseline missing: {report_path}")
+            report = load_json(report_path)
+            if metric_name not in report.get("metrics", {}):
+                raise RuntimeError(
+                    f"external baseline metric missing: {name}/{metric_name}")
+            frozen_baselines[name] = {
+                "report_path": str(report_path.resolve()),
+                "report_sha256": file_sha256(report_path),
+                "metric_name": metric_name,
+            }
+        value["external_baselines"] = frozen_baselines
     return value
 
 
@@ -466,6 +486,13 @@ def report(config: Mapping[str, Any], output: Path) -> None:
             records, initial_metrics["original_index_predictions"],
             treatment_metrics["original_index_predictions"]),
     }
+    external_metrics = {}
+    for name, (report_path, metric_name) in EXTRA_BASELINE_REPORTS.items():
+        item = load_json(report_path)["metrics"][metric_name]
+        external_metrics[name] = item
+        paired[f"{name}_to_prompt_v2_evolved"] = legacy._paired(
+            records, item["original_index_predictions"],
+            treatment_metrics["original_index_predictions"])
     predictions = tuple(PairwisePredictionOutput.load_json(
         control._prediction_path(target / "retry", replicate))
         for replicate in range(legacy.K))
@@ -478,7 +505,8 @@ def report(config: Mapping[str, Any], output: Path) -> None:
         "metrics": {
             "initial_five_root_prompt_v2": initial_metrics,
             "phase10_final_equal_prompt_v2": phase10_metrics,
-            "prompt_v2_evolved_final_equal": treatment_metrics,
+            **external_metrics,
+            TREATMENT_SYSTEM: treatment_metrics,
         },
         "paired": paired,
         "node_metrics": control._node_metrics(
