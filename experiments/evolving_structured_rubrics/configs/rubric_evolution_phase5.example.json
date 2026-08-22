@@ -384,6 +384,21 @@
     "seed": 42,
     "selection_after_benchmark_forbidden": true
   },
+  "vlrb_phase17_checkpoint_transfer": {
+    "protocol_version": "vlrb-phase17-checkpoint-transfer-v1",
+    "source_experiment": "phase17_discovery_v2_prompt_v2_split_refine_v1",
+    "source_vlrb_experiment": "vl_rewardbench_phase17_discovery_v2_prompt_v2_v1",
+    "epochs": [2, 3, 4],
+    "endpoint_ids": ["vllm-8000", "vllm-8001"],
+    "scheduler": "sample_major_available_slot_dynamic",
+    "prompt_version": "1.1.0-cache-pilot",
+    "smoke_sample_count": 20,
+    "max_retry_attempts": 10,
+    "k": 3,
+    "seed": 42,
+    "selection_after_benchmark_forbidden": true,
+    "expected_unique_variant_description_count": 18
+  },
   "visual_gate_experiment": {
     "protocol_version": "visual-grounding-gate-only-v3",
     "source_rubric_experiment": "phase10_five_root_locked_split_refine_v1",

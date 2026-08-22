@@ -1864,7 +1864,7 @@ Phase17 从相同的五个初始 roots 独立开始，保持 Phase16 的核心�
 | 4 | 27 | 65.00% / 98.00% | 73.33% / 99.33% |
 | 5：Final | 27 | 65.00% / 98.00% | 70.67% / 98.67% |
 
-Discovery100 从 Epoch 0 到最终仅提高1.0 pp，且过程不单调；Dev150 在 Epoch 2 达到75.33%后连续下降，最终低于初始2.0 pp。由于协议明确禁止用 Dev150 选 checkpoint，正式输出仍为 Epoch 5。该轨迹说明前两轮结构扩展具有泛化收益，但后期重复局部 Refine 开始过拟合有限的100条演化数据。
+Discovery100 从 Epoch 0 到最终仅提高1.0 pp，且过程不单调；Dev150 在 Epoch 2 达到75.33%后连续下降，最终低于初始2.0 pp。由于协议明确禁止用 Dev150 选择 checkpoint，正式输出仍为 Epoch 5。该轨迹构成后期局部 Refine 可能过度适配 Discovery100 的内部预警，但不能单独证明外部分布也同步退化；16.6 节进一步在 VL-RewardBench 上比较中间 checkpoint。
 
 ### 16.3 Heldout-500 探索性回归
 
@@ -1927,7 +1927,67 @@ VL-RewardBench 共执行101,007个逻辑请求；技术重试后仅剩2个 unres
 - `output/evolving_structured_rubrics/rubric_evolution_phase5/phase17_discovery_v2_prompt_v2_split_refine_v1/`
 - `output/evolving_structured_rubrics/vl_rewardbench_phase17_discovery_v2_prompt_v2_v1/`
 
-**阶段结论。** Discovery-v2 将少量偏好经验从单一视觉幻觉分布扩展到视觉、推理和通用偏好后，Phase17 在 VL-RewardBench 上达到当前完整五-root 系统的最佳外部结果：OverallAcc 69.91%、MacroAcc 64.06%、Strict ACC 69.69%。与此同时，Dev150 后期下降和 heldout-500 回退表明100条 discovery 仍不足以支撑五轮持续 Refine；当前证据支持“更均衡的数据分布改善外部迁移”，但也暴露出后期过拟合与等权 root 投票稀释仍是主要瓶颈。
+### 16.6 Phase17 checkpoint 的 VL-RewardBench 外部迁移诊断
+
+#### 实验动机与设计
+
+Dev150 在 Epoch 2 达到内部最高点，Discovery100 在 Epoch 3 达到最高点，而 Epoch 4 才首次完成全部五个 roots 的 Split。为判断“内部最佳”“结构完成”和“最终 checkpoint”中哪一种更能预测外部迁移，额外冻结并比较以下 Rubric：
+
+| Checkpoint | Nodes | 冻结理由 |
+| --- | ---: | --- |
+| E2 | 23 | Dev150 最高点，75.33% |
+| E3 | 23 | Discovery100 最高点，66.00% |
+| E4 | 27 | Completeness 接受 Split，五个 roots 首次全部完成 Split |
+| E5 | 27 | 协议规定的正式最终输出，直接复用16.4节结果 |
+| Phase10 | 22 | 既有强 Control，直接复用12.2节结果 |
+
+外部评测继续固定为 VL-RewardBench 1,247对样本、Prompt v2、`K=3` counterbalanced A/B 顺序、等权五-root M1。E5 与 Phase10 的逻辑投票完全复用；E2–E4 只为相对 E5 发生 description 变化的18个唯一 criterion 生成缺失预测。所有 checkpoint 在查看本次 benchmark 结果前冻结，结果仅作 exploratory 轨迹诊断，禁止根据 VL-RewardBench 反向改变既有演化接受决定。
+
+#### 总体与配对结果
+
+| Rubric | OverallAcc | MacroAcc | Coverage | Strict ACC | 正确数 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Initial five-root Prompt v2 | 58.12% | 54.60% | 98.24% | 57.10% | 712 |
+| Phase10 Control | 69.53% | 63.37% | 98.96% | 68.81% | 858 |
+| Phase17 E2 | 67.45% | 62.32% | 99.28% | 66.96% | 835 |
+| Phase17 E3 | 67.74% | 61.88% | 99.20% | 67.20% | 838 |
+| **Phase17 E4** | **70.29%** | **64.42%** | 99.60% | **70.01%** | **873** |
+| Phase17 E5 | 69.91% | 64.06% | **99.68%** | 69.69% | 869 |
+
+E2、E3 相对 E5 分别净减少34和31个正确样本，exact McNemar `p=0.00032` 和 `p=0.00019`，说明二者的外部退化不是 Coverage 波动造成的。E4 相对 E5 corrected/harmed 为19/15，净增加4个正确样本，但 `p=0.608`；因此只能认为 E4 与 E5 基本持平、E4 点估计略高，不能宣称显著优于 E5。
+
+| 相对 Phase10 | Corrected | Harmed | Net corrected | Exact McNemar p |
+| --- | ---: | ---: | ---: | ---: |
+| E2 | 28 | 51 | -23 | 0.0128 |
+| E3 | 37 | 57 | -20 | 0.0495 |
+| **E4** | **53** | **38** | **+15** | 0.142 |
+| E5 | 52 | 41 | +11 | 0.300 |
+
+E4 相对 Phase10 的 OverallAcc、MacroAcc 和 Strict ACC 分别提高0.76、1.05和1.20 pp，是本轨迹观察到的最高完整五-root结果；但配对差异仍未显著，只能作为正向 pilot evidence。
+
+#### 性能跃升来源
+
+E3 到 E4 的主要结构变化是 Completeness 第四次 Split 尝试被接受。该 root subtree 的 VL-RewardBench OverallAcc 从52.04%跃升到70.23%，同时 Factuality 和 Clarity 分别提高0.79和0.95 pp；完整系统正确数因此从838增加到873。
+
+| Root subtree | E2 | E3 | E4 |
+| --- | ---: | ---: | ---: |
+| Completeness | 52.04% | 52.04% | **70.23%** |
+| Visual Grounding | 63.75% | 64.16% | 64.16% |
+| Factuality | **70.55%** | 69.51% | 70.30% |
+| Creativity | **72.64%** | 71.59% | 71.59% |
+| Clarity | 65.18% | 68.12% | **69.07%** |
+
+按官方类别的 covered accuracy，E4 相对 Phase10 在 General 和 Hallucination 上分别提高3.11和0.90 pp，但 Reasoning 下降0.85 pp。E4 到 E5 又接受6次 Refine 后，General 保持50.00%，Hallucination 从76.71%微降至76.47%，Reasoning 从66.56%降至65.71%，最终少4个正确样本。这提示后期 Refine 没有继续转化为外部收益，并出现轻微推理回落；但变化不显著，不能据此概括为稳定的后期过拟合规律。
+
+#### 结论与证据边界
+
+本实验否定了“Dev150 或 Discovery100 的单一内部最高点必然对应最佳外部 checkpoint”：E2、E3 均明显弱于 E4/E5。当前轨迹中，**五个 roots 全部完成 Split 的结构里程碑比内部 M1 峰值更能预测 VL-RewardBench 表现**，其中 Completeness 子树是 E4 跃升的主要来源。不过，这一判断只来自单条演化轨迹，E4 又是在同一 VL-RewardBench 上观察到的最高点，不能据此事后替换协议规定的 E5 正式输出。若将“全部 roots 完成 Split 后才进入 checkpoint 候选”作为未来规则，需要在新轨迹或独立外部数据上预先冻结后验证。
+
+技术重试共处理64个失败请求，恢复63个，仅剩1个 criterion-level prediction 未恢复；E4 系统 Coverage 仍为99.60%。主要 artifact 位于：
+
+- `output/evolving_structured_rubrics/vl_rewardbench_phase17_checkpoint_transfer_v1/`
+
+**阶段结论。** Discovery-v2 将少量偏好经验从单一视觉幻觉分布扩展到视觉、推理和通用偏好后，Phase17 正式 E5 在 VL-RewardBench 上达到 OverallAcc 69.91%、MacroAcc 64.06%、Strict ACC 69.69%；探索性 checkpoint 诊断进一步发现，五个 roots 首次全部完成 Split 的 E4 达到当前最高点70.29% / 64.42% / 70.01%。这说明更均衡的数据分布与完整的 root 结构扩展能够改善外部迁移，但 Dev150 排名、后期 Refine 和等权 root 聚合仍未形成稳定的模型选择依据。
 
 ---
 

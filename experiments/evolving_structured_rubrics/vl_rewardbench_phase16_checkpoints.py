@@ -20,6 +20,7 @@ from critiq.structured import (
 )
 from critiq.structured.dual_backend import OnlinePairwiseVoteBackend
 from critiq.structured.version import PAIRWISE_WORKER_PROMPT_V2_CACHE_PILOT_VERSION
+from critiq.utils import Criterion
 
 from . import prompt_v2_aligned_evolution as evolution
 from . import run_rubric_evolution as base
@@ -36,7 +37,18 @@ PROTOCOL_VERSION = "vlrb-phase16-checkpoint-transfer-v3-sample-major-dynamic"
 EPOCHS = (2, 3)
 SMOKE_COUNT = 20
 MAX_RETRY_ATTEMPTS = 10
-STAGES = tuple(f"vlrb-phase16-checkpoint-{name}" for name in (
+CONFIG_KEY = "vlrb_phase16_checkpoint_transfer"
+SOURCE_EVOLUTION_EXPERIMENT_DIR = evolution.EXPERIMENT_DIR
+SOURCE_VLRB_EXPERIMENT_DIR = evolved.EXPERIMENT_DIR
+SYSTEM_PREFIX = "phase16"
+REPORT_TITLE = "Phase16 checkpoint VL-RewardBench transfer diagnostic"
+EXPECTED_VARIANT_DESCRIPTION_COUNT: int | None = None
+CHECKPOINT_ROLES: Mapping[int, str] = {
+    2: "phase16_intermediate_epoch_2",
+    3: "phase16_intermediate_epoch_3",
+}
+STAGE_PREFIX = "vlrb-phase16-checkpoint"
+STAGES = tuple(f"{STAGE_PREFIX}-{name}" for name in (
     "freeze", "audit", "smoke", "run", "retry", "report"))
 
 
@@ -45,7 +57,13 @@ def _target() -> Path:
 
 
 def _evolved_target() -> Path:
-    return base.ROOT / "output/evolving_structured_rubrics" / evolved.EXPERIMENT_DIR
+    return (base.ROOT / "output/evolving_structured_rubrics"
+            / SOURCE_VLRB_EXPERIMENT_DIR)
+
+
+def _control_target() -> Path:
+    return (base.ROOT / "output/evolving_structured_rubrics"
+            / control.EXPERIMENT_DIR)
 
 
 def _status_path(target: Path) -> Path:
@@ -67,8 +85,8 @@ def _require(target: Path, stage: str) -> None:
 def _protocol(config: Mapping[str, Any]) -> dict[str, Any]:
     expected = {
         "protocol_version": PROTOCOL_VERSION,
-        "source_experiment": evolution.EXPERIMENT_DIR,
-        "source_vlrb_experiment": evolved.EXPERIMENT_DIR,
+        "source_experiment": SOURCE_EVOLUTION_EXPERIMENT_DIR,
+        "source_vlrb_experiment": SOURCE_VLRB_EXPERIMENT_DIR,
         "epochs": list(EPOCHS),
         "endpoint_ids": list(control.ENDPOINT_IDS),
         "scheduler": "sample_major_available_slot_dynamic",
@@ -79,8 +97,11 @@ def _protocol(config: Mapping[str, Any]) -> dict[str, Any]:
         "seed": legacy.SEED,
         "selection_after_benchmark_forbidden": True,
     }
-    if config.get("vlrb_phase16_checkpoint_transfer") != expected:
-        raise RuntimeError("vlrb_phase16_checkpoint_transfer must match frozen protocol")
+    if EXPECTED_VARIANT_DESCRIPTION_COUNT is not None:
+        expected["expected_unique_variant_description_count"] = (
+            EXPECTED_VARIANT_DESCRIPTION_COUNT)
+    if config.get(CONFIG_KEY) != expected:
+        raise RuntimeError(f"{CONFIG_KEY} must match frozen protocol")
     request = config.get("worker_request_kwargs")
     if not isinstance(request, Mapping) or request.get("temperature") != .5 or request.get("max_tokens") != 2048:
         raise RuntimeError("Phase16 checkpoint transfer requires temperature=.5/max_tokens=2048")
@@ -89,11 +110,13 @@ def _protocol(config: Mapping[str, Any]) -> dict[str, Any]:
 
 def _checkpoint_rubric(output: Path, epoch: int) -> StructuredRubric:
     return StructuredRubric.load_json(
-        output / evolution.EXPERIMENT_DIR / "epochs" / f"epoch_{epoch:02d}" / "rubric_committed.json")
+        output / SOURCE_EVOLUTION_EXPERIMENT_DIR / "epochs"
+        / f"epoch_{epoch:02d}" / "rubric_committed.json")
 
 
 def _final_rubric(output: Path) -> StructuredRubric:
-    return StructuredRubric.load_json(output / evolution.EXPERIMENT_DIR / "final" / "rubric.json")
+    return StructuredRubric.load_json(
+        output / SOURCE_EVOLUTION_EXPERIMENT_DIR / "final" / "rubric.json")
 
 
 def _records():
@@ -143,6 +166,17 @@ def _manifest(config: Mapping[str, Any], output: Path, records, schedule, *, liv
     final = _final_rubric(output)
     checkpoints = {epoch: _checkpoint_rubric(output, epoch) for epoch in EPOCHS}
     source_predictions = _source_predictions()
+    source_logical_path = (
+        _evolved_target() / "retry" / "combined" / "logical_votes.json")
+    source_report_path = _evolved_target() / "final_report.json"
+    control_logical_path = (
+        _control_target() / "retry" / "combined" / "logical_votes.json")
+    control_report_path = _control_target() / "final_report.json"
+    for required in (source_logical_path, source_report_path,
+                     control_logical_path, control_report_path):
+        if not required.is_file():
+            raise RuntimeError(
+                f"completed checkpoint control artifact is required: {required}")
     request_spec = control._v2_request_spec(config, records, schedule)
     source_request = source_predictions[0].request_spec.to_dict()
     if request_spec != source_request or any(
@@ -170,16 +204,37 @@ def _manifest(config: Mapping[str, Any], output: Path, records, schedule, *, liv
         "structured_worker_request_spec": request_spec,
         "prompt_version": PAIRWISE_WORKER_PROMPT_V2_CACHE_PILOT_VERSION,
         "checkpoint_rubrics": {str(epoch): {"rubric_sha256": rubric.rubric_sha256,
-                                                "node_count": len(rubric.nodes)}
+                                                "node_count": len(rubric.nodes),
+                                                "selection_role": CHECKPOINT_ROLES[epoch]}
                                for epoch, rubric in checkpoints.items()},
-        "final_epoch_5": {"rubric_sha256": final.rubric_sha256, "node_count": len(final.nodes),
-                          "prediction_sha256": [file_sha256(control._prediction_path(
-                              _evolved_target() / "retry", replicate)) for replicate in range(legacy.K)]},
+        "final_epoch_5": {
+            "rubric_sha256": final.rubric_sha256,
+            "node_count": len(final.nodes),
+            "prediction_sha256": [file_sha256(control._prediction_path(
+                _evolved_target() / "retry", replicate))
+                for replicate in range(legacy.K)],
+            "logical_votes_sha256": file_sha256(source_logical_path),
+            "final_report_sha256": file_sha256(source_report_path),
+        },
+        "phase10_control": {
+            "experiment": control.EXPERIMENT_DIR,
+            "logical_votes_sha256": file_sha256(control_logical_path),
+            "final_report_sha256": file_sha256(control_report_path),
+            "generated": 0,
+        },
         "variant_descriptions": [variants[key] for key in sorted(variants)],
         "reuse": {"unit": "sample_replicate_node_description_request_identity",
-                  "source": evolved.EXPERIMENT_DIR, "fallback_reuse_by_name_forbidden": True},
+                  "source": SOURCE_VLRB_EXPERIMENT_DIR,
+                  "fallback_reuse_by_name_forbidden": True},
         "selection_after_benchmark_forbidden": True,
     }
+    if (EXPECTED_VARIANT_DESCRIPTION_COUNT is not None
+            and len(value["variant_descriptions"])
+            != EXPECTED_VARIANT_DESCRIPTION_COUNT):
+        raise RuntimeError(
+            "checkpoint unique historical description count drift: "
+            f"expected={EXPECTED_VARIANT_DESCRIPTION_COUNT}, "
+            f"actual={len(value['variant_descriptions'])}")
     if live:
         value["endpoint_identities"] = phase10._inspect_endpoints(config)
     return value
@@ -206,9 +261,21 @@ def freeze(config: Mapping[str, Any], output: Path) -> None:
     path = target / "frozen_manifest.json"
     if path.exists() and load_json(path) != manifest:
         status = load_json(_status_path(target)) if _status_path(target).exists() else {}
-        if any(value.get("status") == "passed" for value in status.values()):
+        if any(status.get(stage, {}).get("status") == "passed"
+               for stage in STAGES[2:]):
             raise RuntimeError("checkpoint manifest drift after inference")
-    atomic_write_json(path, manifest); atomic_write_json(target / "order_schedule.json", schedule)
+        atomic_write_json(_status_path(target), {})
+    atomic_write_json(path, manifest)
+    atomic_write_json(target / "order_schedule.json", schedule)
+    for epoch in EPOCHS:
+        rubric_path = target / "checkpoint_rubrics" / f"epoch_{epoch:02d}.json"
+        rubric_path.parent.mkdir(parents=True, exist_ok=True)
+        _checkpoint_rubric(output, epoch).save_json(rubric_path)
+    atomic_write_json(target / "variant_manifest.json", {
+        "schema_version": "1.0.0",
+        "items": manifest["variant_descriptions"],
+    })
+    atomic_write_json(target / "reuse_manifest.json", manifest["reuse"])
     details = {"dataset_count": len(records), "epochs": list(EPOCHS),
                "unique_variant_description_count": len(manifest["variant_descriptions"]),
                "worst_case_new_logical_requests": len(manifest["variant_descriptions"]) * len(records) * legacy.K}
@@ -218,14 +285,27 @@ def freeze(config: Mapping[str, Any], output: Path) -> None:
 def audit(config: Mapping[str, Any], output: Path) -> None:
     target, manifest, records, schedule = _load_frozen(config, output)
     values = list(schedule.values())
+    source_predictions = _source_predictions()
+    reconstructed = control._logical_from_predictions(
+        records, schedule, _final_rubric(output), source_predictions)
+    source_logical = load_json(
+        _evolved_target() / "retry" / "combined" / "logical_votes.json")
+    source_reconstruction_exact = (
+        reconstructed["sample_ids"] == source_logical["sample_ids"]
+        and reconstructed["systems"][control.EQUAL_SYSTEM]["votes_by_replicate"]
+        == source_logical["systems"][control.EQUAL_SYSTEM]["votes_by_replicate"])
     result = {"schema_version": "1.0.0", "status": "passed", "offline_only": True,
               "dataset_count": len(records), "k": legacy.K,
               "schedule_aba_count": sum(tuple(x) == (0, 1, 0) for x in values),
               "schedule_bab_count": sum(tuple(x) == (1, 0, 1) for x in values),
               "variant_descriptions": len(manifest["variant_descriptions"]),
-              "description_keyed_reuse": True, "benchmark_labels_in_prompt": False}
+              "description_keyed_reuse": True,
+              "source_epoch_5_reconstruction_exact": source_reconstruction_exact,
+              "benchmark_labels_in_prompt": False}
     if abs(result["schedule_aba_count"] - result["schedule_bab_count"]) > 1:
         raise RuntimeError("K=3 schedule imbalance")
+    if not source_reconstruction_exact:
+        raise RuntimeError("source epoch-5 logical reconstruction drift")
     atomic_write_json(target / "offline_audit.json", result); _status(target, STAGES[1], result)
     print(json.dumps(result, indent=2))
 
@@ -402,7 +482,9 @@ def _logical(output: Path, records, schedule, predictions: Mapping[int, Sequence
             for root_id in rubric.root_ids:
                 root_answers = [next(root.subtree_vote for root in trace.roots if root.root_id == root_id) for trace in execution.traces]
                 roots[root_id].append([legacy._original_index(answer.value, order) for answer, order in zip(root_answers, orders)])
-        systems[f"phase16_epoch_{epoch:02d}_equal"] = {"votes_by_replicate": votes}; root_votes[str(epoch)] = roots
+        systems[f"{SYSTEM_PREFIX}_epoch_{epoch:02d}_equal"] = {
+            "votes_by_replicate": votes}
+        root_votes[str(epoch)] = roots
     return {"schema_version": "1.0.0", "sample_ids": [str(x["sample_id"]) for x in records], "k": legacy.K,
             "systems": systems, "root_votes_by_epoch": root_votes}
 
@@ -437,29 +519,54 @@ def retry(config: Mapping[str, Any], output: Path) -> None:
     source = {epoch: [PairwisePredictionOutput.load_json(
         target / "run" / f"epoch_{epoch:02d}" / f"replicate_{replicate + 1:02d}.json")
         for replicate in range(legacy.K)] for epoch in EPOCHS}
-    failures = []
+    failure_index: dict[tuple[int, int, str, str], dict[str, Any]] = {}
     for epoch in EPOCHS:
+        checkpoint = _checkpoint_rubric(output, epoch)
+        descriptions = {
+            node.criterion.name: node.criterion.description
+            for node in checkpoint.nodes.values()
+        }
         for replicate in range(legacy.K):
             prediction = source[epoch][replicate]
             for index, row in enumerate(prediction.node_outputs):
                 for name, vote in row.items():
                     if not (vote.parse_ok and vote.answer_valid):
-                        failures.append({"epoch": epoch, "replicate": replicate, "sample_index": index,
-                                         "sample_id": prediction.sample_ids[index], "criterion_name": name,
-                                         "source_output_sha256": canonical_sha256(vote.to_dict()), "parse_error": vote.parse_error})
+                        description = descriptions[name]
+                        key = (replicate, index, name,
+                               _description_hash(description))
+                        source_hash = canonical_sha256(vote.to_dict())
+                        item = failure_index.setdefault(key, {
+                            "epochs": [], "replicate": replicate,
+                            "sample_index": index,
+                            "sample_id": prediction.sample_ids[index],
+                            "criterion_name": name,
+                            "description": description,
+                            "description_sha256": key[3],
+                            "source_output_sha256": source_hash,
+                            "parse_error": vote.parse_error,
+                        })
+                        if item["source_output_sha256"] != source_hash:
+                            raise RuntimeError(
+                                "identical checkpoint request has divergent "
+                                "source outputs")
+                        item["epochs"].append(epoch)
+    failures = list(failure_index.values())
     pool = AvailableSlotBackendPool(control._pool_spec(config))
     ordered = {replicate: legacy._ordered_rows(records, schedule, replicate) for replicate in range(legacy.K)}
     model_rows = {replicate: base._model_rows(rows) for replicate, rows in ordered.items()}
     retry_config = dict(config); retry_config["structured_max_retries"] = 0
     evaluators = {replicate: control._v2_evaluator(retry_config, model_rows[replicate], pool) for replicate in range(legacy.K)}
-    criteria = {epoch: {node.criterion.name: node.criterion for node in _checkpoint_rubric(output, epoch).nodes.values()} for epoch in EPOCHS}
     states = []
     def one(item):
         path = target / "retry" / "attempts" / f"{canonical_sha256(item)}.json"
         state = load_json(path) if path.is_file() else {"item": item, "attempts": [], "complete": False, "success": False, "final_output": None}
         if not state["complete"]:
             for number in range(len(state["attempts"]) + 1, MAX_RETRY_ATTEMPTS + 1):
-                candidate, metrics = evaluators[item["replicate"]].infer_one(model_rows[item["replicate"]][item["sample_index"]], criteria[item["epoch"]][item["criterion_name"]].to_criterion())
+                criterion = Criterion(
+                    item["criterion_name"], item["description"], 1.0)
+                candidate, metrics = evaluators[item["replicate"]].infer_one(
+                    model_rows[item["replicate"]][item["sample_index"]],
+                    criterion)
                 state["attempts"].append({"attempt": number, "output": candidate.to_dict(), "metrics": dict(metrics.__dict__)})
                 if candidate.parse_ok and candidate.answer_valid:
                     state.update({"complete": True, "success": True, "final_output": candidate.to_dict()})
@@ -473,7 +580,10 @@ def retry(config: Mapping[str, Any], output: Path) -> None:
     replacements = {epoch: {replicate: {} for replicate in range(legacy.K)} for epoch in EPOCHS}
     for item, state in states:
         if state["success"]:
-            replacements[item["epoch"]][item["replicate"]][(item["sample_index"], item["criterion_name"])] = PairwiseVoteOutput.from_dict(state["final_output"])
+            output_value = PairwiseVoteOutput.from_dict(state["final_output"])
+            for epoch in item["epochs"]:
+                replacements[epoch][item["replicate"]][(
+                    item["sample_index"], item["criterion_name"])] = output_value
     repaired = {epoch: [] for epoch in EPOCHS}
     for epoch in EPOCHS:
         for replicate, prediction in enumerate(source[epoch]):
@@ -499,14 +609,37 @@ def report(config: Mapping[str, Any], output: Path) -> None:
     phase10_value = phase10._system_metrics(records, control_logical["systems"][control.EQUAL_SYSTEM]["votes_by_replicate"])
     paired = {name: legacy._paired(records, epoch5["original_index_predictions"], value["original_index_predictions"])
               for name, value in metrics.items()}
+    paired_phase10 = {
+        name: legacy._paired(
+            records, phase10_value["original_index_predictions"],
+            item["original_index_predictions"])
+        for name, item in metrics.items()
+    }
+    root_metrics = {
+        str(epoch): {
+            root_id: phase10._system_metrics(records, votes)
+            for root_id, votes in roots.items()
+        }
+        for epoch, roots in logical["root_votes_by_epoch"].items()
+    }
     value = {"schema_version": "1.0.0", "experiment": EXPERIMENT_DIR, "exploratory": True,
              "metrics": {"initial_five_root_prompt_v2": initial, "phase10_final_equal_prompt_v2": phase10_value,
-                         "phase16_epoch_05_equal": epoch5, **metrics},
-             "paired_vs_epoch_05": paired, "retry": load_json(target / "retry" / "failure_manifest.json"),
+                         f"{SYSTEM_PREFIX}_epoch_05_equal": epoch5, **metrics},
+             "paired_vs_epoch_05": paired,
+             "paired_vs_phase10": paired_phase10,
+             "root_metrics_by_epoch": root_metrics,
+             "retry": load_json(target / "retry" / "failure_manifest.json"),
              "selection_after_benchmark_forbidden": True}
     atomic_write_json(target / "final_report.json", value)
-    lines = ["# Phase16 checkpoint VL-RewardBench transfer diagnostic", "", "Exploratory K=3 diagnostic; no post-hoc checkpoint selection.", "", "| System | OverallAcc | MacroAcc | Coverage |", "|---|---:|---:|---:|"]
-    for name, item in value["metrics"].items(): lines.append(f"| {name} | {item['overall_acc']:.4f} | {item['macro_acc']:.4f} | {item['coverage']:.4f} |")
+    lines = [f"# {REPORT_TITLE}", "",
+             "Exploratory K=3 diagnostic; no post-hoc checkpoint selection.",
+             "", "| System | OverallAcc | MacroAcc | Coverage | Strict ACC |",
+             "|---|---:|---:|---:|---:|"]
+    for name, item in value["metrics"].items():
+        lines.append(
+            f"| {name} | {item['overall_acc']:.4f} | "
+            f"{item['macro_acc']:.4f} | {item['coverage']:.4f} | "
+            f"{item['strict_accuracy']:.4f} |")
     (target / "final_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     details = {name: {"overall_acc": item["overall_acc"], "macro_acc": item["macro_acc"]} for name, item in metrics.items()}
     _status(target, STAGES[5], details); print(json.dumps(details, indent=2))

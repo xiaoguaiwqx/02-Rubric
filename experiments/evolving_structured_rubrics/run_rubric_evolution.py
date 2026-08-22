@@ -314,6 +314,7 @@ def _config(path: Path) -> dict[str, Any]:
                        "vlrb_prompt_v2_evolved",
                        "vlrb_discovery_v2",
                        "vlrb_phase16_checkpoint_transfer",
+                       "vlrb_phase17_checkpoint_transfer",
                        "visual_gate_experiment",
                        "full_child_gate_experiment",
                        "vlrb_full_child_gate_experiment",
@@ -3038,6 +3039,9 @@ def main() -> int:
         "vlrb-phase16-checkpoint-freeze", "vlrb-phase16-checkpoint-audit",
         "vlrb-phase16-checkpoint-smoke", "vlrb-phase16-checkpoint-run",
         "vlrb-phase16-checkpoint-retry", "vlrb-phase16-checkpoint-report",
+        "vlrb-phase17-checkpoint-freeze", "vlrb-phase17-checkpoint-audit",
+        "vlrb-phase17-checkpoint-smoke", "vlrb-phase17-checkpoint-run",
+        "vlrb-phase17-checkpoint-retry", "vlrb-phase17-checkpoint-report",
         "vlrb-child-gate-freeze", "vlrb-child-gate-audit",
         "vlrb-child-gate-smoke", "vlrb-child-gate-run",
         "vlrb-child-gate-retry", "vlrb-child-gate-report",
@@ -3138,6 +3142,9 @@ def main() -> int:
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-phase16-checkpoint-"):
         from .vl_rewardbench_phase16_checkpoints import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-phase17-checkpoint-"):
+        from .vl_rewardbench_phase17_checkpoints import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-prompt-v2-"):
         from .vl_rewardbench_prompt_v2 import run_stage
