@@ -1987,7 +1987,102 @@ E3 到 E4 的主要结构变化是 Completeness 第四次 Split 尝试被接受�
 
 - `output/evolving_structured_rubrics/vl_rewardbench_phase17_checkpoint_transfer_v1/`
 
-**阶段结论。** Discovery-v2 将少量偏好经验从单一视觉幻觉分布扩展到视觉、推理和通用偏好后，Phase17 正式 E5 在 VL-RewardBench 上达到 OverallAcc 69.91%、MacroAcc 64.06%、Strict ACC 69.69%；探索性 checkpoint 诊断进一步发现，五个 roots 首次全部完成 Split 的 E4 达到当前最高点70.29% / 64.42% / 70.01%。这说明更均衡的数据分布与完整的 root 结构扩展能够改善外部迁移，但 Dev150 排名、后期 Refine 和等权 root 聚合仍未形成稳定的模型选择依据。
+### 16.7 Qwen2.5-VL Worker 跨模型迁移
+
+#### 实验目的与冻结对照
+
+Phase17 的 Rubric 由 Qwen3-VL-8B-Instruct Worker 演化得到。为判断其中的偏好规则是否只适配原 Worker，本实验保持数据、Rubric、Prompt 和聚合协议不变，仅将 Pairwise Worker 替换为 `Qwen/Qwen2.5-VL-7B-Instruct`。主比较为 **Qwen2.5 Initial five-root vs. Qwen2.5 Phase17 E4**；Native VL-RewardBench Prompt 仅作为辅助基线。
+
+- 测试集固定为 VL-RewardBench 1,247 对样本，Rubric 固定为 Phase17 E4 的27个 nodes；
+- Structured Worker 使用 Prompt v2 `1.1.0-cache-pilot`、`temperature=0.5`、`max_tokens=2048`；
+- Initial 与 E4 使用相同的 `K=3` counterbalanced A/B schedule，ABA/BAB 数量为624/623；
+- 两个 Qwen2.5-VL 服务通过8000与8001 available-slot pool 执行，全局并发40；
+- Native 输出按“规则解析 → 397B解析 → 同 Prompt 最多重试10次”的冻结链路恢复；
+- Qwen3 对照直接复用相同 benchmark、Prompt v2 和 checkpoint 的既有冻结结果，不根据本次结果重新选择 Rubric。
+
+`OverallAcc` 是覆盖范围内的 ACC；`MacroAcc` 是 General、Hallucination 和 Reasoning 三类 covered accuracy 的宏平均；`Strict ACC` 以全部1,247对样本为分母。
+
+#### 总体与配对结果
+
+| Worker / 方法 | OverallAcc | MacroAcc | Coverage | Strict ACC | 正确数 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Qwen2.5 Native | 41.30% | 44.73% | 100.00% | 41.30% | 515 |
+| Qwen2.5 Initial five-root | 43.62% | 44.98% | 94.87% | 41.38% | 516 |
+| **Qwen2.5 Phase17 E4** | **57.07%** | **52.95%** | **99.76%** | **56.94%** | **710** |
+| Qwen3 Native | 54.52% | 53.56% | 99.28% | 54.13% | 675 |
+| Qwen3 Initial five-root | 58.12% | 54.60% | 98.24% | 57.10% | 712 |
+| Qwen3 Phase17 E4 | 70.29% | 64.42% | 99.60% | 70.01% | 873 |
+
+Qwen2.5 使用 E4 Rubric 后，OverallAcc、MacroAcc、Coverage 和 Strict ACC 相对同模型 Initial 分别提高 **13.46、7.96、4.89和15.56 pp**，正确数从516增加到710。配对 corrected/harmed 为231/37，净纠正194条，exact McNemar `p=1.86e-35`。因此，E4 的收益并不依赖 Qwen3 Worker：同一组结构化偏好准则可以显著改变另一较弱 VLM 的最终判断。
+
+作为参照，Qwen3 的 Initial→E4 OverallAcc 增益为12.17 pp。两种 Worker 都获得约12–13 pp 的 Rubric 增益，构成明确的跨 Worker 正向证据；Qwen2.5 E4 的 Strict ACC 56.94%也已接近 Qwen3 Initial 的57.10%。但相同 E4 Rubric 下，Qwen2.5 的 OverallAcc 仍比 Qwen3 低13.22 pp（81 corrected / 244 harmed，净−163，`p=3.97e-20`），说明 Rubric 能改善视觉证据的使用和决策优先级，但不能完全补足底层视觉识别与推理能力差距。
+
+#### 类别、子树与聚合诊断
+
+| 类别 | 样本数 | Qwen2.5 Initial Strict ACC | Qwen2.5 E4 Strict ACC | 变化 | 正确数增量 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| General | 181 | 33.15% | 35.91% | +2.76 pp | +5 |
+| Hallucination | 749 | 35.25% | **59.28%** | **+24.03 pp** | **+180** |
+| Reasoning | 317 | 60.57% | 63.41% | +2.84 pp | +9 |
+
+194条净新增正确样本中有180条来自 Hallucination，占92.8%。这与 Phase17 的准则内容一致：其最强迁移能力仍集中在视觉真实性、事实验证和证据优先级；General 与 Reasoning 虽有正向变化，但幅度有限。
+
+在加入任何演化 children 之前，Qwen2.5 对五个初始 roots 的单节点判断如下：
+
+| 初始 root 单节点 | Covered ACC | Coverage | Strict ACC |
+| --- | ---: | ---: | ---: |
+| Completeness | 36.17% | 90.46% | 32.72% |
+| Visual Grounding | 42.99% | 93.83% | 40.34% |
+| **Factuality** | **63.31%** | 90.06% | **57.02%** |
+| Creativity | 33.25% | 90.94% | 30.23% |
+| Clarity | 46.08% | **96.07%** | 44.27% |
+| 五-root Initial 等权 M1 | 43.62% | 94.87% | 41.38% |
+
+Factuality 是唯一在 Qwen2.5 上具有较强独立判断能力的初始 root；Completeness 和 Creativity 的覆盖率均超过90%，但 Covered ACC 只有36.17%和33.25%，说明问题不是不出手，而是宽泛准则在弱 Worker 上容易产生错误投票。五-root Initial 等权 M1 的 Strict ACC 仅41.38%，也说明多个高覆盖但低准确率 roots 会稀释 Factuality 的正确信号。
+
+| Qwen2.5 E4 Root subtree | OverallAcc | MacroAcc | Coverage | Strict ACC |
+| --- | ---: | ---: | ---: | ---: |
+| Completeness | 57.10% | 53.19% | 98.88% | 56.46% |
+| Visual Grounding | 53.46% | 50.72% | 99.76% | 53.33% |
+| Factuality | 57.29% | 52.86% | 98.96% | 56.70% |
+| **Creativity** | **62.63%** | **57.87%** | 98.72% | **61.83%** |
+| Clarity | 55.20% | 52.14% | 99.52% | 54.93% |
+
+Creativity 原 root 单节点的 Strict ACC 只有30.23%，加入演化 children 后提高到61.83%；Completeness、Visual Grounding 和 Clarity 子树也分别较 root 单节点提高23.74、12.99和10.67 pp，说明跨模型收益主要由具体 children 提供，而不是来自五个宽泛初始 roots。另一方面，最佳 Creativity 子树的 Strict ACC 比五-root 等权 M1 高4.89 pp，表明 root 间错误投票稀释在 Qwen2.5 上同样存在；该比较只作 post-hoc 聚合诊断，不用于替换正式五-root结果。
+
+按单节点的覆盖内 ACC 排序，表现最强的五个 criterion 为：
+
+| 最强单节点 | Covered ACC | Coverage | Strict ACC |
+| --- | ---: | ---: | ---: |
+| `factual_accuracy_over_response_volume` | **70.37%** | 83.64% | 58.86% |
+| `factual_directness_over_stylistic_flourish` | 69.77% | **95.51%** | **66.64%** |
+| `instruction_compliant_visual_grounding` | 68.92% | 84.36% | 58.14% |
+| `grounded_coverage_over_hallucinated_volume` | 66.77% | 78.43% | 52.37% |
+| `constraint_adherence_over_expressive_detail` | 65.37% | 74.34% | 48.60% |
+
+覆盖内 ACC 最低的五个 criterion 为：
+
+| 最弱单节点 | Covered ACC | Coverage | Strict ACC |
+| --- | ---: | ---: | ---: |
+| `creativity_and_expressiveness`（root） | **33.25%** | 90.94% | 30.23% |
+| `completeness_and_coverage`（root） | 36.17% | 90.46% | 32.72% |
+| `diagnostic_visual_specificity` | 39.45% | 88.21% | 34.80% |
+| `visual_grounding_and_details`（root） | 42.99% | 93.83% | 40.34% |
+| `domain_specific_visual_interpretation` | 43.97% | 46.51% | **20.45%** |
+
+最强组全部是演化出的具体 children，而最弱组包含三个宽泛初始 roots，进一步说明跨 Worker 增益来自可操作的局部偏好规则。单节点排名必须结合 Coverage 阅读：例如 `domain_specific_visual_interpretation` 的 covered accuracy 并非最低，但只覆盖46.51%的样本，因此 Strict ACC 最低；相反，`factual_directness_over_stylistic_flourish` 同时保持69.77%的覆盖内准确率和95.51%的覆盖率，是本次迁移中最稳定的单节点。
+
+#### 技术可靠性与证据边界
+
+Structured Worker 共执行101,007个逻辑节点请求，初始无效2,562个（2.54%）；技术重试恢复2,298个，最终仍有264个 node-level 输出无效，仅占全部请求0.261%。这些局部失败大多被其他节点和 `K=3` 聚合吸收，E4 最终只有3个样本未覆盖。Native 初始64个规则解析失败全部通过397B解析或同 Prompt 重试恢复，最终 Coverage 为100%。
+
+Qwen2.5 仍表现出明显位置敏感性：3,741次展示级预测中67.9%选择A、31.6%选择B；当 gold 显示为A/B时准确率分别为73.53%和37.33%，三个 replicate 的原始方向完全一致率为52.12%。由于 Initial 与 E4 使用同一平衡 schedule，主比较的13.46 pp增益不能简单归因于位置分配；但该偏置会增加单样本方差，限制绝对分数的稳定性。
+
+本实验只验证了一个额外 Worker、一个冻结 Rubric 和同一个已多次使用的 VL-RewardBench，因此应表述为 exploratory cross-worker transfer evidence，不能直接推广为完全 model-agnostic。主要 artifact 位于：
+
+- `output/evolving_structured_rubrics/vl_rewardbench_qwen25_phase17_e4_transfer_v1/`
+
+**阶段结论。** Discovery-v2 将少量偏好经验从单一视觉幻觉分布扩展到视觉、推理和通用偏好后，Phase17 正式 E5 在 VL-RewardBench 上达到 OverallAcc 69.91%、MacroAcc 64.06%、Strict ACC 69.69%；探索性 checkpoint 诊断进一步发现，五个 roots 首次全部完成 Split 的 E4 达到当前 Qwen3 Worker 最高点70.29% / 64.42% / 70.01%。固定 E4 Rubric 迁移到 Qwen2.5-VL-7B 后，相对其 Initial five-root 仍提高13.46 pp OverallAcc，并净纠正194条样本，说明结构化 Rubric 编码的偏好判断模式具有显著的跨 Worker 可复用性；但 General/Reasoning 增益、位置稳定性和等权 root 聚合仍是主要限制。
 
 ---
 

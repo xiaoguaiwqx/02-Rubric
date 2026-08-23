@@ -313,6 +313,7 @@ def _config(path: Path) -> dict[str, Any]:
                        "vlrb_prompt_v2_transfer",
                        "vlrb_prompt_v2_evolved",
                        "vlrb_discovery_v2",
+                       "vlrb_qwen25_transfer",
                        "vlrb_phase16_checkpoint_transfer",
                        "vlrb_phase17_checkpoint_transfer",
                        "visual_gate_experiment",
@@ -356,6 +357,7 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("root_boundary_pre_refine_experiment", None)
     value.pop("vlrb_prompt_v2_transfer", None)
     value.pop("vlrb_prompt_v2_evolved", None)
+    value.pop("vlrb_qwen25_transfer", None)
     value.pop("visual_gate_experiment", None)
     value.pop("full_child_gate_experiment", None)
     value.pop("vlrb_full_child_gate_experiment", None)
@@ -3036,6 +3038,9 @@ def main() -> int:
         "vlrb-discovery-v2-freeze", "vlrb-discovery-v2-audit",
         "vlrb-discovery-v2-smoke", "vlrb-discovery-v2-run",
         "vlrb-discovery-v2-retry", "vlrb-discovery-v2-report",
+        "vlrb-qwen25-transfer-freeze", "vlrb-qwen25-transfer-audit",
+        "vlrb-qwen25-transfer-smoke", "vlrb-qwen25-transfer-run",
+        "vlrb-qwen25-transfer-retry", "vlrb-qwen25-transfer-report",
         "vlrb-phase16-checkpoint-freeze", "vlrb-phase16-checkpoint-audit",
         "vlrb-phase16-checkpoint-smoke", "vlrb-phase16-checkpoint-run",
         "vlrb-phase16-checkpoint-retry", "vlrb-phase16-checkpoint-report",
@@ -3139,6 +3144,9 @@ def main() -> int:
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-discovery-v2-"):
         from .vl_rewardbench_discovery_v2 import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-qwen25-transfer-"):
+        from .vl_rewardbench_qwen25_transfer import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-phase16-checkpoint-"):
         from .vl_rewardbench_phase16_checkpoints import run_stage

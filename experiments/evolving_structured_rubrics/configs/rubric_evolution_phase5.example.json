@@ -370,6 +370,28 @@
     "selection_after_benchmark_forbidden": true,
     "primary_external_evaluation": true
   },
+  "vlrb_qwen25_transfer": {
+    "protocol_version": "vlrb-qwen25-phase17-e4-transfer-v1",
+    "worker_model": "Qwen/Qwen2.5-VL-7B-Instruct",
+    "source_experiment": "phase17_discovery_v2_prompt_v2_split_refine_v1",
+    "source_epoch": 4,
+    "source_rubric_sha256": "007bd32557007aebc6f952cc63a49135f262648aff8943fbe99addecb4674b4d",
+    "source_node_count": 27,
+    "endpoint_ids": ["vllm-8000", "vllm-8001"],
+    "scheduler": "sample_major_available_slot_dynamic",
+    "prompt_version": "1.1.0-cache-pilot",
+    "structured_temperature": 0.5,
+    "structured_max_tokens": 2048,
+    "native_decoding": {"temperature": 0.2, "top_p": 0.2, "max_tokens": 2048},
+    "native_regex_parser": "vl_rewardbench_overall_judgment_regex_v1",
+    "native_fallback_model": "Qwen/Qwen3.5-397B-A17B",
+    "native_fallback_prompt_version": "vlrb-native-qwen35-parser-v1.1",
+    "native_retry_max_attempts": 10,
+    "smoke_sample_count": 20,
+    "k": 3,
+    "seed": 42,
+    "selection_after_benchmark_forbidden": true
+  },
   "vlrb_phase16_checkpoint_transfer": {
     "protocol_version": "vlrb-phase16-checkpoint-transfer-v3-sample-major-dynamic",
     "source_experiment": "phase16_prompt_v2_locked_split_refine_v2",
