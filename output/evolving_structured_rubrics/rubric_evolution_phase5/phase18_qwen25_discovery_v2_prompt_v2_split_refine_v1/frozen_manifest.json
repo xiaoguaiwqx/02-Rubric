@@ -1,0 +1,748 @@
+{
+  "schema_version": "1.0.0",
+  "experiment": "phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1",
+  "protocol_version": "qwen25-discovery-v2-prompt-v2-locked-split-refine-v1",
+  "exploratory": true,
+  "integration_settings": {
+    "protocol_version": "qwen25-discovery-v2-prompt-v2-locked-split-refine-v1",
+    "candidate_scope": "initial_roots_split_all_committed_nodes_refine",
+    "rubric_memory_mode": "global_rubric_v1",
+    "min_epochs": 3,
+    "max_epochs": 5,
+    "split_retry_reuse_clusters": true,
+    "split_retry_max_locked_children": 1,
+    "strong_child_min_support": 15,
+    "strong_child_min_net_corrected": 3,
+    "child_refine_trigger_mode": "role_aware_v2",
+    "retry_rejected_operations": true,
+    "synchronous_epoch_commit": true,
+    "worker_endpoint": "configured_available_slot_pool",
+    "heldout_access": "final_stage_only",
+    "partial_split_acceptance": false,
+    "exploratory": true,
+    "source_experiment": "independent_initial_five_roots",
+    "discovery_dataset": "data/discovery_v2_demo_v3/discovery_100.jsonl",
+    "dev_dataset": "data/discovery_v2_demo_v3/dev_150.jsonl",
+    "discovery_count": 100,
+    "dev_count": 150,
+    "dev_policy": "diagnostic_only_no_selection",
+    "worker_endpoints": [
+      "vllm-8000",
+      "vllm-8001"
+    ],
+    "pairwise_prompt_mode": "v2_cache",
+    "pairwise_prompt_version": "1.1.0-cache-pilot",
+    "split_trigger": {
+      "tau_split": 0.75,
+      "tau_cov_high": 0.8
+    },
+    "error_signature_policy": "fresh_qwen25_discovery100_only",
+    "heldout_policy": "exploratory_overlap_recorded",
+    "vl_rewardbench_required": true,
+    "worker_model": "Qwen/Qwen2.5-VL-7B-Instruct",
+    "qwen3_evolution_artifact_reuse": false,
+    "transferred_control_epoch": 4
+  },
+  "policy": {
+    "candidate_scope": "initial_roots_only",
+    "lock_root_after_accept": true,
+    "min_epochs": 3,
+    "max_epochs": 5,
+    "retry_rejected_roots": true,
+    "synchronous_epoch_commit": true,
+    "reuse_signatures_if_parent_unchanged": true,
+    "heldout_access": "final_stage_only"
+  },
+  "datasets": {
+    "discovery": {
+      "path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\data\\discovery_v2_demo_v3\\discovery_100.jsonl",
+      "count": 100,
+      "sha256": "06551a775bdec55818df5fc2db3aaebdd418c7327248d66811266faa2f98a1c3"
+    },
+    "dev": {
+      "path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\data\\discovery_v2_demo_v3\\dev_150.jsonl",
+      "count": 150,
+      "sha256": "d97c3507bcbf84f62abdb1e3f2501db26d85181e0a8a141dbc9084fe58d63ffb"
+    },
+    "heldout": {
+      "path": "D:\\3-Work\\02-DD-LLM\\CritiQ\\data\\RLHF-V\\heldout_validation_500_pair.jsonl",
+      "count": 500,
+      "sha256": "fa57ca429469d3c2c014e7aef42801de43befad3fc600738da7c9fb12fd312c7"
+    }
+  },
+  "known_overlap": {
+    "discovery_vs_dev": {
+      "sample_id": 0,
+      "image_sha256": 0,
+      "question_sha256": 0,
+      "unordered_pair_sha256": 0,
+      "source_sample_id": 0
+    },
+    "discovery_vs_heldout": {
+      "count": 2,
+      "matches": [
+        {
+          "sample_id": "dv2-rlhf_v-cb5c6834abeb06bf",
+          "heldout_sample_id": "rlhfv-001812",
+          "same_question": true
+        },
+        {
+          "sample_id": "dv2-rlhf_v-935771fca999303a",
+          "heldout_sample_id": "rlhfv-001207",
+          "same_question": true
+        }
+      ]
+    },
+    "dev_vs_heldout": {
+      "count": 6,
+      "matches": [
+        {
+          "sample_id": "dv2-rlhf_v-99b469321434bbd7",
+          "heldout_sample_id": "rlhfv-004935",
+          "same_question": true
+        },
+        {
+          "sample_id": "dv2-rlhf_v-f3804a7b6375f5ee",
+          "heldout_sample_id": "rlhfv-002649",
+          "same_question": true
+        },
+        {
+          "sample_id": "dv2-rlhf_v-10a90e9d22b2ceb0",
+          "heldout_sample_id": "rlhfv-001154",
+          "same_question": true
+        },
+        {
+          "sample_id": "dv2-rlhf_v-9fd1696cf41630b5",
+          "heldout_sample_id": "rlhfv-001055",
+          "same_question": true
+        },
+        {
+          "sample_id": "dv2-rlhf_v-ad24ac9d61bf0756",
+          "heldout_sample_id": "rlhfv-003180",
+          "same_question": true
+        },
+        {
+          "sample_id": "dv2-rlhf_v-0c24d4bcf983d956",
+          "heldout_sample_id": "rlhfv-004119",
+          "same_question": true
+        }
+      ]
+    }
+  },
+  "heldout_interpretation": "exploratory_regression_check_not_unbiased",
+  "initial_rubric_sha256": "88f831f700967c31d22941b2cc660d9b48034bb3310706fe3124781ba53a09c8",
+  "initial_root_ids": [
+    "init_01_completeness_and_coverage",
+    "init_02_visual_grounding_and_details",
+    "init_03_factuality_no_hallucination",
+    "init_04_creativity_and_expressiveness",
+    "init_05_clarity_and_coherence"
+  ],
+  "pairwise_prompt_mode": "v2_cache",
+  "pairwise_prompt_version": "1.1.0-cache-pilot",
+  "pairwise_request_spec": {
+    "model": "Qwen/Qwen2.5-VL-7B-Instruct",
+    "backend_id": "pool:qwen25vl7b-phase18-evolution-pool-v1:a3ee6f5846e0873bd318fa0e3fc95bb77d2ca96015a63259b5933a6ad4b61901",
+    "prompt_sha256": "7b94a9b5133bd0fed7a0d853a62c62469671673859f2275494375fee9c9827df",
+    "max_data_chars": null,
+    "encode_local_image": true,
+    "image_field": "image_path",
+    "question_field": "question",
+    "sample_id_field": "sample_id",
+    "decoding_config": {
+      "temperature": 0.5,
+      "max_tokens": 2048
+    }
+  },
+  "pairwise_execution_pool": {
+    "pool_id": "qwen25vl7b-phase18-evolution-pool-v1",
+    "common_checkpoint_id": "Qwen/Qwen2.5-VL-7B-Instruct",
+    "global_request_concurrency": 40,
+    "endpoints": [
+      {
+        "endpoint_id": "vllm-8000",
+        "base_url": "http://localhost:8000/v1",
+        "checkpoint_root": "REPLACE_WITH_SERVER_CHECKPOINT_ROOT",
+        "max_concurrency": 20
+      },
+      {
+        "endpoint_id": "vllm-8001",
+        "base_url": "http://localhost:8001/v1",
+        "checkpoint_root": "REPLACE_WITH_SERVER_CHECKPOINT_ROOT",
+        "max_concurrency": 20
+      }
+    ]
+  },
+  "manager_profiles": {
+    "error_signature": {
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_pool": {
+        "pool_id": "siliconflow-qwen35-397b-manager-v1",
+        "common_checkpoint_id": "Qwen/Qwen3.5-397B-A17B",
+        "global_request_concurrency": 30,
+        "endpoints": [
+          {
+            "endpoint_id": "siliconflow-cn",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "checkpoint_root": "provider:Qwen/Qwen3.5-397B-A17B",
+            "max_concurrency": 30
+          }
+        ]
+      },
+      "api_key_env": "GUIJI_API_KEY",
+      "input_mode": "multimodal",
+      "request_kwargs": {
+        "temperature": 0.2,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 10240
+        }
+      },
+      "vllm_identity": null
+    },
+    "semantic_cluster": {
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_pool": {
+        "pool_id": "siliconflow-qwen35-397b-manager-v1",
+        "common_checkpoint_id": "Qwen/Qwen3.5-397B-A17B",
+        "global_request_concurrency": 1,
+        "endpoints": [
+          {
+            "endpoint_id": "siliconflow-cn",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "checkpoint_root": "provider:Qwen/Qwen3.5-397B-A17B",
+            "max_concurrency": 1
+          }
+        ]
+      },
+      "api_key_env": "GUIJI_API_KEY",
+      "input_mode": "text",
+      "request_kwargs": {
+        "temperature": 0.2,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 10240
+        }
+      },
+      "vllm_identity": null,
+      "rubric_memory_mode": "global_rubric_v1"
+    },
+    "child_generation": {
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_pool": {
+        "pool_id": "siliconflow-qwen35-397b-manager-v1",
+        "common_checkpoint_id": "Qwen/Qwen3.5-397B-A17B",
+        "global_request_concurrency": 1,
+        "endpoints": [
+          {
+            "endpoint_id": "siliconflow-cn",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "checkpoint_root": "provider:Qwen/Qwen3.5-397B-A17B",
+            "max_concurrency": 1
+          }
+        ]
+      },
+      "api_key_env": "GUIJI_API_KEY",
+      "input_mode": "text",
+      "request_kwargs": {
+        "temperature": 0.7,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 10240
+        }
+      },
+      "vllm_identity": null,
+      "rubric_memory_mode": "global_rubric_v1"
+    }
+  },
+  "manager_request_specs": {
+    "error_signature": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:71c2a64cd5e81961b5a3a07460eb8d4208357f059cce9ebdbd944ebd04874ee9",
+      "prompt_sha256": "e21996db18090b604de233c827f33667946932cfa492785433847130ae6fd20f",
+      "decoding_config": {
+        "temperature": 0.2,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 10240
+        }
+      },
+      "prompt_version": "1.0.0",
+      "parser_version": "1.0.0"
+    },
+    "semantic_cluster": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+      "prompt_sha256": "a9a9342e8b8a5c8361a922c987959251b86209d5c6032d40fa5d005d31cfced6",
+      "decoding_config": {
+        "temperature": 0.2,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 10240
+        }
+      },
+      "prompt_version": "1.0.0",
+      "parser_version": "1.0.0"
+    },
+    "split_failure_attribution": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+      "prompt_sha256": "61475e252181004ae3e82d133787bfc266ad7d86ea8b692862089b66912aad85",
+      "decoding_config": {
+        "temperature": 0.2,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 10240
+        }
+      },
+      "prompt_version": "1.0.0",
+      "parser_version": "1.0.0"
+    },
+    "child_generation": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+      "prompt_sha256": "f37f6eb16ed97dde9f86150e8caa1ae73028ba81aa6adc5fe6160928179211d2",
+      "decoding_config": {
+        "temperature": 0.7,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 10240
+        }
+      },
+      "prompt_version": "1.0.0",
+      "parser_version": "1.0.0"
+    }
+  },
+  "manager_endpoint_identities": {
+    "error_signature": [],
+    "semantic_cluster": [],
+    "child_generation": []
+  },
+  "refine_protocol": {
+    "protocol_version": "refine-v1",
+    "rubric_memory_mode": "global_rubric_v1",
+    "max_description_chars": 1800,
+    "wrong_image_count": 3,
+    "correct_image_count": 2,
+    "abstain_image_count": 1,
+    "correct_text_count": 6,
+    "abstain_text_count": 6,
+    "candidate_count": 1,
+    "forced_smoke_target_node_id": "init_01_completeness_and_coverage__verified_existence_over_hallucinated_volume__dbf3c657ab",
+    "heldout_protocol": "exploratory_diagnostic_only"
+  },
+  "refine_manager_profile": {
+    "model": "Qwen/Qwen3.5-397B-A17B",
+    "backend_pool": {
+      "pool_id": "siliconflow-qwen35-397b-refine-manager-v1",
+      "common_checkpoint_id": "Qwen/Qwen3.5-397B-A17B",
+      "global_request_concurrency": 1,
+      "endpoints": [
+        {
+          "endpoint_id": "siliconflow-cn",
+          "base_url": "https://api.siliconflow.cn/v1",
+          "checkpoint_root": "provider:Qwen/Qwen3.5-397B-A17B",
+          "max_concurrency": 1
+        }
+      ]
+    },
+    "api_key_env": "GUIJI_API_KEY",
+    "generation_request_kwargs": {
+      "temperature": 0.7,
+      "seed": 42,
+      "extra_body": {
+        "enable_thinking": true,
+        "thinking_budget": 8192
+      }
+    },
+    "attribution_request_kwargs": {
+      "temperature": 0.2,
+      "seed": 42,
+      "extra_body": {
+        "enable_thinking": true,
+        "thinking_budget": 8192
+      }
+    },
+    "rubric_memory_mode": "global_rubric_v1"
+  },
+  "refine_manager_request_specs": {
+    "refine_generation": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-refine-manager-v1:c46f865a771d73bb5b52e1e4a830c3c5698d36d3a54327fe049fbca8927a0b92",
+      "prompt_sha256": "d49c29ab79f9fe1e9fc1dd0383d37f2ba592fa154302bb8390261a0c92234e94",
+      "decoding_config": {
+        "temperature": 0.7,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 8192
+        }
+      },
+      "prompt_version": "1.0.0",
+      "parser_version": "1.0.0"
+    },
+    "refine_failure_attribution": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-refine-manager-v1:c46f865a771d73bb5b52e1e4a830c3c5698d36d3a54327fe049fbca8927a0b92",
+      "prompt_sha256": "4bfb6006b488bfeb5f05abbe637cd9729efc733010ec6805a1af8641a6075819",
+      "decoding_config": {
+        "temperature": 0.2,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 8192
+        }
+      },
+      "prompt_version": "1.0.0",
+      "parser_version": "1.0.0"
+    }
+  },
+  "locked_retry_manager_request_specs": {
+    "child_generation": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+      "prompt_sha256": "3fc0b2621dbd49425604b5df9b188f044f397c6c0d578a31e25f10d671fdfc5d",
+      "decoding_config": {
+        "temperature": 0.7,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 10240
+        }
+      },
+      "prompt_version": "child-generation-global-rubric-locked-retry-v3",
+      "parser_version": "1.0.0"
+    },
+    "split_failure_attribution": {
+      "schema_version": "1.0.0",
+      "model": "Qwen/Qwen3.5-397B-A17B",
+      "backend_id": "pool:siliconflow-qwen35-397b-manager-v1:4f3c92118b00a64cad900c11a633721efd6c37fdc5c6c606bb9f496f3f5eb87b",
+      "prompt_sha256": "aa2a7751b5e13a972295dc80d3c0b092ea89b4e8af5cb39c71002283fee90f89",
+      "decoding_config": {
+        "temperature": 0.2,
+        "seed": 42,
+        "extra_body": {
+          "enable_thinking": true,
+          "thinking_budget": 10240
+        }
+      },
+      "prompt_version": "split-failure-attribution-locked-retry-v3",
+      "parser_version": "1.0.0"
+    }
+  },
+  "epoch_00_rubric_memory_sha256": "5595171b72d9ceca41fa4b4529ae7e46e06293632110018eae1af06c87cf41c2",
+  "epoch_00_rubric_memory": {
+    "schema_version": "1.0.0",
+    "rubric_sha256": "88f831f700967c31d22941b2cc660d9b48034bb3310706fe3124781ba53a09c8",
+    "root_ids": [
+      "init_01_completeness_and_coverage",
+      "init_02_visual_grounding_and_details",
+      "init_03_factuality_no_hallucination",
+      "init_04_creativity_and_expressiveness",
+      "init_05_clarity_and_coherence"
+    ],
+    "nodes": [
+      {
+        "node_id": "init_01_completeness_and_coverage",
+        "criterion_name": "completeness_and_coverage",
+        "description": "Address the full scope of the task in the user’s query, covering all major elements specified in the prompt as well as relevant visual aspects and contextual cues."
+      },
+      {
+        "node_id": "init_02_visual_grounding_and_details",
+        "criterion_name": "visual_grounding_and_details",
+        "description": "Reference observable elements in the image such as objects, spatial relationships, colors, or text, and bases its description or analysis on these details."
+      },
+      {
+        "node_id": "init_03_factuality_no_hallucination",
+        "criterion_name": "factuality_no_hallucination",
+        "description": "Avoid visual or factual errors, ensuring all details and claims are presented in the image or reasonably supported by the prompt."
+      },
+      {
+        "node_id": "init_04_creativity_and_expressiveness",
+        "criterion_name": "creativity_and_expressiveness",
+        "description": "Demonstrates imagination and originality when appropriate, or precise and knowledgeable articulation for analytical tasks, while remaining contextually appropriate."
+      },
+      {
+        "node_id": "init_05_clarity_and_coherence",
+        "criterion_name": "clarity_and_coherence",
+        "description": "Communicates ideas clearly and logically, with fluent language, well-organized structure, and smooth flow of information."
+      }
+    ],
+    "edges": []
+  },
+  "error_signature_source": "fresh_discovery100_only",
+  "dev_visible_to_manager": false,
+  "dev_affects_acceptance": false,
+  "dev_affects_early_stop": false,
+  "selection_after_dev_forbidden": true,
+  "heldout_access": "final_only",
+  "vl_rewardbench_required": true,
+  "worker_model": "Qwen/Qwen2.5-VL-7B-Instruct",
+  "worker_endpoint_identities": [
+    {
+      "endpoint_id": "vllm-8000",
+      "base_url": "http://localhost:8000/v1",
+      "vllm_version": "0.11.0",
+      "model": "Qwen/Qwen2.5-VL-7B-Instruct",
+      "checkpoint_root": "/media/disk12T/2022-sgh/ModelWeight/Qwen2.5-VL-7B-Instruct",
+      "max_model_len": 25800,
+      "max_concurrency": 20
+    },
+    {
+      "endpoint_id": "vllm-8001",
+      "base_url": "http://localhost:8001/v1",
+      "vllm_version": "0.11.0",
+      "model": "Qwen/Qwen2.5-VL-7B-Instruct",
+      "checkpoint_root": "/media/oem/12T1/WQX/02_DD_LLM/local-llm-inference/ModelWeight/Qwen2.5-VL-7B-Instruct",
+      "max_model_len": 25800,
+      "max_concurrency": 20
+    }
+  ],
+  "fresh_evolution_artifact_policy": {
+    "initial_predictions": "fresh_qwen25",
+    "error_signatures": "fresh_qwen25",
+    "clusters": "fresh_manager_from_qwen25_signatures",
+    "candidates": "fresh_manager",
+    "failure_history": "fresh_trajectory",
+    "qwen3_evolution_artifact_reuse_count": 0
+  },
+  "initial_triggers": {
+    "init_01_completeness_and_coverage": {
+      "schema_version": "1.0.0",
+      "parent_node_id": "init_01_completeness_and_coverage",
+      "triggered": true,
+      "reasons": [],
+      "decisive_wrong_sample_ids": [
+        "dv2-rlhf_v-0bcca5da5f164846",
+        "dv2-rlhf_v-21dbdb00bf754c0f",
+        "dv2-rlhf_v-b63ef4d127f6abfe",
+        "dv2-rlhf_v-ae499cff454d3758",
+        "dv2-mm_rlhf-7e1a7f0434017229",
+        "dv2-mm_rlhf-461af81926c8275c",
+        "dv2-mm_rlhf-f00ea7f2fb546c74",
+        "dv2-mm_rlhf-33f4010d1636d9a3",
+        "dv2-vilreward_73k-0cb9ccf5c624b32d",
+        "dv2-vilreward_73k-3e738442f0f3d5a9",
+        "dv2-mmpr_v1_2-7afb800c1fc5baf6",
+        "dv2-mmpr_v1_2-a93c093f2e3386f9",
+        "dv2-mmpr_v1_2-adfd6f245ac43881",
+        "dv2-mmpr_v1_2-a878d545868f33eb",
+        "dv2-vision_arena_battle-29160b610889f03d",
+        "dv2-vision_arena_battle-916769a43ce47d2c",
+        "dv2-vision_arena_battle-d80ab1bdf83c99aa",
+        "dv2-vision_arena_battle-a068ef6537996a4b",
+        "dv2-vision_arena_battle-fa7f1658cd97e57b",
+        "dv2-mm_ifdpo-aaf52a27e1836f97",
+        "dv2-mm_ifdpo-2fdb6b68c1a46c27",
+        "dv2-rlhf_v-8e181c09269bd778",
+        "dv2-rlhf_v-935771fca999303a",
+        "dv2-mm_rlhf-41d2527aecf7a5e6",
+        "dv2-mm_rlhf-0663dc3c9a157222",
+        "dv2-mm_rlhf-8f8395f5dbf904d7",
+        "dv2-mm_rlhf-cc3e831aac606024",
+        "dv2-vilreward_73k-f6c4cdb18f31a8f0",
+        "dv2-mmpr_v1_2-7285e3719a07b3be",
+        "dv2-mmpr_v1_2-b1b555ee2f93a127",
+        "dv2-mmpr_v1_2-af2e50254aff0257",
+        "dv2-vision_arena_battle-2b77270403385659",
+        "dv2-vision_arena_battle-9a9c5c04389d6477",
+        "dv2-vision_arena_battle-298d125dfa16a461",
+        "dv2-mm_ifdpo-3d703659babb1daf"
+      ],
+      "current_children": 0,
+      "remaining_capacity": 5
+    },
+    "init_02_visual_grounding_and_details": {
+      "schema_version": "1.0.0",
+      "parent_node_id": "init_02_visual_grounding_and_details",
+      "triggered": true,
+      "reasons": [],
+      "decisive_wrong_sample_ids": [
+        "dv2-rlhf_v-540406875c514bdd",
+        "dv2-rlhf_v-0bcca5da5f164846",
+        "dv2-rlhf_v-ae499cff454d3758",
+        "dv2-mm_rlhf-7e1a7f0434017229",
+        "dv2-mm_rlhf-f00ea7f2fb546c74",
+        "dv2-mm_rlhf-33f4010d1636d9a3",
+        "dv2-vilreward_73k-3e738442f0f3d5a9",
+        "dv2-mmpr_v1_2-34de9e72b7cad8c1",
+        "dv2-mmpr_v1_2-d782e1e5bc3d0b0f",
+        "dv2-vision_arena_battle-29160b610889f03d",
+        "dv2-vision_arena_battle-916769a43ce47d2c",
+        "dv2-vision_arena_battle-fa7f1658cd97e57b",
+        "dv2-vision_arena_battle-fd9c0a106be470b1",
+        "dv2-vision_arena_battle-9ccb57fcef64c578",
+        "dv2-mm_ifdpo-aaf52a27e1836f97",
+        "dv2-mm_ifdpo-76857d40761b708b",
+        "dv2-mm_ifdpo-dbfcd1f5c437748f",
+        "dv2-mm_ifdpo-77e6510220f9eb15",
+        "dv2-rlhf_v-8603bf89fc33fbdd",
+        "dv2-rlhf_v-935771fca999303a",
+        "dv2-mm_rlhf-41d2527aecf7a5e6",
+        "dv2-mm_rlhf-cc3e831aac606024",
+        "dv2-vilreward_73k-f6c4cdb18f31a8f0",
+        "dv2-mmpr_v1_2-7285e3719a07b3be",
+        "dv2-mmpr_v1_2-b1b555ee2f93a127",
+        "dv2-mmpr_v1_2-af2e50254aff0257",
+        "dv2-vision_arena_battle-2b77270403385659",
+        "dv2-vision_arena_battle-9a9c5c04389d6477",
+        "dv2-vision_arena_battle-298d125dfa16a461",
+        "dv2-vision_arena_battle-71bc21877197646d",
+        "dv2-mm_ifdpo-3d703659babb1daf"
+      ],
+      "current_children": 0,
+      "remaining_capacity": 5
+    },
+    "init_03_factuality_no_hallucination": {
+      "schema_version": "1.0.0",
+      "parent_node_id": "init_03_factuality_no_hallucination",
+      "triggered": true,
+      "reasons": [],
+      "decisive_wrong_sample_ids": [
+        "dv2-rlhf_v-0bcca5da5f164846",
+        "dv2-rlhf_v-21dbdb00bf754c0f",
+        "dv2-rlhf_v-ae499cff454d3758",
+        "dv2-mm_rlhf-34997ef8b2dcba62",
+        "dv2-mm_rlhf-7e1a7f0434017229",
+        "dv2-mm_rlhf-461af81926c8275c",
+        "dv2-mm_rlhf-f00ea7f2fb546c74",
+        "dv2-mmpr_v1_2-7afb800c1fc5baf6",
+        "dv2-mmpr_v1_2-2ecf926203f92b8e",
+        "dv2-mmpr_v1_2-d782e1e5bc3d0b0f",
+        "dv2-vision_arena_battle-29160b610889f03d",
+        "dv2-vision_arena_battle-916769a43ce47d2c",
+        "dv2-vision_arena_battle-a068ef6537996a4b",
+        "dv2-vision_arena_battle-fa7f1658cd97e57b",
+        "dv2-vision_arena_battle-fd9c0a106be470b1",
+        "dv2-mm_ifdpo-aaf52a27e1836f97",
+        "dv2-mm_ifdpo-76857d40761b708b",
+        "dv2-rlhf_v-9cb156c4d94e606a",
+        "dv2-rlhf_v-8e181c09269bd778",
+        "dv2-rlhf_v-935771fca999303a",
+        "dv2-mm_rlhf-41d2527aecf7a5e6",
+        "dv2-mm_rlhf-0663dc3c9a157222",
+        "dv2-mm_rlhf-cc3e831aac606024",
+        "dv2-mmpr_v1_2-af2e50254aff0257",
+        "dv2-vision_arena_battle-2b77270403385659",
+        "dv2-vision_arena_battle-9a9c5c04389d6477",
+        "dv2-vision_arena_battle-298d125dfa16a461",
+        "dv2-mm_ifdpo-dab9cb0ad9443c79",
+        "dv2-mm_ifdpo-4a3319822314d290",
+        "dv2-mm_ifdpo-09bb4f6a020ebcc6",
+        "dv2-mm_ifdpo-66a8deb67e2796f6",
+        "dv2-mm_ifdpo-3d703659babb1daf"
+      ],
+      "current_children": 0,
+      "remaining_capacity": 5
+    },
+    "init_04_creativity_and_expressiveness": {
+      "schema_version": "1.0.0",
+      "parent_node_id": "init_04_creativity_and_expressiveness",
+      "triggered": true,
+      "reasons": [],
+      "decisive_wrong_sample_ids": [
+        "dv2-rlhf_v-540406875c514bdd",
+        "dv2-rlhf_v-cb5c6834abeb06bf",
+        "dv2-rlhf_v-0bcca5da5f164846",
+        "dv2-rlhf_v-b63ef4d127f6abfe",
+        "dv2-rlhf_v-ae499cff454d3758",
+        "dv2-mm_rlhf-7e1a7f0434017229",
+        "dv2-mm_rlhf-461af81926c8275c",
+        "dv2-mm_rlhf-2d153867fca84be6",
+        "dv2-vilreward_73k-311aee7ba8413c20",
+        "dv2-vilreward_73k-6d44d06b569ee120",
+        "dv2-mmpr_v1_2-7afb800c1fc5baf6",
+        "dv2-mmpr_v1_2-adfd6f245ac43881",
+        "dv2-vision_arena_battle-29160b610889f03d",
+        "dv2-vision_arena_battle-916769a43ce47d2c",
+        "dv2-vision_arena_battle-d80ab1bdf83c99aa",
+        "dv2-vision_arena_battle-fa7f1658cd97e57b",
+        "dv2-vision_arena_battle-fd9c0a106be470b1",
+        "dv2-mm_ifdpo-aaf52a27e1836f97",
+        "dv2-mm_ifdpo-76857d40761b708b",
+        "dv2-rlhf_v-9cb156c4d94e606a",
+        "dv2-rlhf_v-8e181c09269bd778",
+        "dv2-rlhf_v-935771fca999303a",
+        "dv2-mm_rlhf-6e618920165a14e2",
+        "dv2-mm_rlhf-41d2527aecf7a5e6",
+        "dv2-mm_rlhf-cc3e831aac606024",
+        "dv2-vilreward_73k-f6c4cdb18f31a8f0",
+        "dv2-mmpr_v1_2-7285e3719a07b3be",
+        "dv2-mmpr_v1_2-b1b555ee2f93a127",
+        "dv2-mmpr_v1_2-af2e50254aff0257",
+        "dv2-vision_arena_battle-2b77270403385659",
+        "dv2-vision_arena_battle-9a9c5c04389d6477",
+        "dv2-vision_arena_battle-298d125dfa16a461",
+        "dv2-vision_arena_battle-71bc21877197646d",
+        "dv2-mm_ifdpo-3d703659babb1daf"
+      ],
+      "current_children": 0,
+      "remaining_capacity": 5
+    },
+    "init_05_clarity_and_coherence": {
+      "schema_version": "1.0.0",
+      "parent_node_id": "init_05_clarity_and_coherence",
+      "triggered": true,
+      "reasons": [],
+      "decisive_wrong_sample_ids": [
+        "dv2-rlhf_v-540406875c514bdd",
+        "dv2-rlhf_v-cb5c6834abeb06bf",
+        "dv2-rlhf_v-21dbdb00bf754c0f",
+        "dv2-rlhf_v-b63ef4d127f6abfe",
+        "dv2-mm_rlhf-7e1a7f0434017229",
+        "dv2-mm_rlhf-2d153867fca84be6",
+        "dv2-vilreward_73k-3e738442f0f3d5a9",
+        "dv2-mmpr_v1_2-a878d545868f33eb",
+        "dv2-mmpr_v1_2-d782e1e5bc3d0b0f",
+        "dv2-vision_arena_battle-29160b610889f03d",
+        "dv2-vision_arena_battle-916769a43ce47d2c",
+        "dv2-vision_arena_battle-fa7f1658cd97e57b",
+        "dv2-vision_arena_battle-fd9c0a106be470b1",
+        "dv2-vision_arena_battle-9ccb57fcef64c578",
+        "dv2-mm_ifdpo-aaf52a27e1836f97",
+        "dv2-mm_ifdpo-76857d40761b708b",
+        "dv2-rlhf_v-8e181c09269bd778",
+        "dv2-rlhf_v-935771fca999303a",
+        "dv2-mm_rlhf-41d2527aecf7a5e6",
+        "dv2-mm_rlhf-0663dc3c9a157222",
+        "dv2-mm_rlhf-cc3e831aac606024",
+        "dv2-vilreward_73k-b0e4d69a42dd0e2b",
+        "dv2-mmpr_v1_2-7285e3719a07b3be",
+        "dv2-mmpr_v1_2-b1b555ee2f93a127",
+        "dv2-mmpr_v1_2-af2e50254aff0257",
+        "dv2-mmpr_v1_2-3cee3dcd82ac5c9c",
+        "dv2-vision_arena_battle-2b77270403385659",
+        "dv2-vision_arena_battle-9a9c5c04389d6477",
+        "dv2-vision_arena_battle-71bc21877197646d",
+        "dv2-mm_ifdpo-4a3319822314d290",
+        "dv2-mm_ifdpo-09bb4f6a020ebcc6",
+        "dv2-mm_ifdpo-3d703659babb1daf"
+      ],
+      "current_children": 0,
+      "remaining_capacity": 5
+    }
+  },
+  "initial_eligible_root_ids": [
+    "init_01_completeness_and_coverage",
+    "init_02_visual_grounding_and_details",
+    "init_03_factuality_no_hallucination",
+    "init_04_creativity_and_expressiveness",
+    "init_05_clarity_and_coherence"
+  ],
+  "initial_eligible_root_count": 5,
+  "initial_prediction_sha256": "bbe552538cdabff6b46c18153e4c651abdd1bfba66936f07a4d9bd77268b5f5e"
+}

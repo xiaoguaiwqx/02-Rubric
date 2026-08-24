@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0.0",
+  "diagnostic_only": true,
+  "selection_forbidden": true,
+  "epochs": [
+    {
+      "epoch": 0,
+      "rubric_sha256": "88f831f700967c31d22941b2cc660d9b48034bb3310706fe3124781ba53a09c8",
+      "node_count": 5,
+      "m1_accuracy": 0.7266666666666667,
+      "m1_coverage": 0.9666666666666667,
+      "corrected_vs_epoch0": 0,
+      "harmed_vs_epoch0": 0,
+      "net_corrected_vs_epoch0": 0
+    },
+    {
+      "epoch": 1,
+      "rubric_sha256": "5643719af64c3c2cc72fc52bd5af2ed92bb1503fce45e5f90f82177c4d063ccd",
+      "node_count": 10,
+      "m1_accuracy": 0.72,
+      "m1_coverage": 0.96,
+      "corrected_vs_epoch0": 5,
+      "harmed_vs_epoch0": 6,
+      "net_corrected_vs_epoch0": -1
+    },
+    {
+      "epoch": 2,
+      "rubric_sha256": "9405d9e78c1cae7c7e604cef7ece6ba28fcefb3a344e7580f41b7cd2adf4806f",
+      "node_count": 25,
+      "m1_accuracy": 0.6466666666666666,
+      "m1_coverage": 0.9866666666666667,
+      "corrected_vs_epoch0": 8,
+      "harmed_vs_epoch0": 20,
+      "net_corrected_vs_epoch0": -12
+    },
+    {
+      "epoch": 3,
+      "rubric_sha256": "c051f22ba6b41c1e61f1a140fdde1606969a18262d0f073c8384e8100b893d31",
+      "node_count": 25,
+      "m1_accuracy": 0.68,
+      "m1_coverage": 0.9866666666666667,
+      "corrected_vs_epoch0": 10,
+      "harmed_vs_epoch0": 17,
+      "net_corrected_vs_epoch0": -7
+    },
+    {
+      "epoch": 4,
+      "rubric_sha256": "7c4810d28ea58c2953bd9b1d34da2fb54ab0e0a484029efea937d6568c0329f7",
+      "node_count": 25,
+      "m1_accuracy": 0.6933333333333334,
+      "m1_coverage": 0.9866666666666667,
+      "corrected_vs_epoch0": 9,
+      "harmed_vs_epoch0": 14,
+      "net_corrected_vs_epoch0": -5
+    },
+    {
+      "epoch": 5,
+      "rubric_sha256": "8584dfac07354848f003bb4b4e97ed9612fddc6f090805476962e8d8851c0831",
+      "node_count": 25,
+      "m1_accuracy": 0.6866666666666666,
+      "m1_coverage": 0.98,
+      "corrected_vs_epoch0": 11,
+      "harmed_vs_epoch0": 17,
+      "net_corrected_vs_epoch0": -6
+    }
+  ]
+}

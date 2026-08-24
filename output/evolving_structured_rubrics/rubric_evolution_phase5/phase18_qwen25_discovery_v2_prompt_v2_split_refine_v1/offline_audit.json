@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "offline_only": true,
+  "checks": {
+    "discovery_count_100": true,
+    "dev_count_150": true,
+    "discovery_dev_isolated": true,
+    "all_images_readable": true,
+    "gold_is_ab": true,
+    "gold_positions_balanced": true,
+    "source_distribution_frozen": true,
+    "initial_five_roots": true,
+    "manager_specs_match": true,
+    "refine_specs_match": true,
+    "retry_specs_match": true,
+    "vl_rewardbench_strong_overlap_zero": true,
+    "dev_manager_visibility_false": true,
+    "heldout_accessed": false
+  },
+  "vl_rewardbench_overlap": {
+    "sample_id": 0,
+    "image_sha256": 0,
+    "question_sha256": 16,
+    "unordered_pair_sha256": 0
+  },
+  "heldout_overlap_is_nonblocking_and_reported": true
+}
