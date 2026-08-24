@@ -1508,7 +1508,7 @@ Which candidate better matches the criterion and is more likely to align with hu
 
 `available-slot` 动态调度是指：所有请求进入同一个待处理队列，哪个 API 端点或并发槽位先空闲，就立即领取下一条请求；系统不会预先把某个样本或 criterion 固定绑定到特定端点，因此能够减少快慢请求不均造成的空闲等待。
 
-两个系统使用相同的 Phase 10 最终 Rubric（5 roots、17 children，rubric SHA-256=`17ad7a0...7ef`）、`Qwen3-VL-8B-Instruct`、`temperature=0.5` 和单 replicate。S3 将 `max_tokens` 固定为2048，并继续使用原 available-slot 动态 backend pool。S0 的性能直接引用10.7中已经冻结的 Phase 10 结果，避免将一次带随机采样波动的重跑误作新的基线；另行执行的原 Prompt 全量重跑只用于比较耗时、尾延迟与位置偏置。heldout-500 已被前序实验多次查看，因此本节属于 exploratory Prompt/执行协议诊断。
+两个系统使用相同的 Phase 10 最终 Rubric（5 roots、17 children，rubric SHA-256=`17ad7a0...7ef`）、`Qwen3-VL-8B-Instruct`、`temperature=0.5` 和单 replicate。S3 将 `max_tokens` 固定为2048，并继续使用原 available-slot 动态 backend pool。S0 的性能直接引用10.7中已经冻结的 Phase 10 结果，避免将一次带随机采样波动的重跑误作新的基线；另行执行的原 Prompt 全量重跑只用于比较耗时、尾延迟与位置偏置。
 
 #### Discovery-90 结果
 
@@ -1610,8 +1610,6 @@ Rubric 演化带来的146条净纠正中，General、Hallucination 和 Reasoning
 综合而言，VL-RewardBench 结果支持将 **Prompt v2 + available-slot 动态调度 + `max_tokens=2048`** 作为后续默认 Pairwise Worker 协议：它在外部数据上保留了 Rubric 演化的显著收益，并使 Phase 10 Final equal 相对 Prompt v1 再提高5.22 pp。
 
 实验 artifact：`output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/`；最终报告为 `final_report.json` 和 `final_report.md`，技术重试报告为 `retry/report.json`。
-
-
 
 
 
@@ -1739,8 +1737,6 @@ Factuality 是本次最明确的正向结果：正确数由48/81提高到53/85�
 结构上，平均激活量和两两激活重叠有所下降，但改善主要由 Creativity 的 Coverage 从98.89%降至61.11%贡献；冲突样本没有减少，说明实验尚未实现五个 roots 的全面职责分离。更根本的限制是 discovery-90 主要由视觉事实性幻觉样本构成，能够为 Factuality/Visual Grounding 提供反馈，却缺少足够的 Clarity、Creativity、Completeness 和推理类偏好证据。强行让所有 roots 从同一错误分布学习边界，容易把“非目标错误”误写成排除条件。
 
 因此，**Root Boundary Pre-Refine 暂停，不纳入当前主方法，也不将本实验接受的两个 root patches 带入后续主实验**。现阶段主链路继续采用已验证的 Global Memory、Locked-Child Split 和 Role-aware Child Refine。本实验保留为负向探索证据：Root-level 边界学习需要与各 root 匹配的多领域 discovery 数据，以及能够区分真实专业化与选择性弃权的竞争指标；满足这些条件后再单独恢复验证。本阶段不继续执行其后的 Split+Refine，也不据此声称 heldout 泛化收益。
-
-
 
 
 
@@ -2054,11 +2050,11 @@ Creativity 原 root 单节点的 Strict ACC 只有30.23%，加入演化 children
 
 | 最强单节点 | Covered ACC | Coverage | Strict ACC |
 | --- | ---: | ---: | ---: |
-| `factual_accuracy_over_response_volume` | **70.37%** | 83.64% | 58.86% |
 | `factual_directness_over_stylistic_flourish` | 69.77% | **95.51%** | **66.64%** |
 | `instruction_compliant_visual_grounding` | 68.92% | 84.36% | 58.14% |
 | `grounded_coverage_over_hallucinated_volume` | 66.77% | 78.43% | 52.37% |
 | `constraint_adherence_over_expressive_detail` | 65.37% | 74.34% | 48.60% |
+| `factual_accuracy_over_response_volume` | **70.37%** | 83.64% | 58.86% |
 
 覆盖内 ACC 最低的五个 criterion 为：
 
@@ -2082,7 +2078,71 @@ Qwen2.5 仍表现出明显位置敏感性：3,741次展示级预测中67.9%选�
 
 - `output/evolving_structured_rubrics/vl_rewardbench_qwen25_phase17_e4_transfer_v1/`
 
-**阶段结论。** Discovery-v2 将少量偏好经验从单一视觉幻觉分布扩展到视觉、推理和通用偏好后，Phase17 正式 E5 在 VL-RewardBench 上达到 OverallAcc 69.91%、MacroAcc 64.06%、Strict ACC 69.69%；探索性 checkpoint 诊断进一步发现，五个 roots 首次全部完成 Split 的 E4 达到当前 Qwen3 Worker 最高点70.29% / 64.42% / 70.01%。固定 E4 Rubric 迁移到 Qwen2.5-VL-7B 后，相对其 Initial five-root 仍提高13.46 pp OverallAcc，并净纠正194条样本，说明结构化 Rubric 编码的偏好判断模式具有显著的跨 Worker 可复用性；但 General/Reasoning 增益、位置稳定性和等权 root 聚合仍是主要限制。
+### 16.8 Qwen2.5 从 Initial 开始的模型专属演化（Phase18）
+
+#### 实验目的与设计
+
+16.7只验证了“Qwen3 演化出的 Rubric 能否直接迁移给 Qwen2.5”。Phase18 进一步固定 Manager、数据、Prompt v2、Split/Refine、Global Memory 和等权五-root M1协议，仅将 Pairwise Worker 全程替换为 `Qwen/Qwen2.5-VL-7B-Instruct`，从相同的五个 Initial roots 重新生成 ErrorSignature、Split children 和 Refine description。实验检验：**较弱 Worker 能否从自己的错误经验中演化出有效 Rubric，以及模型专属演化是否优于直接复用 Qwen3 演化结果。**
+
+- 演化数据固定为 Discovery100；Dev150 每个 epoch 只做独立诊断，不对 Manager 可见，不参与算子接受、早停或 checkpoint 选择；
+- Pairwise Worker 使用 Prompt v2、`max_tokens=2048`，8000与8001 available-slot pool；Manager 仍为 `Qwen/Qwen3.5-397B-A17B`；
+- Split 阈值、Locked-Child retry、Role-aware Refine、同步 epoch commit 和3–5轮协议与 Phase17 保持一致；
+- 最终 Rubric 由5个 roots 扩展到25个 nodes：E1接受 Visual Grounding Split，E2接受其余4个 root Split，E3–E5分别接受6、5和4次 Refine；
+- RLHF-V heldout-500 与 VL-RewardBench 均为 exploratory 外部诊断，不反向改变 E5 正式输出。
+
+主要 artifact 位于：
+
+- `output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/`
+- `output/evolving_structured_rubrics/vl_rewardbench_qwen25_phase18_evolved_v1/`
+
+#### Discovery100 与 Dev150 演化轨迹
+
+下表中的 ACC 以各数据集全部样本为分母，Tie/abstain 不计为正确；Covered ACC 另按有效 A/B 支持集计算。Dev150 始终为 `diagnostic_only`、`selection_forbidden=true`。
+
+| Epoch | Nodes | 本轮接受操作 | Discovery ACC / Coverage | Dev ACC / Coverage |
+| --- | ---: | --- | ---: | ---: |
+| E0 | 5 | Initial | 58.00% / 95.00% | **72.67%** / 96.67% |
+| E1 | 10 | Split ×1 | 57.00% / 93.00% | 72.00% / 96.00% |
+| **E2** | 25 | Split ×4 | **63.00% / 100.00%** | 64.67% / 98.67% |
+| E3 | 25 | Refine ×6 | 62.00% / 99.00% | 68.00% / 98.67% |
+| **E4** | 25 | Refine ×5 | 58.00% / 96.00% | **69.33% / 98.67%** |
+| E5 | 25 | Refine ×4 | 62.00% / 99.00% | 68.67% / 98.00% |
+
+E2 是 Discovery100 最高点，但其 Dev150 ACC 只有64.67%，相对 E0 下降8.00 pp。E2→E4 期间，Discovery ACC 从63.00%下降到58.00%，而 Dev ACC 从64.67%恢复到69.33%；对应的 Dev covered ACC 从65.54%提高到70.27%。因此后续 Refine 确实修复了部分跨样本行为，但 E4 仍比 E0 Dev 低3.33 pp，尚不能称为改善了 Initial 的 Dev 泛化。
+
+这一轨迹也暴露出算子局部 Fitness 与完整 M1 的错位：Split/Refine 按 root Specialized ACC 或 node self-competition 接受，并不要求完整五-root M1同步提升，所以局部准则改善可能通过多数投票产生全局退化。Discovery 最优 E2、Dev 最优 E0以及 E2–E4 中 Dev 最优 E4并不一致，说明不能仅依据单一内部分数推断外部 checkpoint。
+
+#### RLHF-V heldout-500
+
+| Qwen2.5 系统 | Strict ACC | Coverage | Covered ACC | 正确数 |
+| --- | ---: | ---: | ---: | ---: |
+| Initial five-root | 60.80% | 93.80% | 64.82% | 304 / 500 |
+| Phase17 E4 直接迁移 | 64.40% | **99.60%** | 64.66% | 322 / 500 |
+| **Phase18 E5 模型专属演化** | **66.40%** | 98.80% | **67.21%** | **332 / 500** |
+
+Phase18 E5 相对 Qwen2.5 Initial 净增加28个正确样本（53 corrected / 25 harmed，exact McNemar `p=0.0020`），相对直接迁移的 Phase17 E4 净增加10个（30/20，`p=0.203`）。这说明模型专属演化在同域 heldout 上有明确正向结果，但相对 transferred E4 的优势尚不显著。
+
+#### VL-RewardBench 外部结果
+
+评测继续固定为1,247对样本、Prompt v2、`K=3` counterbalanced A/B schedule 和等权五-root M1；`OverallAcc` 与 `MacroAcc` 均按覆盖内结果计算，`Strict ACC` 以全部样本为分母。
+
+| Qwen2.5 Rubric | OverallAcc | MacroAcc | Coverage | Strict ACC | 正确数 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Initial five-root | 43.62% | 44.98% | 94.87% | 41.38% | 516 |
+| **Phase17 E4 直接迁移** | **57.07%** | 52.95% | **99.76%** | **56.94%** | **710** |
+| Phase18 E5 模型专属演化 | 56.06% | **53.07%** | 98.56% | 55.25% | 689 |
+
+Phase18 E5 相对 Initial 的 OverallAcc、MacroAcc、Coverage 和 Strict ACC 分别提高12.44、8.09、3.69和13.87 pp，corrected/harmed 为209/36，净纠正173条，exact McNemar `p=7.84e-31`。因此，Qwen2.5 能够从自己的 Discovery100 错误经验中完成有效演化，收益并不要求先由 Qwen3 生成准则。
+
+但模型专属 E5 并未超过 Phase17 E4 的直接迁移：OverallAcc 低1.01 pp、Strict ACC 低1.68 pp、少21个正确样本；paired corrected/harmed 为50/71，`p=0.0686`。Phase18 E5 的 MacroAcc 略高0.13 pp，类别上 Reasoning 更高（64.67% vs. 63.41%），但 Hallucination 更低（55.81% vs. 59.28%）。这说明专属演化学习到了一些更适配 Qwen2.5 的推理规则，却没有复制 Phase17 E4 在幻觉类数据上的强优势。
+
+#### Checkpoint 分化与待完成诊断
+
+Phase18 的内部排序存在明显分歧：E2 是 Discovery100 最佳 checkpoint，E4 是 E2–E4 中 Dev150 最佳 checkpoint，而 E5 是协议规定的最终输出。为判断 Discovery、Dev 或演化结构里程碑中哪个更能预测外部迁移，后续应在完全相同的 Qwen2.5 VL-RewardBench 协议下补测 E2、E3、E4；E5、Initial 和 Phase17 E4 直接复用现有结果。该 checkpoint 比较属于预先记录的 exploratory 轨迹诊断，不能根据结果反向修改已经完成的 Phase18 算子接受记录。
+
+**Phase18 结论。** Qwen2.5 从 Initial 开始独立演化后，在 Discovery100、RLHF-V heldout-500 和 VL-RewardBench 上均明显优于同模型 Initial，证明 Split+Refine 链路并非只对 Qwen3 Worker 有效。不过，模型专属 E5 在 VL-RewardBench 上仍略弱于直接迁移的 Phase17 E4，且 Discovery/Dev checkpoint 排名不一致。当前证据更支持“结构化 Rubric 可以跨模型迁移，也可以由目标模型自行演化”，尚不支持“目标模型专属演化必然优于强模型产生的可迁移 Rubric”。
+
+**阶段结论。** Discovery-v2 将少量偏好经验从单一视觉幻觉分布扩展到视觉、推理和通用偏好后，Phase17 正式 E5 在 VL-RewardBench 上达到 OverallAcc 69.91%、MacroAcc 64.06%、Strict ACC 69.69%；探索性 checkpoint 诊断进一步发现，五个 roots 首次全部完成 Split 的 E4 达到当前 Qwen3 Worker 最高点70.29% / 64.42% / 70.01%。固定 E4 Rubric 迁移到 Qwen2.5-VL-7B 后，相对其 Initial five-root 提高13.46 pp OverallAcc；Qwen2.5 从 Initial 独立演化的 Phase18 E5 也提高12.44 pp，但外部结果略低于直接迁移的 E4。整体上，结构化 Rubric 编码的偏好判断模式具有明确的跨 Worker 可复用性和弱 Worker 自主演化能力；General/Reasoning 数据覆盖、位置稳定性、局部 Fitness 与全局聚合的一致性仍是主要限制。
 
 ---
 
@@ -2114,3 +2174,31 @@ Qwen2.5 仍表现出明显位置敏感性：3,741次展示级预测中67.9%选�
 - [x] Split 竞争成功时整体接纳 children，失败时完整回退并记录结构化历史与自然语言归因
 - [ ] 三个单算子分别完成端到端验证
 - [ ] Phase 7 调度顺序完成 review 并冻结
+
+---
+
+## 19. Rationale Matters 的 VL-RewardBench 对照结果
+
+下表转录自 *Rationale Matters: Learning Transferable Rubrics via Proxy-Guided Critique for VLM Reward Models* 中展示的 VL-RewardBench 结果。数值单位为百分比；粗体保留原图中的重点标记。
+
+| 模型 | Proxy Agent | Data Size | OverallAcc | MacroAcc |
+| --- | --- | ---: | ---: | ---: |
+| **Proprietary Models** |  |  |  |  |
+| GPT-4o (2024-08-06) | None | - | 65.80 | 62.40 |
+| Claude-3.5-Sonnet (2024-06-22) | None | - | 55.30 | 53.60 |
+| Claude-3.7-Sonnet | None | - | 66.31 | 66.53 |
+| **Open-source Models** |  |  |  |  |
+| VITA-1.5 | None | - | 16.48 | 16.53 |
+| SliME | None | - | 19.04 | 17.64 |
+| NVLM-D-72B | None | - | 40.10 | 44.10 |
+| Llama-3.2-90B | None | - | 56.20 | 53.90 |
+| Qwen2-VL-72B | None | - | 39.50 | 43.00 |
+| IXC-2.5-Reward | None | >200k | 65.80 | 70.00 |
+| R1-Reward | None | >200k | 71.92 | 71.44 |
+| Unified-Reward-SFT | None | >200k | 66.10 | 66.50 |
+| Unified-Reward-Think | None | >200k | **73.80** | 72.30 |
+| **Our Baselines** |  |  |  |  |
+| Proxy-GRM-SFT | None | 10k | 69.53 | 69.18 |
+| Proxy-GRM-RL | None | 45k | 72.17 | 71.18 |
+| Proxy-GRM-RL | Proxy-SFT | 50k | **75.22** | **73.93** |
+| Proxy-GRM-RL | Proxy-RL | 60k | 73.38 | **72.38** |

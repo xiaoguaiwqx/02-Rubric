@@ -408,6 +408,29 @@ class SpecializeTests(unittest.TestCase):
         with self.assertRaises(SpecializeParseError):
             parse_error_signature_response(json.dumps(payload), expected_sample_id="s2")
 
+    def test_error_signature_parser_repairs_unescaped_latex_commands(self):
+        raw = (
+            '{"sample_id":"s1","task_pattern":"geometry",'
+            '"visual_focus":"radius",'
+            '"candidate_difference":"Use \\pi and \\times in the formula",'
+            '"parent_failure":"missed arithmetic",'
+            '"suggested_subdomain":"mathematics"}'
+        )
+        result = parse_error_signature_response(raw, expected_sample_id="s1")
+        self.assertEqual(
+            result.candidate_difference,
+            "Use \\pi and \\times in the formula",
+        )
+
+    def test_error_signature_parser_does_not_repair_unescaped_quotes(self):
+        raw = (
+            '{"sample_id":"s1","task_pattern":"bad "quote"",'
+            '"visual_focus":"radius","candidate_difference":"x",'
+            '"parent_failure":"y","suggested_subdomain":"z"}'
+        )
+        with self.assertRaises(SpecializeParseError):
+            parse_error_signature_response(raw, expected_sample_id="s1")
+
     def test_split_failure_attribution_strict_parser(self):
         payload = {
             "summary": "The children overrode correct parent votes outside their clusters.",

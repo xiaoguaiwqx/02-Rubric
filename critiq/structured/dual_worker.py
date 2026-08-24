@@ -150,8 +150,36 @@ def parse_pairwise_vote_response(raw_response: object) -> ParsedPairwiseVote:
 
     if not isinstance(raw_response, str):
         raise PairwiseVoteParseError("pairwise response must be a string")
+    stripped = raw_response.strip()
+    # Some open-weight workers follow the semantic ``return None`` instruction
+    # literally even though the surrounding contract requests JSON.  This is
+    # an unambiguous abstention, not a missing model judgement.  Accepting it
+    # keeps the vote identical (ABSTAIN) while distinguishing it from a true
+    # parse failure.
+    if stripped == "None" or stripped.startswith("None\n"):
+        rationale = stripped[4:].strip() or "Explicit None response."
+        return ParsedPairwiseVote(Vote.ABSTAIN, True, rationale)
     try:
-        value = parse_json(raw_response)
+        try:
+            value = parse_json(raw_response)
+        except Exception:
+            # Multimodal reasoning outputs often embed LaTeX directly in JSON
+            # strings (for example ``\angle``).  Escape only backslashes that
+            # cannot begin a legal JSON escape; do not guess missing quotes,
+            # commas, braces, or truncated content.
+            repaired: list[str] = []
+            valid_escapes = frozenset('"\\/bfnrtu')
+            for index, character in enumerate(raw_response):
+                if (character == "\\" and
+                        (index + 1 == len(raw_response)
+                         or raw_response[index + 1] not in valid_escapes)):
+                    repaired.append("\\\\")
+                else:
+                    repaired.append(character)
+            repaired_response = "".join(repaired)
+            if repaired_response == raw_response:
+                raise
+            value = parse_json(repaired_response)
         if not isinstance(value, dict):
             raise ValueError("response JSON must be an object")
         answer = value["answer"]
@@ -173,6 +201,34 @@ def parse_pairwise_vote_response(raw_response: object) -> ParsedPairwiseVote:
     # This mirrors the old evaluator: schema/field parsing succeeded, then an
     # unsupported token became an invalid result without triggering retry.
     return ParsedPairwiseVote(Vote.ABSTAIN, False, thought)
+
+
+def recover_cached_pairwise_vote_output(
+    output: PairwiseVoteOutput,
+) -> PairwiseVoteOutput:
+    """Reparse an old technical failure without issuing a new model request.
+
+    Cached outputs preserve the raw response, so parser-only compatibility
+    fixes can be applied on resume while keeping every successful model call
+    and cache identity intact.  Ambiguous or genuinely malformed responses are
+    returned unchanged.
+    """
+
+    if output.parse_ok or output.raw_response is None:
+        return output
+    try:
+        parsed = parse_pairwise_vote_response(output.raw_response)
+    except PairwiseVoteParseError:
+        return output
+    return PairwiseVoteOutput(
+        parsed.vote,
+        True,
+        output.raw_response,
+        None,
+        output.attempt_count,
+        parsed.thought,
+        parsed.answer_valid,
+    )
 
 
 @dataclass(frozen=True)

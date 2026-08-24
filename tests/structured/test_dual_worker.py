@@ -36,6 +36,7 @@ from critiq.structured import (
     Vote,
     parse_gate_state_response,
     parse_pairwise_vote_response,
+    recover_cached_pairwise_vote_output,
     gate_cache_key_payload,
     pairwise_cache_key_payload,
     worker_prompt_sha256,
@@ -124,6 +125,34 @@ class DualWorkerProtocolTests(unittest.TestCase):
         self.assertEqual(invalid.thought, "legacy invalid")
         with self.assertRaises(PairwiseVoteParseError):
             parse_pairwise_vote_response(None)
+
+    def test_pairwise_parser_recovers_unambiguous_bare_none_and_latex(self):
+        bare = parse_pairwise_vote_response("None\nNot applicable to this pair.")
+        self.assertIs(bare.vote, Vote.ABSTAIN)
+        self.assertTrue(bare.answer_valid)
+        self.assertEqual(bare.thought, "Not applicable to this pair.")
+
+        latex = parse_pairwise_vote_response(
+            '{"analysis_a":"\\angle A = 90^\\circ",'
+            '"analysis_b":"b","thought":"use \\angle A",'
+            '"answer":"A"}'
+        )
+        self.assertIs(latex.vote, Vote.A)
+        self.assertEqual(latex.thought, r"use \angle A")
+
+    def test_cached_pairwise_technical_failure_is_reparsed_without_new_vote(self):
+        failed = PairwiseVoteOutput(
+            Vote.ABSTAIN, False, "None", "invalid JSON", 2, None, False)
+        recovered = recover_cached_pairwise_vote_output(failed)
+        self.assertTrue(recovered.parse_ok)
+        self.assertTrue(recovered.answer_valid)
+        self.assertIs(recovered.vote, Vote.ABSTAIN)
+        self.assertEqual(recovered.attempt_count, 2)
+
+        malformed = PairwiseVoteOutput(
+            Vote.ABSTAIN, False, "not a decision", "invalid JSON", 2,
+            None, False)
+        self.assertIs(recover_cached_pairwise_vote_output(malformed), malformed)
 
     def test_parse_failure_is_distinct_from_model_abstain(self):
         abstain = PairwiseVoteOutput(Vote.ABSTAIN, True, '{"answer":"None"}', None, 1, "t", True)

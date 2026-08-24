@@ -61,6 +61,7 @@ from .dual_worker import (
     make_gate_parse_failure,
     parse_gate_state_response,
     parse_pairwise_vote_response,
+    recover_cached_pairwise_vote_output,
     worker_prompt_sha256,
 )
 from .executor import (
@@ -415,6 +416,7 @@ __all__ = [
     "parse_structured_root_router_response",
     "parse_gate_state_response",
     "parse_pairwise_vote_response",
+    "recover_cached_pairwise_vote_output",
     "parse_structured_worker_response",
     "parse_child_proposal_response",
     "parse_cluster_proposal_response",

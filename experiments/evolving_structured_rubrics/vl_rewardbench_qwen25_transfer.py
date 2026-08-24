@@ -485,9 +485,12 @@ def run(config: Mapping[str, Any], output: Path) -> None:
 
 def _retry_structured(config: Mapping[str, Any], target: Path,
                       manifest: Mapping[str, Any], records, schedule,
-                      rubric: StructuredRubric) -> tuple[PairwisePredictionOutput, ...]:
+                      rubric: StructuredRubric, *,
+                      source_work: Path | None = None,
+                      ) -> tuple[PairwisePredictionOutput, ...]:
+    source_work = source_work or target / "run/structured"
     source = tuple(PairwisePredictionOutput.load_json(
-        prompt_v2._prediction_path(target / "run/structured", replicate))
+        prompt_v2._prediction_path(source_work, replicate))
         for replicate in range(legacy.K))
     items = prompt_v2._failure_items(source)
     work = target / "retry/structured"

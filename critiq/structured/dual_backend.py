@@ -20,6 +20,7 @@ from .dual_worker import (
     GateStateOutput,
     PairwisePredictionOutput,
     PairwiseVoteOutput,
+    recover_cached_pairwise_vote_output,
 )
 from .schema import RubricNode, StructuredRubric
 from .telemetry import ModelCallMetrics
@@ -148,7 +149,8 @@ class OnlinePairwiseVoteBackend(_OnlineDualBackend):
         with lock:
             cached = self.cache.get_pairwise(payload) if active else None
             if cached is not None:
-                return PairwiseBackendResult(cached.output, BackendSource.CACHE,
+                output = recover_cached_pairwise_vote_output(cached.output)
+                return PairwiseBackendResult(output, BackendSource.CACHE,
                     ModelCallMetrics.from_agent_calls((), cache_hit=True), cached.generation_metrics, key)
             output, generation = self.evaluator.infer_one(data, node.criterion.to_criterion())
             current = replace(generation, cache_misses=1 if active else 0)

@@ -50,6 +50,25 @@ class SpecializeParseError(ValueError):
     """A Specialize Manager response violated its strict schema."""
 
 
+_LATEX_COMMANDS = (
+    "alpha", "approx", "beta", "begin", "cdot", "delta", "div",
+    "epsilon", "end", "frac", "gamma", "geq", "infty", "int",
+    "lambda", "left", "leq", "mathrm", "mathbf", "mu", "neq",
+    "omega", "overline", "phi", "pi", "pm", "prod", "psi",
+    "right", "sigma", "sqrt", "sum", "text", "theta", "times",
+    "underline",
+)
+_LATEX_BACKSLASH_PATTERN = re.compile(
+    r"\\(?=(?:" + "|".join(_LATEX_COMMANDS) + r")\b|[()\[\]{}])"
+)
+
+
+def _repair_unescaped_latex_json(raw: str) -> str:
+    """Escape recognized LaTeX commands without repairing other JSON damage."""
+
+    return _LATEX_BACKSLASH_PATTERN.sub(r"\\\\", raw)
+
+
 def _exact(value: object, fields: set[str], label: str) -> Mapping[str, Any]:
     if not isinstance(value, Mapping) or set(value) != fields:
         raise SpecializeParseError(f"{label} fields must be exactly {sorted(fields)}")
@@ -62,7 +81,15 @@ def _parse(raw: object, label: str) -> Mapping[str, Any]:
     try:
         value = parse_json(raw)
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        raise SpecializeParseError(f"failed to parse {label} JSON: {exc}") from exc
+        repaired = _repair_unescaped_latex_json(raw)
+        if repaired == raw:
+            raise SpecializeParseError(
+                f"failed to parse {label} JSON: {exc}") from exc
+        try:
+            value = parse_json(repaired)
+        except Exception as repaired_exc:  # pylint: disable=broad-exception-caught
+            raise SpecializeParseError(
+                f"failed to parse {label} JSON: {repaired_exc}") from repaired_exc
     if not isinstance(value, Mapping):
         raise SpecializeParseError(f"{label} JSON must be an object")
     return value

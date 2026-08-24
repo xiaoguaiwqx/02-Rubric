@@ -74,6 +74,7 @@ class EvolutionProtocol:
  fixed_root_id: str | None = None
  source_experiment_dir: str | None = None
  allow_configured_endpoint_pool: bool = False
+ allow_legacy_signature_reuse: bool = True
 
  @property
  def is_memory_treatment(self):return self.rubric_memory_mode=='global_rubric_v1'
@@ -577,7 +578,7 @@ def _signatures(target,manager,parent,trigger,node_feedback,rows_by_id,identity,
   elif protocol.read_only_control_signatures:
    if not control_shard.exists():raise RuntimeError(f'Control signature missing: {parent.node_id}/{sid}')
    accept(sid,ErrorSignatureOutput.from_dict(load_json(control_shard)),shard,'control_v2_exact_identity');reuse['control_v2_exact_identity']+=1
-  elif v1_shard.exists():accept(sid,ErrorSignatureOutput.from_dict(load_json(v1_shard)),shard,'v1_identity_match');reuse['v1_identity_match']+=1
+  elif protocol.allow_legacy_signature_reuse and v1_shard.exists():accept(sid,ErrorSignatureOutput.from_dict(load_json(v1_shard)),shard,'v1_identity_match');reuse['v1_identity_match']+=1
   else:pending.append((sid,shard))
  completed=len(values)
  if completed:print(f'split-evolution signatures cached={completed}/{total} root={parent.node_id}',flush=True)
