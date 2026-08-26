@@ -615,6 +615,33 @@
     "semantic_answer_space": ["A", "B", "None"],
     "selection_after_dev_or_heldout_forbidden": true
   },
+  "full_rubric_unified_worker_experiment": {
+    "protocol_version": "unified-full-rubric-worker-v1",
+    "prompt_version": "pairwise-full-rubric-unified-v1",
+    "source_experiment": "phase17_discovery_v2_prompt_v2_split_refine_v1",
+    "source_epoch": 4,
+    "rubric_sha256": "007bd32557007aebc6f952cc63a49135f262648aff8943fbe99addecb4674b4d",
+    "internal_datasets": {
+      "discovery100": 100,
+      "dev150": 150,
+      "heldout500": 500
+    },
+    "vl_rewardbench_count": 1247,
+    "internal_k": 1,
+    "vl_rewardbench_k": 3,
+    "internal_ab_swap": false,
+    "generation_seed_policy": "unset",
+    "temperature": 0.5,
+    "max_tokens": 2048,
+    "max_parse_retries": 10,
+    "smoke_internal_samples_per_split": 2,
+    "smoke_vlrb_sample_count": 20,
+    "endpoint_ids": ["vllm-8000", "vllm-8001"],
+    "scheduler": "sample_bundle_available_slot_affinity",
+    "semantic_answer_space": ["A", "B", "None"],
+    "single_model_call_per_sample_replicate": true,
+    "selection_after_diagnostics_forbidden": true
+  },
   "discovery_data_v2": {
     "protocol_version": "discovery-data-v2-v1",
     "dedup_policy_version": "image-question-v2-benchmark-schema-v2",

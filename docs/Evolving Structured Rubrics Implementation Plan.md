@@ -2150,7 +2150,7 @@ Phase18 的内部排序存在明显分歧：E2 是 Discovery100 最佳 checkpoin
 
 ### 17.1 问题与统一评测协议
 
-Phase17 的 root 子树诊断表明，多个局部专家同时参与时，正确判断仍可能被其他 root 的错误票稀释。为检验“结构化 Rubric 的价值是否应通过简单多数票实现”，本阶段固定 **Phase17 E4 Rubric**，不再修改节点、description 或 Worker，只改变推理时的聚合方式。评测统一使用 VL-RewardBench 的1,247个偏好对、`Qwen3-VL-8B-Instruct`、Prompt v2、`temperature=0.5`、`max_tokens=2048` 和冻结的 `K=3` counterbalanced A/B schedule；VL-RewardBench 不用于选择聚合变体。
+Phase17 的 root 子树诊断表明，多个局部专家同时参与时，正确判断仍可能被其他 root 的错误票稀释。为检验“结构化 Rubric 的价值是否应通过简单多数票实现”，本阶段固定 **Phase17 E4 Rubric** 和 `Qwen3-VL-8B-Instruct`，不再演化节点或 description，只改变推理单元、Prompt 中的 Rubric 组织方式和最终聚合机制。评测统一使用 VL-RewardBench 的1,247个偏好对、`temperature=0.5`、`max_tokens=2048` 和冻结的 `K=3` counterbalanced A/B schedule；VL-RewardBench 不用于选择聚合变体。
 
 保留的关键系统如下：
 
@@ -2160,6 +2160,7 @@ Phase17 的 root 子树诊断表明，多个局部专家同时参与时，正确
 | **S3 Unified Subtree** | 每个 root 及其 children 一次性输入模型，视为一条统一决策策略；五个子树结果等权聚合 |
 | **S4 Global Arbiter** | 在 S3 的五份同-replicate子树报告上增加一次全局仲裁；Prompt 明确允许 `None` |
 | **Clean S5-v2** | 输入与 S4 相同，但 Prompt 要求尽量给出 A/B；parser 仍把原生 `None` 记为合法弃权，仅技术失败使用同一 Prompt 重试，不使用 tie-break/rescue Prompt |
+| **S6 Unified Full-Rubric** | 把五个 root、全部 children 和层级关系一次性交给单个 Worker，由模型隐式选择相关准则、解决冲突并直接输出偏好 |
 
 Clean S5-v2 复用已冻结的18,705份 S3 子树报告，只重新生成3,741次 Arbiter 判断。它使用全新 protocol、输出目录和 cache namespace，确保不会复用旧 Arbiter 输出；旧 S5 的100% Coverage结果仅作为只读协议参照。
 
@@ -2348,8 +2349,9 @@ Arbiter 使用与子树报告相同的四字段 JSON 输出模板，但 parser �
 | S3 Unified Subtree | 66.72% | 68.42% | 62.97% | 97.51% | 832 |
 | S4 Global Arbiter（允许 `None`） | 67.44% | **71.64%** | 66.11% | 94.15% | 841 |
 | **Clean S5-v2（A/B-preferred，原生 `None`）** | **71.13%** | 71.59% | **66.24%** | **99.36%** | **887** |
+| S6 Unified Full-Rubric | 62.07% | 62.07% | 59.51% | 100.00% | 774 |
 
-S3 比 S0 低3.29 pp Strict ACC，说明“把每棵树隐式压缩为一次判断”本身不能解决聚合问题。S4 的覆盖内准确率达到71.64%，但73个最终弃权使 Strict ACC 只有67.44%；它表现出较好的选择性，却不适合作为需要为每个 pair 给出排序的主系统。Clean S5-v2 将 Coverage 恢复到99.36%，相对 S3 corrected/harmed 为74/19，净增加55条（exact McNemar `p=7.72e-9`）；相对 S4 为54/8，净增加46条（`p=1.71e-9`）。相对 S0 虽净增加14条、Strict ACC 提高1.12 pp，但 corrected/harmed 为62/48，`p=0.215`，因此当前只能报告更高的点估计，不能声称显著优于 S0。
+S3 比 S0 低3.29 pp Strict ACC，说明“把每棵树隐式压缩为一次判断”本身不能解决聚合问题。S4 的覆盖内准确率达到71.64%，但73个最终弃权使 Strict ACC 只有67.44%；它表现出较好的选择性，却不适合作为需要为每个 pair 给出排序的主系统。Clean S5-v2 将 Coverage 恢复到99.36%，相对 S3 corrected/harmed 为74/19，净增加55条（exact McNemar `p=7.72e-9`）；相对 S4 为54/8，净增加46条（`p=1.71e-9`）。相对 S0 虽净增加14条、Strict ACC 提高1.12 pp，但 corrected/harmed 为62/48，`p=0.215`，因此当前只能报告更高的点估计，不能声称显著优于 S0。S6 将整个 Rubric 压入一次调用后的显著退化及其原因在17.8节单独分析。
 
 ### 17.6 为什么 Global Arbiter 有效
 
@@ -2407,6 +2409,95 @@ S4 与 Clean S5-v2 的主 run 时间由实际分段运行求和得到：先运�
 \** S4/S5-v2 没有单独执行一次无缓存端到端 run，170.7/171.4分钟分别由 S3 主 run 加对应 Arbiter 主 run 得到，且未计入单独 retry stage，因而只能视为主 run 的近似下界。以此分段计时对比 S0 历史参考，Clean S5-v2 耗时约缩短60.7%，即约2.54×加速、耗时约为参考值的39.3%；该比较不是严格受控测速。请求量减少77.78%由固定协议直接计算，不受运行中断或缓存状态影响。
 
 补充的 K=1、单顺序内部诊断没有显示一致收益：Discovery100 上 Arbiter 与显式聚合同为65.0% Strict ACC，Dev150 从73.33%降至62.67%，RLHF-V heldout-500 为73.40%，略低于可用的 Phase17 E5 显式参考74.00%（该 heldout 对照并非相同 E4 Rubric，只能作诊断）。因此现有证据支持的是：**在 VL-RewardBench 的冻结 K=3 协议下，Global Arbiter 最终决策能以更少请求达到比显式递归投票更高的点估计；其 Strict ACC 显著优于统一子树多数和高弃权 Arbiter，但 OverallAcc 与高弃权 Arbiter基本持平。**
+
+### 17.8 Unified Full-Rubric Worker：一次调用整合全部准则的消融
+
+#### 17.8.1 实验问题与方法
+
+S0、S3 和 Clean S5-v2 都保留了某种显式分解：分别以 node、root 子树或“子树报告 + Arbiter”为推理单元。本消融进一步检验一个更激进的假设：**结构化 Rubric 是否只需作为一段完整上下文交给模型，而不必显式执行其节点和子树结构。**实验固定 Phase17 E4 的5个 roots、27个 nodes、全部 descriptions 和拓扑，不重新演化 Rubric，只改变推理方式：
+
+```text
+图像 + 问题 + Candidate A/B
+              │
+              ▼
+完整 Phase17 E4 Rubric
+5个 roots + 22个 children + 层级关系
+              │
+              ▼
+一个 Unified Full-Rubric Worker
+隐式选择相关准则并解决准则冲突
+              │
+              ▼
+直接输出 A / B（原生 None 仍按语义弃权统计）
+```
+
+该系统记为 **S6 Unified Full-Rubric**。每个 sample/replicate 只调用一次模型，不运行 node Worker、Unified-Subtree Worker、Gate、Root Router、root 多数投票或 Global Arbiter，也不使用 fallback 和第二套 rescue Prompt。System Prompt 的静态部分包含完整 Rubric，并要求把层级结构视为一个统一决策策略；User Prompt 只包含图像、问题和 A/B 回答。核心输出仍与 Pairwise Worker Prompt v2 对齐：
+
+```json
+{
+  "analysis_a": "Analyze A using the relevant rubric evidence.",
+  "analysis_b": "Analyze B using the relevant rubric evidence.",
+  "thought": "Compare A and B and resolve any criterion conflicts.",
+  "answer": "A / B"
+}
+```
+
+模型为 `Qwen3-VL-8B-Instruct`，`temperature=0.5`、`max_tokens=2048`，不设置 generation seed，并使用两个 endpoint 的 available-slot pool。Discovery100、Dev150 和 RLHF-V heldout-500 各运行一次（`K=1`、不交换）；VL-RewardBench 严格复用冻结的1,247个样本、`K=3` counterbalanced A/B schedule，每个 replicate 独立生成后再做三次结论的多数聚合。Prompt 要求 A/B，但 parser 对模型原生 `None` 保持语义透明；只有 transport、空响应、非法 JSON、缺失字段或非法标签使用同一 Prompt 最多重试10次。
+
+#### 17.8.2 内部数据结果
+
+| 数据集 | 显式递归 Strict ACC | S6 Strict ACC | Strict 变化 | 显式 Coverage | S6 Coverage |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Discovery100 | 65.00% | 63.00% | -2.00 pp | 98.00% | 100.00% |
+| Dev150 | 73.33% | 72.67% | -0.67 pp | 99.33% | 100.00% |
+| RLHF-V heldout-500 | 74.00%* | 72.20% | -1.80 pp | 99.40%* | 100.00% |
+
+Discovery100 上 corrected/harmed 为9/11，Dev150 为16/17，heldout-500 为34/43，三组净变化分别为-2、-1和-9条，均未达到显著差异。S6 在内部数据上没有发生覆盖坍缩，但也没有表现出准确率收益。需要注意，Discovery100 和 Dev150 的对照是同一 Phase17 E4 Rubric；现有 heldout 对照来自 Phase17 E5，因为没有冻结的 E4 heldout prediction，因此带 `*` 的 heldout 数字只能作为历史诊断，不能视为严格的同 Rubric 聚合消融。
+
+Dev150 的平均变化较小，但不同领域相互抵消：General 提高2 pp、Visual 提高10 pp，Reasoning 下降14 pp；按来源看，MM-RLHF 提高12 pp，而 ViLReward-73K 下降20 pp。这说明“总分接近”并不表示单次整合在各类偏好上具有相同决策行为。
+
+#### 17.8.3 VL-RewardBench 结果
+
+| 系统 | Strict ACC | OverallAcc | MacroAcc | Coverage | 相对 S6 的 Strict 差值 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| S0 Explicit Recursive | 70.01% | 70.29% | 64.42% | 99.60% | +7.94 pp |
+| S3 Unified Subtree | 66.72% | 68.42% | 62.97% | 97.51% | +4.65 pp |
+| Clean S5-v2 Global Arbiter | **71.13%** | **71.59%** | **66.24%** | 99.36% | +9.06 pp |
+| **S6 Unified Full-Rubric** | 62.07% | 62.07% | 59.51% | **100.00%** | — |
+
+S6 虽然覆盖全部1,247个样本，但只答对774条。相对 S0 corrected/harmed 为68/167，净减少99条（exact McNemar `p=8.62e-11`）；相对 S3 为80/138，净减少58条（`p=1.04e-4`）；相对 Clean S5-v2 为69/182，净减少113条（`p=6.31e-13`）。因此下降不是由少量随机波动或 `None` 引起，而是单次整合系统性地改变了偏好判断。
+
+类别结果定位了主要退化来源：
+
+| 系统 | General Strict ACC | Hallucination Strict ACC | Reasoning Strict ACC |
+| --- | ---: | ---: | ---: |
+| S0 Explicit Recursive | 49.17% | 76.50% | 66.56% |
+| S3 Unified Subtree | 46.96% | 72.36% | 64.67% |
+| Clean S5-v2 | **54.14%** | **77.84%** | 64.98% |
+| S6 Unified Full-Rubric | 48.07% | 63.28% | **67.19%** |
+
+S6 的 Reasoning 比 S0 高0.63 pp，但 Hallucination 低13.22 pp；相对 S0 的净损失99条几乎全部来自 Hallucination。PoVid 从 S0 的89.06%降到70.31%，是最明显的来源级退化。进一步检查发现，S6 在 Hallucination 子集选择更长回答的比例为53.27%，而 S0 和 Clean S5-v2 分别为44.98%和44.04%；在 S6 相对 S0 的受损样本中，错误选中的回答有67.66%是更长回答。这与完整 Prompt 中 completeness、specificity 和 presentation 等准则对视觉事实性产生**证据稀释**的解释一致：模型容易把更丰富但未经视觉验证的细节当成质量优势。
+
+#### 17.8.4 效率、技术可靠性与结论
+
+| 系统 | 每 replicate 调用数 | VL-RewardBench 逻辑请求 | 相对 S0 请求减少 |
+| --- | ---: | ---: | ---: |
+| S0 Explicit Recursive | 27 | 101,007 | — |
+| S3 Unified Subtree | 5 | 18,705 | 81.48% |
+| Clean S5-v2 | 6 | 22,446 | 77.78% |
+| **S6 Unified Full-Rubric** | **1** | **3,741** | **96.30%** |
+
+S6 的 VL-RewardBench 主 run 耗时为1,486.1秒（24.77分钟），吞吐为151.04次请求/分钟、50.35个样本的三-replicate bundle/分钟；但一次请求平均约含7,314个输入 token，是 S3 子树请求平均长度的约3.09倍，因此调用数下降不会等比例转化为 prefill 和墙钟时间下降。S6 共处理4,491个逻辑请求，初次有38个技术失败，同 Prompt 重试后全部恢复，最终 parse valid rate 为100%、未解决技术失败为0、语义 `None` 为0；技术链路不是准确率下降的原因。
+
+该消融否定了“只要把完整 Rubric 文本提供给模型，就能替代结构化执行”的假设。它同时说明两点：第一，S6 确实把 VL-RewardBench 请求量降到最低，证明统一调用在工程上可行；第二，**Rubric 的收益不仅来自 description 中包含了哪些知识，也来自如何隔离局部证据、保留子树分析并在最终阶段显式解决冲突。**当前结果支持继续采用“5份 Unified-Subtree 报告 → Clean Global Arbiter”的两阶段系统，而不是把全部27个准则压缩进一次判断。S6 因而作为关键负消融保留：它把“结构化执行”与“仅提供结构化文本”清楚地区分开。
+
+
+
+
+
+
+
+
 
 ---
 

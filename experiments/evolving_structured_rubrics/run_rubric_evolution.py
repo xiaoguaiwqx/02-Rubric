@@ -325,7 +325,8 @@ def _config(path: Path) -> dict[str, Any]:
                        "discovery_data_v2",
                        "global_arbiter_ab_only_experiment",
                        "global_arbiter_ab_preferred_none_v2_experiment",
-                       "internal_global_arbiter_k1_experiment"}
+                       "internal_global_arbiter_k1_experiment",
+                       "full_rubric_unified_worker_experiment"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -372,6 +373,7 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("global_arbiter_ab_only_experiment", None)
     value.pop("global_arbiter_ab_preferred_none_v2_experiment", None)
     value.pop("internal_global_arbiter_k1_experiment", None)
+    value.pop("full_rubric_unified_worker_experiment", None)
     return value
 
 
@@ -3106,7 +3108,14 @@ def main() -> int:
         "internal-global-arbiter-smoke",
         "internal-global-arbiter-run",
         "internal-global-arbiter-retry",
-        "internal-global-arbiter-report"))
+        "internal-global-arbiter-report",
+        "full-rubric-worker-freeze",
+        "full-rubric-worker-audit",
+        "full-rubric-worker-smoke",
+        "full-rubric-worker-internal-run",
+        "full-rubric-worker-vlrb-run",
+        "full-rubric-worker-retry",
+        "full-rubric-worker-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -3141,7 +3150,10 @@ def main() -> int:
         "specialize-evaluate": lambda: specialize_evaluate(config, output),
         "specialize-report": lambda: specialize_report(config, output),
     }
-    if args.stage.startswith("internal-global-arbiter-"):
+    if args.stage.startswith("full-rubric-worker-"):
+        from .full_rubric_unified_worker import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("internal-global-arbiter-"):
         from .internal_global_arbiter_k1 import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-global-arbiter-ab-preferred-none-v2-"):
