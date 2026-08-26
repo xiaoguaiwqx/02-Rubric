@@ -224,9 +224,9 @@ class VisualSiblingGatePoolTest(unittest.TestCase):
                 "common_checkpoint_id": "Qwen/Qwen3-VL-8B-Instruct",
                 "global_request_concurrency": 99,
                 "endpoints": [
-                    {"endpoint_id": "vllm-8000", "base_url": "http://localhost:8000/v1",
+                    {"endpoint_id": "vllm-8000", "base_url": "http://10.102.137.255:8000/v1",
                      "checkpoint_root": "model", "max_concurrency": 20},
-                    {"endpoint_id": "vllm-8001", "base_url": "http://localhost:8001/v1",
+                    {"endpoint_id": "vllm-8001", "base_url": "http://10.102.138.0:8000/v1",
                      "checkpoint_root": "model", "max_concurrency": 20},
                 ],
             }
@@ -243,7 +243,7 @@ class VisualSiblingGatePoolTest(unittest.TestCase):
                 "pool_id": "source", "common_checkpoint_id": "model",
                 "global_request_concurrency": 20,
                 "endpoints": [
-                    {"endpoint_id": "vllm-8000", "base_url": "http://localhost:8000/v1",
+                    {"endpoint_id": "vllm-8000", "base_url": "http://10.102.137.255:8000/v1",
                      "checkpoint_root": "model", "max_concurrency": 20},
                 ],
             }
@@ -263,8 +263,8 @@ class VisualSiblingGatePoolTest(unittest.TestCase):
         contract = gate.build_routing_contract(_rubric())
         spec = BackendPoolSpec(
             "visual-gate-dual-v2", "Qwen/Qwen3-VL-8B-Instruct", 2,
-            (BackendEndpointSpec("vllm-8000", "http://localhost:8000/v1", "model", 1),
-             BackendEndpointSpec("vllm-8001", "http://localhost:8001/v1", "model", 1)),
+            (BackendEndpointSpec("vllm-8000", "http://10.102.137.255:8000/v1", "model", 1),
+             BackendEndpointSpec("vllm-8001", "http://10.102.138.0:8000/v1", "model", 1)),
         )
         request = gate._request_spec(config, protocol, contract, spec)
         self.assertNotIn("response_format", request["decoding_config"])

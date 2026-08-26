@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0.0",
+  "prompt_version": "global-arbiter-evidence-synthesis-ab-only-tiebreak-v1",
+  "target_count": 6,
+  "recovered_count": 6,
+  "unresolved_count": 0,
+  "calls": [
+    {
+      "sample_id": "RLAIF-V-41506",
+      "replicate": 0,
+      "parse_ok": true,
+      "answer": "A",
+      "primary_model_generation_count": 21,
+      "rescue_model_generation_count": 1,
+      "primary_cache_key": "1166ab84db0961962cfe08a40da7b00b9df133a426cb28f79ab949d9b6e7234d",
+      "rescue_cache_key": "687920be0ec92a08cc00cbc1bfbc7a9d62fccbae0b88c8fb26043385315c41f8"
+    },
+    {
+      "sample_id": "hallucination_pair-1033",
+      "replicate": 0,
+      "parse_ok": true,
+      "answer": "A",
+      "primary_model_generation_count": 21,
+      "rescue_model_generation_count": 1,
+      "primary_cache_key": "2ba38c414a7de58737f58aa209c12db3ab346bbe581acc2fcb09520e345cc5dd",
+      "rescue_cache_key": "9e28e8a391d8ce8b5d5d20765277b5a0a86f8a4256154f67a207028208c82c1f"
+    },
+    {
+      "sample_id": "hallucination_pair-13705",
+      "replicate": 0,
+      "parse_ok": true,
+      "answer": "A",
+      "primary_model_generation_count": 21,
+      "rescue_model_generation_count": 1,
+      "primary_cache_key": "e141943af8fc8ce77d600c420acc03e0d4fb9cb45bc02f732c51c7a82f09094c",
+      "rescue_cache_key": "89384dab6ab7116bfa9ffc2c375bca980cbec8392e519fdad2bf8a3e041882d9"
+    },
+    {
+      "sample_id": "hallucination_pair-3794",
+      "replicate": 1,
+      "parse_ok": true,
+      "answer": "A",
+      "primary_model_generation_count": 21,
+      "rescue_model_generation_count": 1,
+      "primary_cache_key": "195b63f7b736dff76189bdbabb45300e9b03c48c1d9980a4a551f9f83c1df6c2",
+      "rescue_cache_key": "0eafae2876e60b89c7a0f0504dafc082c70e702c34dca08d7b9624f4eede26a2"
+    },
+    {
+      "sample_id": "mathverse_464",
+      "replicate": 0,
+      "parse_ok": true,
+      "answer": "A",
+      "primary_model_generation_count": 21,
+      "rescue_model_generation_count": 1,
+      "primary_cache_key": "1a65a6a3e34d19f0266d3b2adc084c0bbfcd20d99e2807bb80bb609d7c1f37e5",
+      "rescue_cache_key": "c9d070456639f1050d4c0f9f87ff1cf5ee0fdd1bce11f47a872b29554b08f06e"
+    },
+    {
+      "sample_id": "mmmu_pro_test_Clinical_Medicine_33",
+      "replicate": 1,
+      "parse_ok": true,
+      "answer": "B",
+      "primary_model_generation_count": 21,
+      "rescue_model_generation_count": 1,
+      "primary_cache_key": "e1a654035443186317cb282785cc6b9f13c48bb686e8f95025233e4a3dd93d91",
+      "rescue_cache_key": "0b94bb352c07d8fc04402641ac748824fd7be54d44fc0b2e5db3c3218f24ebca"
+    }
+  ]
+}

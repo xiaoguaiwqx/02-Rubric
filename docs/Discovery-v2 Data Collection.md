@@ -483,8 +483,8 @@ $output = "output/evolving_structured_rubrics/rubric_evolution_phase5"
 其中 `discovery-v2-screen` 是旧 five-root diagnostic；它的缓存和报告继续保留，但 `discovery-v2-selection-freeze` 与 Generic screening 都不读取其预测或 hardness。新版 Generic screening 已实现，运行入口为：
 
 ```powershell
-Invoke-RestMethod "http://localhost:8000/v1/models" | Out-Null
-Invoke-RestMethod "http://localhost:8001/v1/models" | Out-Null
+Invoke-RestMethod "http://10.102.137.255:8000/v1/models" | Out-Null
+Invoke-RestMethod "http://10.102.138.0:8000/v1/models" | Out-Null
 
 & $python -m $module --config $config --output-dir $output discovery-v2-generic-screen-smoke
 & $python -m $module --config $config --output-dir $output discovery-v2-generic-screen

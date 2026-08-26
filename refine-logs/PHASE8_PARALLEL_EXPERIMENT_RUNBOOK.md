@@ -23,8 +23,8 @@ Invoke-Phase8Stage "refine-role-freeze"
 Invoke-Phase8Stage "refine-role-audit"
 
 # Both local Worker services must be ready before launching.
-Invoke-RestMethod "http://localhost:8000/v1/models" | Out-Null
-Invoke-RestMethod "http://localhost:8001/v1/models" | Out-Null
+Invoke-RestMethod "http://10.102.137.255:8000/v1/models" | Out-Null
+Invoke-RestMethod "http://10.102.138.0:8000/v1/models" | Out-Null
 
 # Run these two commands in separate PowerShell terminals.
 Invoke-Phase8Stage "split-retry-visual-run"  # Worker: 8000

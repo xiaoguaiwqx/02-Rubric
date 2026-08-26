@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "offline_only": true,
+  "checks": {
+    "vlrb_only": true,
+    "record_count_1247": true,
+    "five_roots": true,
+    "three_requests_per_sample": true,
+    "all_requests_regenerated": true,
+    "semantic_answer_space": true,
+    "parser_accepts_a": true,
+    "parser_accepts_b": true,
+    "parser_accepts_none": true,
+    "prompt_schema_ab_only": true,
+    "prompt_requires_relative_choice": true,
+    "source_reports_complete": true,
+    "source_reports_read_only": true,
+    "s4_not_model_input": true,
+    "same_replicate_bundle": true,
+    "sample_prefix_before_reports": true,
+    "no_gold_in_prompt": true,
+    "no_majority_result_in_prompt": true,
+    "controls_exact": true,
+    "formal_order_frozen": true
+  }
+}

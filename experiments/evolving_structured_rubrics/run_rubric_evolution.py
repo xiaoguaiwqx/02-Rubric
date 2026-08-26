@@ -15,7 +15,7 @@ Five-root Split-only evolution (397B Manager, Pairwise only on 8001):
     Invoke-EvolutionStage "split-evolution-repair-audit"
     Invoke-EvolutionStage "split-evolution-freeze"
     Invoke-EvolutionStage "split-evolution-smoke"
-    Invoke-RestMethod "http://localhost:8001/v1/models" | Out-Null
+    Invoke-RestMethod "http://10.102.138.0:8000/v1/models" | Out-Null
     Invoke-EvolutionStage "split-evolution-run"
     Invoke-EvolutionStage "split-evolution-report"
     Invoke-EvolutionStage "split-evolution-heldout"
@@ -55,7 +55,7 @@ Evolving Structured Rubrics 的 Phase 5 与 Phase 6B 实验入口。
         }
     }
 
-    Invoke-RestMethod "http://localhost:8001/v1/models" | Out-Null
+    Invoke-RestMethod "http://10.102.138.0:8000/v1/models" | Out-Null
     Invoke-SplitStage "split-freeze" @("--parent-node-id", $parent)
     Invoke-SplitStage "split-signatures"
     Invoke-SplitStage "split-cluster"
@@ -74,12 +74,12 @@ Evolving Structured Rubrics 的 Phase 5 与 Phase 6B 实验入口。
     Invoke-SplitStage "split-signature-qwen35-propose"
 
     # Pairwise evaluate 仅路由到 8001；不要求 8000 在线。
-    Invoke-RestMethod "http://localhost:8001/v1/models" | Out-Null
+    Invoke-RestMethod "http://10.102.138.0:8000/v1/models" | Out-Null
     Invoke-SplitStage "split-signature-qwen35-evaluate"
     Invoke-SplitStage "split-signature-qwen35-compare"
 
     # 一次性 heldout-500 Visual subtree 泛化测试；四个 children 仅通过 8001 推理。
-    Invoke-RestMethod "http://localhost:8001/v1/models" | Out-Null
+    Invoke-RestMethod "http://10.102.138.0:8000/v1/models" | Out-Null
     Invoke-SplitStage "split-signature-qwen35-heldout-visual"
 
 结果写入 ``$output/phase6_split_signature_qwen35_397b``。前两阶段只比较 paired
@@ -322,7 +322,10 @@ def _config(path: Path) -> dict[str, Any]:
                        "full_child_gate_experiment",
                        "vlrb_full_child_gate_experiment",
                        "vlrb_phase16_root_child_router",
-                       "discovery_data_v2"}
+                       "discovery_data_v2",
+                       "global_arbiter_ab_only_experiment",
+                       "global_arbiter_ab_preferred_none_v2_experiment",
+                       "internal_global_arbiter_k1_experiment"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -366,6 +369,9 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("full_child_gate_experiment", None)
     value.pop("vlrb_full_child_gate_experiment", None)
     value.pop("discovery_data_v2", None)
+    value.pop("global_arbiter_ab_only_experiment", None)
+    value.pop("global_arbiter_ab_preferred_none_v2_experiment", None)
+    value.pop("internal_global_arbiter_k1_experiment", None)
     return value
 
 
@@ -3082,7 +3088,25 @@ def main() -> int:
         "discovery-v2-demo-export",
         "discovery-v2-screen-smoke", "discovery-v2-screen",
         "discovery-v2-adjudicate", "discovery-v2-review-export",
-        "discovery-v2-finalize", "discovery-v2-report"))
+        "discovery-v2-finalize", "discovery-v2-report",
+        "vlrb-global-arbiter-ab-only-freeze",
+        "vlrb-global-arbiter-ab-only-audit",
+        "vlrb-global-arbiter-ab-only-smoke",
+        "vlrb-global-arbiter-ab-only-run",
+        "vlrb-global-arbiter-ab-only-retry",
+        "vlrb-global-arbiter-ab-only-report",
+        "vlrb-global-arbiter-ab-preferred-none-v2-freeze",
+        "vlrb-global-arbiter-ab-preferred-none-v2-audit",
+        "vlrb-global-arbiter-ab-preferred-none-v2-smoke",
+        "vlrb-global-arbiter-ab-preferred-none-v2-run",
+        "vlrb-global-arbiter-ab-preferred-none-v2-retry",
+        "vlrb-global-arbiter-ab-preferred-none-v2-report",
+        "internal-global-arbiter-freeze",
+        "internal-global-arbiter-audit",
+        "internal-global-arbiter-smoke",
+        "internal-global-arbiter-run",
+        "internal-global-arbiter-retry",
+        "internal-global-arbiter-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -3117,7 +3141,16 @@ def main() -> int:
         "specialize-evaluate": lambda: specialize_evaluate(config, output),
         "specialize-report": lambda: specialize_report(config, output),
     }
-    if args.stage.startswith("discovery-v2-evolution-"):
+    if args.stage.startswith("internal-global-arbiter-"):
+        from .internal_global_arbiter_k1 import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-global-arbiter-ab-preferred-none-v2-"):
+        from .global_arbiter_ab_preferred_none_v2 import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-global-arbiter-ab-only-"):
+        from .global_arbiter_ab_only import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("discovery-v2-evolution-"):
         from .discovery_v2_prompt_v2_evolution import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith("discovery-v2-"):

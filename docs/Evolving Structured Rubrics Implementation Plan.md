@@ -768,8 +768,8 @@ function Invoke-EvolutionStage {
     }
 }
 
-# 确认本地 Pairwise API 的8001端口可用
-Invoke-RestMethod "http://localhost:8001/v1/models" | Out-Null
+# 确认远程逻辑 endpoint vllm-8001 可用
+Invoke-RestMethod "http://10.102.138.0:8000/v1/models" | Out-Null
 Write-Host "Pairwise API 8001 is ready." -ForegroundColor Green
 
 # 冻结五个初始 roots、discovery-90、触发条件和实验协议
@@ -2146,7 +2146,271 @@ Phase18 的内部排序存在明显分歧：E2 是 Discovery100 最佳 checkpoin
 
 ---
 
-## 17. 后续候选
+## 17. 聚合机制探索：从节点投票到子树分析与最终决策
+
+### 17.1 问题与统一评测协议
+
+Phase17 的 root 子树诊断表明，多个局部专家同时参与时，正确判断仍可能被其他 root 的错误票稀释。为检验“结构化 Rubric 的价值是否应通过简单多数票实现”，本阶段固定 **Phase17 E4 Rubric**，不再修改节点、description 或 Worker，只改变推理时的聚合方式。评测统一使用 VL-RewardBench 的1,247个偏好对、`Qwen3-VL-8B-Instruct`、Prompt v2、`temperature=0.5`、`max_tokens=2048` 和冻结的 `K=3` counterbalanced A/B schedule；VL-RewardBench 不用于选择聚合变体。
+
+保留的关键系统如下：
+
+| 系统 | 每个 replicate 的推理与聚合方式 |
+| --- | --- |
+| **S0 Explicit Recursive** | 27个节点分别判断，再按既有 parent/children 与五-root 等权规则递归聚合 |
+| **S3 Unified Subtree** | 每个 root 及其 children 一次性输入模型，视为一条统一决策策略；五个子树结果等权聚合 |
+| **S4 Global Arbiter** | 在 S3 的五份同-replicate子树报告上增加一次全局仲裁；Prompt 明确允许 `None` |
+| **Clean S5-v2** | 输入与 S4 相同，但 Prompt 要求尽量给出 A/B；parser 仍把原生 `None` 记为合法弃权，仅技术失败使用同一 Prompt 重试，不使用 tie-break/rescue Prompt |
+
+Clean S5-v2 复用已冻结的18,705份 S3 子树报告，只重新生成3,741次 Arbiter 判断。它使用全新 protocol、输出目录和 cache namespace，确保不会复用旧 Arbiter 输出；旧 S5 的100% Coverage结果仅作为只读协议参照。
+
+### 17.2 端到端推理流程
+
+Clean S5-v2 由两个串联模块组成：Unified-Subtree Worker 先将五棵 Rubric 子树分别转化为结构化证据报告，Global Arbiter 再综合五份报告得出一次偏好。它不会先把五棵树投成一个多数结果再交给 Arbiter。对于 `K=3`，整个“子树分析 → 全局仲裁”流程独立执行三次，最后只聚合三次 Arbiter 结论：
+
+```text
+图像 + 问题 + Candidate A/B
+              │
+              └─ 对 r ∈ {1, 2, 3} 独立执行（使用 replicate r 的冻结 A/B 顺序）：
+                    ├─ Completeness root + children     → 子树报告 R1
+                    ├─ Visual Grounding root + children → 子树报告 R2
+                    ├─ Factuality root + children       → 子树报告 R3
+                    ├─ Creativity root + children       → 子树报告 R4
+                    └─ Clarity root + children          → 子树报告 R5
+                                │
+                                ▼
+                      Global Arbiter 综合 R1–R5
+                                │
+                                ▼
+                      replicate 结论 y_r ∈ {A, B, None}
+                              │
+                              └─ {y_1, y_2, y_3} 按 K=3 多数聚合 → 最终偏好
+```
+
+这里的 `R1–R5` 是完整分析报告，不只是五个 A/B/None 标签。因而 Global Arbiter 可以检查不同子树的事实依据、识别不适用或错误报告，并在准则冲突时重新判断证据强弱。三次结论会先映射回原始 Candidate 顺序；只有至少两次一致选择同一个 Candidate 时才输出最终 A/B，否则最终结果为 `None`。因此 A/B/None 各一票，或只有一次 A/B 判断而另外两次均为 `None` 时，都不会被强行排序。
+
+### 17.3 Unified-Subtree Worker
+
+#### 17.3.1 作用与调用粒度
+
+传统 S0 对 Rubric 中的27个节点分别调用 Pairwise Worker，再通过递归多数投票得到结果。Unified-Subtree Worker 改变的是**推理单元**：一次调用接收一个 root 及其全部 children，把整棵子树作为统一决策策略进行一次综合判断。children 是针对不同情形的专业判断指导，不会各自产生一张独立选票，也不需要额外的 Gate 或 Router。
+
+对一个样本的一个 replicate，系统分别调用五次 Unified-Subtree Worker，得到五份子树报告；`K=3` 时，每个样本共生成15份子树报告。
+
+| 项目 | Unified-Subtree Worker 的内容 |
+| --- | --- |
+| 多模态输入 | 图像、原始问题或指令、Candidate A、Candidate B |
+| Rubric 输入 | 一个 root 的 name/description，以及该 root 下按冻结顺序排列的全部 children name/description |
+| 不可见信息 | 其他 root、其他子树的判断、gold、最终多数结果 |
+| 推理方式 | 将 root 的总体目标与 children 的专业边界合并为一条决策策略 |
+| 输出 | 一份包含 A/B 分析、综合比较和 A/B/None 结论的子树报告 |
+
+#### 17.3.2 System Prompt
+
+System Prompt 固定 Unified-Subtree Worker 的角色和推理规则，核心模板如下：
+
+````text
+UNIFIED_SUBTREE_SYSTEM_PROMPT = """## Instruction
+
+You are judging a multimodal image-text preference pair under one structured rubric subtree. You are given the image, the source instruction or question, two candidate responses, and the rubric subtree.
+
+The root defines the broad criterion, while its children provide specialized guidance for particular cases. Treat the entire subtree as one unified decision policy, not as a set of independent votes.
+
+Use the image when the rubric depends on visual evidence. If the rubric subtree as a whole is not applicable to this pair, answer None.
+
+Your response should be in the following **JSON** format:
+```json
+{
+    "analysis_a": "Analyze A based on the given criterion.",
+    "analysis_b": "Analyze B based on the given criterion.",
+    "thought": "Compare A and B.",
+    "answer": "A / B / None"
+}
+```
+
+Return None if any of the following conditions are met:
+- The rubric subtree as a whole is not applicable to this pair of data pieces.
+- They are of the same quality.
+- You are unsure.
+"""
+````
+
+这段 Prompt 的关键约束不是“在 children 中选择一个节点”，而是要求模型同时理解 root 与 children。root 确定总体评价目标，children 补充更细粒度的适用情形和决策边界，模型最终只生成一份整棵子树的判断。
+
+#### 17.3.3 User Prompt 与输出
+
+图像通过多模态消息传入；User Prompt 保存每个样本和每棵子树的动态内容，顺序如下：
+
+```text
+## Question
+<question>
+
+## Candidate A
+<candidate_a>
+
+## Candidate B
+<candidate_b>
+
+## Structured Rubric Subtree
+
+### Root Criterion
+**<root_name>**: <root_description>
+
+### Specialized Child Criteria
+1. **<child_1_name>**
+<child_1_description>
+...
+
+Which candidate better follows this structured rubric subtree and is
+more likely to align with human preference?
+```
+
+Worker 返回的完整报告为：
+
+```json
+{
+  "analysis_a": "Analyze Candidate A under the entire subtree.",
+  "analysis_b": "Analyze Candidate B under the entire subtree.",
+  "thought": "Compare A and B by integrating the root and children.",
+  "answer": "A / B / None"
+}
+```
+
+四个字段都会被保存并传给 Global Arbiter。`None` 是合法语义弃权，表示整棵子树不适用、两者质量相同或证据不足；它不是解析失败。
+
+### 17.4 Global Arbiter
+
+#### 17.4.1 输入与决策规则
+
+Global Arbiter 在同一个 replicate 内读取原始图像、问题、A/B回答，以及五份 Unified-Subtree 报告。它把报告视为**相关证据**而不是五张独立选票：不能直接统计五个 `answer` 标签，而要重新核对原始多模态证据，并允许判断某份报告错误或不适用。以下 Prompt 描述专指最终采用的 Clean S5-v2；S4 使用相同输入，但其 Prompt 明确允许 `None`，因此两者的 Coverage 不可混为一谈。
+
+其 System Prompt 固定以下证据优先级：
+
+1. 可验证的视觉与事实正确性；
+2. 在事实成立之后比较完整性；
+3. 清晰度与创造性只用于区分其他方面可接受的回答，不能补偿事实错误。
+
+Prompt 明确要求为每个 pair 返回相对偏好且不要弃权；即使两个回答都不完美，也应选择证据更强、错误更轻的 A 或 B。
+
+````text
+GLOBAL_ARBITER_AB_ONLY_SYSTEM_PROMPT = """## Instruction
+
+You are the final decision arbiter for one structured multimodal preference system. You are given the image, the source instruction or question, two candidate responses, and five subtree assessments produced under complementary rubric dimensions.
+
+Treat the subtree assessments as correlated evidence, not independent votes. Do not decide by counting their A/B labels. Independently verify the image, question, and candidate responses. A subtree assessment may be incorrect or inapplicable.
+
+Prioritize verifiable visual and factual correctness. Consider completeness after factual validity; clarity and creativity may distinguish otherwise acceptable responses but cannot compensate for factual errors.
+
+Return a relative preference for every pair. If both responses are imperfect or the evidence is limited, select the response with stronger support and the less severe error. Do not abstain.
+
+Your response should be in the following **JSON** format:
+```json
+{
+    "analysis_a": "Analyze A using the image and subtree evidence.",
+    "analysis_b": "Analyze B using the image and subtree evidence.",
+    "thought": "Integrate the evidence into one relative preference.",
+    "answer": "A / B"
+}
+```
+"""
+````
+
+#### 17.4.2 User Prompt、输出与重试
+
+Arbiter 的 User Prompt 把原始样本放在前面、五份报告放在后面，保持稳定布局：
+
+```text
+## Source Instruction or Question
+<question>
+
+## Candidate A
+<candidate_a>
+
+## Candidate B
+<candidate_b>
+
+## Subtree Assessments
+### <root_1_name>
+{"analysis_a": ..., "analysis_b": ..., "thought": ..., "answer": ...}
+...
+### <root_5_name>
+{"analysis_a": ..., "analysis_b": ..., "thought": ..., "answer": ...}
+
+Integrate the image evidence and all subtree assessments into one final preference.
+```
+
+Arbiter 使用与子树报告相同的四字段 JSON 输出模板，但 parser 只强制校验 `answer`。虽然 Prompt 明令输出 A/B、不要弃权，模型原生输出的 `None` 仍被记录为合法语义弃权。只有 transport、空响应、非法 JSON 或非法标签属于技术失败；这些请求使用完全相同的 Prompt 重试，不存在第二套 tie-break 或 rescue Prompt。固定 System Prompt、将样本和报告放入 User Prompt，也使跨请求共享前缀可以被 vLLM 缓存。
+
+### 17.5 VL-RewardBench 主要结果
+
+| 系统 | Strict ACC | OverallAcc | MacroAcc | Coverage | 正确数 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| S0 Explicit Recursive | 70.01% | 70.29% | 64.42% | 99.60% | 873 |
+| S3 Unified Subtree | 66.72% | 68.42% | 62.97% | 97.51% | 832 |
+| S4 Global Arbiter（允许 `None`） | 67.44% | **71.64%** | 66.11% | 94.15% | 841 |
+| **Clean S5-v2（A/B-preferred，原生 `None`）** | **71.13%** | 71.59% | **66.24%** | **99.36%** | **887** |
+
+S3 比 S0 低3.29 pp Strict ACC，说明“把每棵树隐式压缩为一次判断”本身不能解决聚合问题。S4 的覆盖内准确率达到71.64%，但73个最终弃权使 Strict ACC 只有67.44%；它表现出较好的选择性，却不适合作为需要为每个 pair 给出排序的主系统。Clean S5-v2 将 Coverage 恢复到99.36%，相对 S3 corrected/harmed 为74/19，净增加55条（exact McNemar `p=7.72e-9`）；相对 S4 为54/8，净增加46条（`p=1.71e-9`）。相对 S0 虽净增加14条、Strict ACC 提高1.12 pp，但 corrected/harmed 为62/48，`p=0.215`，因此当前只能报告更高的点估计，不能声称显著优于 S0。
+
+### 17.6 为什么 Global Arbiter 有效
+
+Global Arbiter 接收图像、问题、A/B回答和五份同-replicate子树报告，将这些报告视为相关证据而非五张独立选票。逐 replicate 审计 Arbiter 是否推翻五个子树的多数意见，结果如下：
+
+
+| 子树判断格局 | Replicate 数 | 推翻次数 | 推翻后修正 | 推翻后损害 | 中性转移 | 净修正 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 5–0 一致 | 2,115 | 0 | 0 | 0 | 0 | 0 |
+| 4–1 强多数 | 817 | 71 | 50 | 17 | 4 | +33 |
+| 3–2 弱多数 | 579 | 160 | 113 | 43 | 4 | +70 |
+| 平局 / 稀疏 / 大量 `None` | 230 | 105 | 58 | 9 | 38 | +49 |
+| **合计** | **3,741** | **336** | **221** | **69** | **46** | **+152** |
+
+**“推翻”**表示 Global Arbiter 的结论和上述五棵子树的多数/聚合结论不同。比如说五个子树多数投票是 A (A / A / A / B / B)，但是Global Arbiter结果是 B，这就是“推翻”，如果 gold 是 B，就是**“推翻后修正”**
+
+五个子树完全一致时，Arbiter 从不推翻；随着子树分歧增加，观测到的推翻比例也随之提高。336次推翻中有221次修正、69次损害，另有46次没有改变 Strict correctness，主要对应错误答案与 `None` 之间的转移。4–1强多数、3–2弱多数以及平局/稀疏状态分别净修正33、70和49次。这一模式与“**重新审查冲突证据**”机制一致，说明 Arbiter 并非简单复刻子树多数，但该审计本身不能完全排除模型间接利用多数信号。
+
+不同 VL-RewardBench 类别上的结果进一步表明，这一收益并非完全均匀。下表以 S0 Explicit Recursive 为基线；Strict ACC 的分母是该类别全部样本，`None` 计为未答对，`OverallAcc` 则只在 Coverage 内计算：
+
+| 类别 | 样本数 | S0 Strict ACC | Clean S5-v2 Strict ACC | Strict 变化 | Clean S5-v2 Coverage | Clean S5-v2 OverallAcc |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| General | 181 | 49.17% | **54.14%** | +4.97 pp | 98.34% | 55.06% |
+| Hallucination | 749 | 76.50% | **77.84%** | +1.34 pp | 99.73% | 78.05% |
+| Reasoning | 317 | **66.56%** | 64.98% | -1.58 pp | 99.05% | 65.61% |
+
+按 Strict ACC 的百分点增幅看，Global Arbiter 在 General 上提升最大，Hallucination 也有小幅改善；Reasoning 则下降1.58 pp。因而总体提升不能解释为所有类别都同步受益，当前聚合策略在复杂推理证据的取舍上仍有改进空间。
+
+在 S4 的73个最终 `None` 样本上，Clean S5-v2 给出39个正确、27个错误并保留7个 `None`：该子集 Strict ACC 为53.42%（39/73），覆盖内准确率为59.09%（39/66）。因此 A/B-preferred Prompt 没有提高全局 OverallAcc，而是把略高于随机的可判别信息转化为正式排序：S4 与 Clean S5-v2 的 OverallAcc 几乎相同（71.64% vs. 71.59%），但 Strict ACC 提高3.69 pp。
+
+### 17.7 效率与结论边界
+
+下表统一按 VL-RewardBench 的1,247个样本和 `K=3` 计算逻辑请求量，不包含技术重试：
+
+| 系统 | 每个 replicate 的模型调用 | 每样本 `K=3` 调用数 | 完整评测请求量 | 相对 S0 减少 | 主 run 分段时间 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| S0 Explicit Recursive | 27个 node Worker | 81 | 101,007 | — | 约435.6分钟（7.26小时）* |
+| S3 Unified Subtree | 5个 Unified-Subtree Worker | 15 | 18,705 | 81.48% | 136.6分钟（2.28小时） |
+| S4 Global Arbiter | 5个 Unified-Subtree Worker + 1个 Global Arbiter | 18 | 22,446 | 77.78% | 约170.7分钟（2.84小时）** |
+| Clean S5-v2 | 5个 Unified-Subtree Worker + 1个 Global Arbiter | 18 | 22,446 | 77.78% | 约171.4分钟（2.86小时）** |
+
+S3 作为对照系统时，五个子树 `None` 不计票，A/B 中唯一多数获胜；A/B 平票或没有决定性子树则输出 `None`。S4 与 Clean S5-v2 不使用这一步子树多数，直接把五份报告交给 Arbiter。
+
+S4 与 Clean S5-v2 的主 run 时间由实际分段运行求和得到：先运行 S3 生成18,705份子树报告，再运行3,741次 Arbiter。各阶段的具体计时如下，均不包含 freeze、report、最终缓存扫描和单独 retry stage：
+
+| 实测阶段 | 模型请求 | 主运行耗时 | 推理吞吐 | 说明 |
+| --- | ---: | ---: | ---: | --- |
+| S0 Explicit Recursive 历史计时 | 101,007 | 26,134.4秒（435.57分钟） | 231.89次/分钟 | 相同27-node、`K=3`协议的 Phase17 计时参考* |
+| S3 Unified-Subtree Worker | 18,705 | 8,196.7秒（136.61分钟） | 136.92次/分钟 | 完整生成五子树报告 |
+| S4 Global Arbiter 增量阶段 | 3,741 | 2,043.7秒（34.06分钟） | 109.83次/分钟 | 复用 S3 子树报告 |
+| Clean S5-v2 Global Arbiter 增量阶段 | 3,741 | 2,085.0秒（34.75分钟） | 107.66次/分钟 | 复用 S3；初次7次失败由后续同 Prompt retry 恢复，retry 耗时未计入 |
+
+\* S0 的来源报告标记 `fresh_timing_valid=false`，因为运行包含中断恢复和部分缓存复用；435.6分钟只能作为历史量级参考，不能视为严格受控计时。
+
+\** S4/S5-v2 没有单独执行一次无缓存端到端 run，170.7/171.4分钟分别由 S3 主 run 加对应 Arbiter 主 run 得到，且未计入单独 retry stage，因而只能视为主 run 的近似下界。以此分段计时对比 S0 历史参考，Clean S5-v2 耗时约缩短60.7%，即约2.54×加速、耗时约为参考值的39.3%；该比较不是严格受控测速。请求量减少77.78%由固定协议直接计算，不受运行中断或缓存状态影响。
+
+补充的 K=1、单顺序内部诊断没有显示一致收益：Discovery100 上 Arbiter 与显式聚合同为65.0% Strict ACC，Dev150 从73.33%降至62.67%，RLHF-V heldout-500 为73.40%，略低于可用的 Phase17 E5 显式参考74.00%（该 heldout 对照并非相同 E4 Rubric，只能作诊断）。因此现有证据支持的是：**在 VL-RewardBench 的冻结 K=3 协议下，Global Arbiter 最终决策能以更少请求达到比显式递归投票更高的点估计；其 Strict ACC 显著优于统一子树多数和高弃权 Arbiter，但 OverallAcc 与高弃权 Arbiter基本持平。**
+
+---
+
+## 18. 后续候选
 
 - **Merge / Drop**：在前三个算子稳定后再处理节点重挂接和历史生存状态；
 - **删除 parent 的 Split 消融**：与正式的“保留 parent 并挂载 children”Split 分开；
@@ -2155,9 +2419,9 @@ Phase18 的内部排序存在明显分歧：E2 是 Discovery100 最佳 checkpoin
 
 ---
 
-## 18. Review Checklist
+## 19. Review Checklist
 
-- [x] 正式聚合 vote 只来自 Pairwise Worker
+- [x] Split/Refine 的触发、竞争与接受只读取 Pairwise Worker；Global Arbiter 作为演化完成后的独立聚合实验，不反馈给 Manager 或修改 Rubric
 - [x] Gate 只控制 status-dependent edges，不覆盖 Pairwise vote
 - [x] 第一版采用单 parent Forest，多前提依赖保存在 lineage
 - [x] discovery-90 用于反馈、筛选和接受；heldout-500 不参与选择。Init/Final 之外的 checkpoint 结果均标记为 exploratory 后验诊断
@@ -2177,7 +2441,7 @@ Phase18 的内部排序存在明显分歧：E2 是 Discovery100 最佳 checkpoin
 
 ---
 
-## 19. Rationale Matters 的 VL-RewardBench 对照结果
+## 20. Rationale Matters 的 VL-RewardBench 对照结果
 
 下表转录自 *Rationale Matters: Learning Transferable Rubrics via Proxy-Guided Critique for VLM Reward Models* 中展示的 VL-RewardBench 结果。数值单位为百分比；粗体保留原图中的重点标记。
 

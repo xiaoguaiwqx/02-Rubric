@@ -1,0 +1,347 @@
+{
+  "s0_explicit_recursive": {
+    "groups": {
+      "general": {
+        "sample_count": 181,
+        "correct_count": 89,
+        "strict_accuracy": 0.49171270718232046,
+        "coverage": 0.9834254143646409,
+        "covered_accuracy": 0.5
+      },
+      "hallucination": {
+        "sample_count": 749,
+        "correct_count": 573,
+        "strict_accuracy": 0.7650200267022697,
+        "coverage": 0.9973297730307076,
+        "covered_accuracy": 0.7670682730923695
+      },
+      "reasoning": {
+        "sample_count": 317,
+        "correct_count": 211,
+        "strict_accuracy": 0.6656151419558359,
+        "coverage": 1.0,
+        "covered_accuracy": 0.6656151419558359
+      }
+    },
+    "sources": {
+      "povid": {
+        "sample_count": 448,
+        "correct_count": 399,
+        "strict_accuracy": 0.890625,
+        "coverage": 0.9977678571428571,
+        "covered_accuracy": 0.8926174496644296
+      },
+      "reasoning_tasks": {
+        "sample_count": 317,
+        "correct_count": 211,
+        "strict_accuracy": 0.6656151419558359,
+        "coverage": 1.0,
+        "covered_accuracy": 0.6656151419558359
+      },
+      "rlaif-v": {
+        "sample_count": 233,
+        "correct_count": 124,
+        "strict_accuracy": 0.5321888412017167,
+        "coverage": 1.0,
+        "covered_accuracy": 0.5321888412017167
+      },
+      "rlhf-v": {
+        "sample_count": 68,
+        "correct_count": 50,
+        "strict_accuracy": 0.7352941176470589,
+        "coverage": 0.9852941176470589,
+        "covered_accuracy": 0.746268656716418
+      },
+      "vlfeedback": {
+        "sample_count": 10,
+        "correct_count": 6,
+        "strict_accuracy": 0.6,
+        "coverage": 1.0,
+        "covered_accuracy": 0.6
+      },
+      "wildvision-battle": {
+        "sample_count": 171,
+        "correct_count": 83,
+        "strict_accuracy": 0.4853801169590643,
+        "coverage": 0.9824561403508771,
+        "covered_accuracy": 0.49404761904761907
+      }
+    }
+  },
+  "s3_unified_subtree": {
+    "groups": {
+      "general": {
+        "sample_count": 181,
+        "correct_count": 85,
+        "strict_accuracy": 0.4696132596685083,
+        "coverage": 0.9723756906077348,
+        "covered_accuracy": 0.48295454545454547
+      },
+      "hallucination": {
+        "sample_count": 749,
+        "correct_count": 542,
+        "strict_accuracy": 0.7236315086782377,
+        "coverage": 0.9773030707610146,
+        "covered_accuracy": 0.7404371584699454
+      },
+      "reasoning": {
+        "sample_count": 317,
+        "correct_count": 205,
+        "strict_accuracy": 0.6466876971608833,
+        "coverage": 0.9716088328075709,
+        "covered_accuracy": 0.6655844155844156
+      }
+    },
+    "sources": {
+      "povid": {
+        "sample_count": 448,
+        "correct_count": 386,
+        "strict_accuracy": 0.8616071428571429,
+        "coverage": 0.9754464285714286,
+        "covered_accuracy": 0.8832951945080092
+      },
+      "reasoning_tasks": {
+        "sample_count": 317,
+        "correct_count": 205,
+        "strict_accuracy": 0.6466876971608833,
+        "coverage": 0.9716088328075709,
+        "covered_accuracy": 0.6655844155844156
+      },
+      "rlaif-v": {
+        "sample_count": 233,
+        "correct_count": 113,
+        "strict_accuracy": 0.48497854077253216,
+        "coverage": 0.9871244635193133,
+        "covered_accuracy": 0.49130434782608695
+      },
+      "rlhf-v": {
+        "sample_count": 68,
+        "correct_count": 43,
+        "strict_accuracy": 0.6323529411764706,
+        "coverage": 0.9558823529411765,
+        "covered_accuracy": 0.6615384615384615
+      },
+      "vlfeedback": {
+        "sample_count": 10,
+        "correct_count": 5,
+        "strict_accuracy": 0.5,
+        "coverage": 0.9,
+        "covered_accuracy": 0.5555555555555556
+      },
+      "wildvision-battle": {
+        "sample_count": 171,
+        "correct_count": 80,
+        "strict_accuracy": 0.4678362573099415,
+        "coverage": 0.9766081871345029,
+        "covered_accuracy": 0.47904191616766467
+      }
+    }
+  },
+  "s4_global_arbiter": {
+    "groups": {
+      "general": {
+        "sample_count": 181,
+        "correct_count": 92,
+        "strict_accuracy": 0.5082872928176796,
+        "coverage": 0.9226519337016574,
+        "covered_accuracy": 0.5508982035928144
+      },
+      "hallucination": {
+        "sample_count": 749,
+        "correct_count": 558,
+        "strict_accuracy": 0.7449933244325768,
+        "coverage": 0.951935914552737,
+        "covered_accuracy": 0.782608695652174
+      },
+      "reasoning": {
+        "sample_count": 317,
+        "correct_count": 191,
+        "strict_accuracy": 0.6025236593059937,
+        "coverage": 0.9274447949526814,
+        "covered_accuracy": 0.6496598639455783
+      }
+    },
+    "sources": {
+      "povid": {
+        "sample_count": 448,
+        "correct_count": 392,
+        "strict_accuracy": 0.875,
+        "coverage": 0.9508928571428571,
+        "covered_accuracy": 0.92018779342723
+      },
+      "reasoning_tasks": {
+        "sample_count": 317,
+        "correct_count": 191,
+        "strict_accuracy": 0.6025236593059937,
+        "coverage": 0.9274447949526814,
+        "covered_accuracy": 0.6496598639455783
+      },
+      "rlaif-v": {
+        "sample_count": 233,
+        "correct_count": 118,
+        "strict_accuracy": 0.5064377682403434,
+        "coverage": 0.9656652360515021,
+        "covered_accuracy": 0.5244444444444445
+      },
+      "rlhf-v": {
+        "sample_count": 68,
+        "correct_count": 48,
+        "strict_accuracy": 0.7058823529411765,
+        "coverage": 0.9117647058823529,
+        "covered_accuracy": 0.7741935483870968
+      },
+      "vlfeedback": {
+        "sample_count": 10,
+        "correct_count": 6,
+        "strict_accuracy": 0.6,
+        "coverage": 0.9,
+        "covered_accuracy": 0.6666666666666666
+      },
+      "wildvision-battle": {
+        "sample_count": 171,
+        "correct_count": 86,
+        "strict_accuracy": 0.5029239766081871,
+        "coverage": 0.9239766081871345,
+        "covered_accuracy": 0.5443037974683544
+      }
+    }
+  },
+  "s5_legacy_ab_only_reference": {
+    "groups": {
+      "general": {
+        "sample_count": 181,
+        "correct_count": 101,
+        "strict_accuracy": 0.5580110497237569,
+        "coverage": 1.0,
+        "covered_accuracy": 0.5580110497237569
+      },
+      "hallucination": {
+        "sample_count": 749,
+        "correct_count": 585,
+        "strict_accuracy": 0.7810413885180241,
+        "coverage": 1.0,
+        "covered_accuracy": 0.7810413885180241
+      },
+      "reasoning": {
+        "sample_count": 317,
+        "correct_count": 205,
+        "strict_accuracy": 0.6466876971608833,
+        "coverage": 1.0,
+        "covered_accuracy": 0.6466876971608833
+      }
+    },
+    "sources": {
+      "povid": {
+        "sample_count": 448,
+        "correct_count": 408,
+        "strict_accuracy": 0.9107142857142857,
+        "coverage": 1.0,
+        "covered_accuracy": 0.9107142857142857
+      },
+      "reasoning_tasks": {
+        "sample_count": 317,
+        "correct_count": 205,
+        "strict_accuracy": 0.6466876971608833,
+        "coverage": 1.0,
+        "covered_accuracy": 0.6466876971608833
+      },
+      "rlaif-v": {
+        "sample_count": 233,
+        "correct_count": 126,
+        "strict_accuracy": 0.5407725321888412,
+        "coverage": 1.0,
+        "covered_accuracy": 0.5407725321888412
+      },
+      "rlhf-v": {
+        "sample_count": 68,
+        "correct_count": 51,
+        "strict_accuracy": 0.75,
+        "coverage": 1.0,
+        "covered_accuracy": 0.75
+      },
+      "vlfeedback": {
+        "sample_count": 10,
+        "correct_count": 6,
+        "strict_accuracy": 0.6,
+        "coverage": 1.0,
+        "covered_accuracy": 0.6
+      },
+      "wildvision-battle": {
+        "sample_count": 171,
+        "correct_count": 95,
+        "strict_accuracy": 0.5555555555555556,
+        "coverage": 1.0,
+        "covered_accuracy": 0.5555555555555556
+      }
+    }
+  },
+  "s5_v2_global_arbiter_ab_preferred_none_tolerant": {
+    "groups": {
+      "general": {
+        "sample_count": 181,
+        "correct_count": 98,
+        "strict_accuracy": 0.5414364640883977,
+        "coverage": 0.9834254143646409,
+        "covered_accuracy": 0.550561797752809
+      },
+      "hallucination": {
+        "sample_count": 749,
+        "correct_count": 583,
+        "strict_accuracy": 0.7783711615487316,
+        "coverage": 0.9973297730307076,
+        "covered_accuracy": 0.7804551539491299
+      },
+      "reasoning": {
+        "sample_count": 317,
+        "correct_count": 206,
+        "strict_accuracy": 0.6498422712933754,
+        "coverage": 0.9905362776025236,
+        "covered_accuracy": 0.6560509554140127
+      }
+    },
+    "sources": {
+      "povid": {
+        "sample_count": 448,
+        "correct_count": 406,
+        "strict_accuracy": 0.90625,
+        "coverage": 0.9955357142857143,
+        "covered_accuracy": 0.9103139013452914
+      },
+      "reasoning_tasks": {
+        "sample_count": 317,
+        "correct_count": 206,
+        "strict_accuracy": 0.6498422712933754,
+        "coverage": 0.9905362776025236,
+        "covered_accuracy": 0.6560509554140127
+      },
+      "rlaif-v": {
+        "sample_count": 233,
+        "correct_count": 124,
+        "strict_accuracy": 0.5321888412017167,
+        "coverage": 1.0,
+        "covered_accuracy": 0.5321888412017167
+      },
+      "rlhf-v": {
+        "sample_count": 68,
+        "correct_count": 53,
+        "strict_accuracy": 0.7794117647058824,
+        "coverage": 1.0,
+        "covered_accuracy": 0.7794117647058824
+      },
+      "vlfeedback": {
+        "sample_count": 10,
+        "correct_count": 6,
+        "strict_accuracy": 0.6,
+        "coverage": 0.9,
+        "covered_accuracy": 0.6666666666666666
+      },
+      "wildvision-battle": {
+        "sample_count": 171,
+        "correct_count": 92,
+        "strict_accuracy": 0.5380116959064327,
+        "coverage": 0.9883040935672515,
+        "covered_accuracy": 0.5443786982248521
+      }
+    }
+  }
+}

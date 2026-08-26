@@ -1768,7 +1768,7 @@ Compare two candidate answers to the visual question under one criterion.
     import os
     WORKER_ARGS = {
         "model": os.getenv("CRITIQ_WORKER_MODEL", "Qwen/Qwen3-VL-8B-Instruct"),
-        "base_url": os.getenv("CRITIQ_WORKER_BASE_URL", "http://localhost:8000/v1"),
+        "base_url": os.getenv("CRITIQ_WORKER_BASE_URL", "http://10.102.137.255:8000/v1"),
         "api_keys": 'EMPTY',
         "request_kwargs": {
             "temperature": 0.5,

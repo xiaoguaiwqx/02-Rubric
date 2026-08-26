@@ -14,14 +14,14 @@
     "endpoints": [
       {
         "endpoint_id": "vllm-8000",
-        "base_url": "http://localhost:8000/v1",
-        "checkpoint_root": "REPLACE_WITH_SERVER_CHECKPOINT_ROOT",
+        "base_url": "http://10.102.137.255:8000/v1",
+        "checkpoint_root": "/media/disk12T/2022-sgh/ModelWeight/Qwen3-VL-8B-Instruct",
         "max_concurrency": 20
       },
       {
         "endpoint_id": "vllm-8001",
-        "base_url": "http://localhost:8001/v1",
-        "checkpoint_root": "REPLACE_WITH_SERVER_CHECKPOINT_ROOT",
+        "base_url": "http://10.102.138.0:8000/v1",
+        "checkpoint_root": "/media/oem/12T1/WQX/02_DD_LLM/local-llm-inference/ModelWeight/Qwen3-VL-8B-Instruct",
         "max_concurrency": 20
       }
     ]
@@ -551,6 +551,69 @@
     "child_fallback": "all_children_for_failed_root",
     "selection_after_benchmark_forbidden": true,
     "exploratory": true
+  },
+  "global_arbiter_ab_only_experiment": {
+    "protocol_version": "global-arbiter-ab-only-v1-vlrb-only",
+    "prompt_version": "global-arbiter-evidence-synthesis-ab-only-v1",
+    "source_vlrb_experiment": "vl_rewardbench_implicit_unified_subtree_prompt_v1",
+    "source_s4_experiment": "vl_rewardbench_global_arbiter_v1",
+    "source_rubric_experiment": "phase17_discovery_v2_prompt_v2_split_refine_v1",
+    "source_epoch": 4,
+    "vl_rewardbench_only": true,
+    "k": 3,
+    "generation_seed_policy": "unset",
+    "temperature": 0.5,
+    "max_tokens": 2048,
+    "max_parse_retries": 10,
+    "smoke_sample_count": 20,
+    "endpoint_ids": ["vllm-8000", "vllm-8001"],
+    "scheduler": "sample_bundle_available_slot_affinity",
+    "new_request_scope": "s5_global_arbiter_ab_only_all_requests",
+    "semantic_answer_space": ["A", "B", "None"],
+    "selection_after_benchmark_forbidden": true
+  },
+  "global_arbiter_ab_preferred_none_v2_experiment": {
+    "protocol_version": "global-arbiter-ab-preferred-none-tolerant-v2-vlrb-only",
+    "prompt_version": "global-arbiter-evidence-synthesis-ab-only-v1",
+    "source_vlrb_experiment": "vl_rewardbench_implicit_unified_subtree_prompt_v1",
+    "source_s4_experiment": "vl_rewardbench_global_arbiter_v1",
+    "source_rubric_experiment": "phase17_discovery_v2_prompt_v2_split_refine_v1",
+    "source_epoch": 4,
+    "vl_rewardbench_only": true,
+    "k": 3,
+    "generation_seed_policy": "unset",
+    "temperature": 0.5,
+    "max_tokens": 2048,
+    "max_parse_retries": 10,
+    "smoke_sample_count": 20,
+    "endpoint_ids": ["vllm-8000", "vllm-8001"],
+    "scheduler": "sample_bundle_available_slot_affinity",
+    "new_request_scope": "s5_v2_global_arbiter_ab_preferred_none_all_requests",
+    "semantic_answer_space": ["A", "B", "None"],
+    "selection_after_benchmark_forbidden": true
+  },
+  "internal_global_arbiter_k1_experiment": {
+    "protocol_version": "internal-global-arbiter-k1-v1",
+    "source_experiment": "phase17_discovery_v2_prompt_v2_split_refine_v1",
+    "source_epoch": 4,
+    "rubric_sha256": "007bd32557007aebc6f952cc63a49135f262648aff8943fbe99addecb4674b4d",
+    "datasets": {
+      "discovery100": 100,
+      "dev150": 150,
+      "heldout500": 500
+    },
+    "k": 1,
+    "replicate_count": 1,
+    "ab_swap": false,
+    "generation_seed_policy": "unset",
+    "temperature": 0.5,
+    "max_tokens": 2048,
+    "max_parse_retries": 10,
+    "smoke_samples_per_split": 2,
+    "endpoint_ids": ["vllm-8000", "vllm-8001"],
+    "scheduler": "sample_major_available_slot_affinity",
+    "semantic_answer_space": ["A", "B", "None"],
+    "selection_after_dev_or_heldout_forbidden": true
   },
   "discovery_data_v2": {
     "protocol_version": "discovery-data-v2-v1",

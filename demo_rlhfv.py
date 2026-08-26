@@ -176,7 +176,7 @@ OPENAI_API_KEYS = [os.getenv("OPENAI_API_KEY", "EMPTY_KEY")]
 # 选便宜一点、吞吐高一点的模型；manager 则负责生成和改写 criteria，通常用强模型。
 WORKER_ARGS = {
     "model": os.getenv("CRITIQ_WORKER_MODEL", "Qwen/Qwen3-VL-8B-Instruct"),
-    "base_url": os.getenv("CRITIQ_WORKER_BASE_URL", "http://localhost:8000/v1"),
+    "base_url": os.getenv("CRITIQ_WORKER_BASE_URL", "http://10.102.137.255:8000/v1"),
     "api_keys": 'EMPTY',
     # "api_keys": parse_api_keys("GUIJI_API_KEYS", "GUIJI_API_KEY"),
     "request_kwargs": {
@@ -191,7 +191,7 @@ MANAGER_ARGS = {
     "model": os.getenv("CRITIQ_MANAGER_MODEL", "Qwen/Qwen3-VL-8B-Instruct"),
     "api_keys": 'EMPTY',
     # "api_keys": OPENAI_API_KEYS,
-    "base_url": os.getenv("CRITIQ_MANAGER_BASE_URL", "http://localhost:8000/v1"),
+    "base_url": os.getenv("CRITIQ_MANAGER_BASE_URL", "http://10.102.137.255:8000/v1"),
     "request_kwargs": {
         "temperature": 1.0,
     },

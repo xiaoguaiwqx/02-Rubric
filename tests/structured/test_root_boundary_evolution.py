@@ -86,9 +86,9 @@ class RootBoundaryEvolutionTests(unittest.TestCase):
             "common_checkpoint_id": "Qwen/Qwen3-VL-8B-Instruct",
             "global_request_concurrency": 40,
             "endpoints": [
-                {"endpoint_id": "vllm-8000", "base_url": "http://localhost:8000/v1",
+                {"endpoint_id": "vllm-8000", "base_url": "http://10.102.137.255:8000/v1",
                  "checkpoint_root": "same", "max_concurrency": 20},
-                {"endpoint_id": "vllm-8001", "base_url": "http://localhost:8001/v1",
+                {"endpoint_id": "vllm-8001", "base_url": "http://10.102.138.0:8000/v1",
                  "checkpoint_root": "same", "max_concurrency": 20},
             ],
         }}

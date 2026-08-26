@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "changed_prediction_count": 102,
+  "transitions": {
+    "correct->correct": 833,
+    "correct->wrong": 8,
+    "none->correct": 37,
+    "none->wrong": 36,
+    "wrong->correct": 21,
+    "wrong->wrong": 312
+  }
+}

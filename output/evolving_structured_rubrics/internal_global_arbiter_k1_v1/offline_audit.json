@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0.0",
+  "offline_only": true,
+  "checks": {
+    "k_is_one": true,
+    "single_replicate": true,
+    "no_swap": true,
+    "five_roots": true,
+    "parser_accepts_subtree_none": true,
+    "parser_accepts_arbiter_none": true,
+    "subtree_prompt_has_original_pair": true,
+    "arbiter_prompt_has_five_reports": true,
+    "gold_absent_from_prompts": true,
+    "all_datasets_frozen": true
+  }
+}
