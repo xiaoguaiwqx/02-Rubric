@@ -592,6 +592,41 @@
     "semantic_answer_space": ["A", "B", "None"],
     "selection_after_benchmark_forbidden": true
   },
+  "global_arbiter_evidence_priority_ablation_v1_experiment": {
+    "protocol_version": "global-arbiter-evidence-priority-ablation-v1",
+    "source_subtree_experiment": "vl_rewardbench_implicit_unified_subtree_prompt_v1",
+    "source_v2_experiment": "vl_rewardbench_global_arbiter_ab_preferred_none_v2",
+    "source_rubric_experiment": "phase17_discovery_v2_prompt_v2_split_refine_v1",
+    "source_epoch": 4,
+    "variants": {
+      "v0_label_only_neutral": {
+        "evidence_mode": "label_only",
+        "decision_rule": "neutral",
+        "reuse": false
+      },
+      "v1_full_report_neutral": {
+        "evidence_mode": "full_report",
+        "decision_rule": "neutral",
+        "reuse": false
+      },
+      "v2_full_report_factuality_first": {
+        "evidence_mode": "full_report",
+        "decision_rule": "factuality_first",
+        "reuse": true
+      }
+    },
+    "k": 3,
+    "generation_seed_policy": "unset",
+    "temperature": 0.5,
+    "max_tokens": 2048,
+    "max_parse_retries": 10,
+    "smoke_sample_count": 50,
+    "subset_seed": 42,
+    "endpoint_ids": ["vllm-8000", "vllm-8001"],
+    "scheduler": "sample_bundle_available_slot_affinity",
+    "semantic_answer_space": ["A", "B", "None"],
+    "selection_after_benchmark_forbidden": true
+  },
   "internal_global_arbiter_k1_experiment": {
     "protocol_version": "internal-global-arbiter-k1-v1",
     "source_experiment": "phase17_discovery_v2_prompt_v2_split_refine_v1",

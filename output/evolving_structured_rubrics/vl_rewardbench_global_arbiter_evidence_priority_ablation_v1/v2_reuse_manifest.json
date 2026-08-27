@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "source_experiment": "vl_rewardbench_global_arbiter_ab_preferred_none_v2",
+  "source_artifact_sha256": {
+    "v2_manifest": "9608a5acb9465de971c6764b30b50c164c463b7c050b0c2f3e9d52b44ade0ae9",
+    "v2_prompt": "e515015ac4894099e3f3e0182c80e3c385f480787560ccc6ce6dc1625a056a4c",
+    "v2_prediction": "b242574e51ddad4c4a7cafbbfc92791087a11fdd2e70f7984e5cae5aa3b91376",
+    "v2_report": "7c6fbafa8291cae38b1dc2624c5d3ab24bd84d43c98d03faf80b2f7bc8bd484a"
+  },
+  "new_model_requests": 0
+}

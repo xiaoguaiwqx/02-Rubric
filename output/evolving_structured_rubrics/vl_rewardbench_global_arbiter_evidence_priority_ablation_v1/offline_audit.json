@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "offline_only": true,
+  "checks": {
+    "record_count_1247": true,
+    "five_roots": true,
+    "source_reports_18705": true,
+    "source_reports_have_full_fields": true,
+    "neutral_is_single_paragraph_deletion": true,
+    "neutral_has_no_factuality_first": true,
+    "same_neutral_system_for_v0_v1": true,
+    "v0_contains_only_labels": true,
+    "v1_contains_full_reports": true,
+    "same_pair_prefix": true,
+    "same_root_names": true,
+    "parser_accepts_none": true,
+    "v2_exact_reuse": true,
+    "v2_new_model_requests_zero": true,
+    "schedule_identical": true,
+    "gold_is_dataset_field": true
+  }
+}

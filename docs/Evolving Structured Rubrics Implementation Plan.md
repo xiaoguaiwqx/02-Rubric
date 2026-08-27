@@ -2351,7 +2351,7 @@ Arbiter 使用与子树报告相同的四字段 JSON 输出模板，但 parser �
 | **Clean S5-v2（A/B-preferred，原生 `None`）** | **71.13%** | 71.59% | **66.24%** | **99.36%** | **887** |
 | S6 Unified Full-Rubric | 62.07% | 62.07% | 59.51% | 100.00% | 774 |
 
-S3 比 S0 低3.29 pp Strict ACC，说明“把每棵树隐式压缩为一次判断”本身不能解决聚合问题。S4 的覆盖内准确率达到71.64%，但73个最终弃权使 Strict ACC 只有67.44%；它表现出较好的选择性，却不适合作为需要为每个 pair 给出排序的主系统。Clean S5-v2 将 Coverage 恢复到99.36%，相对 S3 corrected/harmed 为74/19，净增加55条（exact McNemar `p=7.72e-9`）；相对 S4 为54/8，净增加46条（`p=1.71e-9`）。相对 S0 虽净增加14条、Strict ACC 提高1.12 pp，但 corrected/harmed 为62/48，`p=0.215`，因此当前只能报告更高的点估计，不能声称显著优于 S0。S6 将整个 Rubric 压入一次调用后的显著退化及其原因在17.8节单独分析。
+S3 比 S0 低3.29 pp Strict ACC，说明“把每棵树隐式压缩为一次判断”本身不能解决聚合问题。S4 的覆盖内准确率达到71.64%，但73个最终弃权使 Strict ACC 只有67.44%；它表现出较好的选择性，却不适合作为需要为每个 pair 给出排序的主系统。Clean S5-v2 将 Coverage 恢复到99.36%，相对 S3 corrected/harmed 为74/19，净增加55条（exact McNemar `p=7.72e-9`）；相对 S4 为54/8，净增加46条（`p=1.71e-9`）。相对 S0 虽净增加14条、Strict ACC 提高1.12 pp，但 corrected/harmed 为62/48，`p=0.215`，因此当前只能报告更高的点估计，不能声称显著优于 S0。S6 将整个 Rubric 压入一次调用后的显著退化及其原因在17.9节单独分析。
 
 ### 17.6 为什么 Global Arbiter 有效
 
@@ -2410,9 +2410,80 @@ S4 与 Clean S5-v2 的主 run 时间由实际分段运行求和得到：先运�
 
 补充的 K=1、单顺序内部诊断没有显示一致收益：Discovery100 上 Arbiter 与显式聚合同为65.0% Strict ACC，Dev150 从73.33%降至62.67%，RLHF-V heldout-500 为73.40%，略低于可用的 Phase17 E5 显式参考74.00%（该 heldout 对照并非相同 E4 Rubric，只能作诊断）。因此现有证据支持的是：**在 VL-RewardBench 的冻结 K=3 协议下，Global Arbiter 最终决策能以更少请求达到比显式递归投票更高的点估计；其 Strict ACC 显著优于统一子树多数和高弃权 Arbiter，但 OverallAcc 与高弃权 Arbiter基本持平。**
 
-### 17.8 Unified Full-Rubric Worker：一次调用整合全部准则的消融
+### 17.8 Clean S5-v2 收益来源：完整报告与 factuality-first 顺序消融
 
-#### 17.8.1 实验问题与方法
+#### 17.8.1 研究问题与实验设计
+
+Clean S5-v2 同时引入了两个可能带来收益的因素：Global Arbiter 能读取五份完整子树报告，而其 System Prompt 还显式规定了 factuality-first 决策优先级。为区分二者的作用，本实验固定 Phase17 E4 Rubric、1,247条 VL-RewardBench 样本、Qwen3-VL-8B-Instruct、`K=3` counterbalanced A/B schedule、`temperature=0.5`、`max_tokens=2048`、parser、`None` 语义和评估脚本，只构造以下顺序消融：
+
+实验计划见 `refine-logs/GLOBAL_ARBITER_EVIDENCE_PRIORITY_ABLATION_PLAN.md`，机器可读结果与报告位于 `output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/`。
+
+| 变体 | Arbiter 接收的子树证据 | Arbiter 决策规则 | 是否新增推理 |
+| --- | --- | --- | ---: |
+| V0 `label_only_neutral` | 五个 root 名称及各自 `A/B/None` 标签 | Neutral | 是 |
+| V1 `full_report_neutral` | 五份完整 `analysis_a/analysis_b/thought/answer` 报告 | Neutral | 是 |
+| V2 `full_report_factuality_first` | 与 V1 相同的五份完整报告 | Clean S5-v2 factuality-first | 否，严格复用 |
+
+V0 与 V1 使用逐字相同的 neutral System Prompt；唯一差异是 User Prompt 中每棵树只保留 `answer`，还是保留完整报告。V1 的 System Prompt 则由 V2 正式 Prompt 精确删除以下一段得到，其余文字和 JSON schema 不变：
+
+```text
+Prioritize verifiable visual and factual correctness. Consider completeness
+after factual validity; clarity and creativity may distinguish otherwise
+acceptable responses but cannot compensate for factual errors.
+```
+
+实验复用 S3 已冻结的18,705份子树报告。V0、V1各新增 `1,247 × 3 = 3,741` 次 Arbiter 请求；V2 严格复用现有3,741次正式结果，不重新生成。评估 gold 始终读取数据集的 `preferred_original_index`。该设计只支持两个有顺序条件的比较：V1−V0 衡量 neutral 条件下完整报告的收益，V2−V1 衡量 full-report 条件下显式 factuality-first 的额外收益。由于没有 `label_only_factuality_first`，不能把两个差值解释为彼此完全独立的因果贡献。
+
+#### 17.8.2 总体与配对结果
+
+| 系统 | Strict ACC | OverallAcc | MacroAcc | Coverage | 正确数 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| V0 Label-only Neutral | 65.76% | 65.76% | 60.86% | **100.00%** | 820 |
+| **V1 Full-report Neutral** | **71.13%** | 71.42% | 66.17% | 99.60% | **887** |
+| V2 Full-report Factuality-first | **71.13%** | **71.59%** | **66.24%** | 99.36% | **887** |
+
+| 条件比较 | Strict 变化 | Corrected / Harmed |
+| --- | ---: | ---: |
+| V1−V0：Neutral 下完整报告 vs. 标签 | **+5.37 pp** | 104 / 37 |
+| V2−V1：Full-report 下 factuality-first vs. Neutral | **0.00 pp** | 19 / 19 |
+
+完整报告使 Strict ACC 从65.76%提高到71.13%，净增加67个正确样本；置信区间完全大于零，且 Coverage 只下降0.40 pp，因此增益不是依靠大量弃权获得的。相反，factuality-first 虽然改变了43条最终判断，却恰好修正19条、损害19条，Strict 正确数保持887不变。V2 的 OverallAcc 比 V1 高0.17 pp，只是因为它少覆盖3条样本；这不是全样本准确率收益，也再次说明本阶段应以 `None` 计错的 Strict ACC 为主指标。
+
+#### 17.8.3 类别、来源与位置稳定性
+
+| 类别 | 样本数 | V0 Strict | V1 Strict | V1−V0 | V2 Strict | V2−V1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| General | 181 | 45.30% | **55.80%** | **+10.50 pp** | 54.14% | -1.66 pp |
+| Hallucination | 749 | 70.09% | **77.84%** | **+7.74 pp** | 77.84% | 0.00 pp |
+| Reasoning | 317 | **67.19%** | 64.04% | **-3.15 pp** | 64.98% | +0.95 pp |
+
+V1 相对 V0 在 General 上 corrected/harmed 为22/3，在 Hallucination 上为73/15，但在 Reasoning 上为9/19。来源级趋势一致：PoVID、RLHF-V、WildVision 分别提高8.71、10.29和10.53 pp，Reasoning Tasks 则下降3.15 pp。完整报告明显增强了视觉事实、幻觉与开放偏好判断，但并非对所有任务无条件有益；在复杂推理中，较长且相关的子树报告可能引入错误锚定，或让视觉事实证据压过任务本身的推理结构。
+
+完整报告还显著降低了 A/B 顺序敏感性：
+
+| 系统 | Gold 显示为 A 时 ACC | Gold 显示为 B 时 ACC | 位置差距 |
+| --- | ---: | ---: | ---: |
+| V0 Label-only Neutral | 59.34% | 69.26% | **9.92 pp** |
+| V1 Full-report Neutral | 69.32% | 70.33% | **1.01 pp** |
+| V2 Full-report Factuality-first | 69.00% | 70.65% | 1.65 pp |
+
+该结果说明，只有标签时 Arbiter 更容易依赖位置或表层模式，而完整报告提供的具体证据能稳定其跨顺序决策。
+
+#### 17.8.4 效率、技术可靠性与结论
+
+| 系统 | Arbiter 逻辑请求 | Input tokens | Output tokens | 完整耗时 | 吞吐 | P50 / P95 latency |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| V0 Label-only Neutral | 3,741 | 4.42M | 1.12M | 18.85分钟 | 198.46次/分钟 | 7.88s / 17.19s |
+| V1 Full-report Neutral | 3,741 | 9.81M | 1.29M | 36.19分钟 | 103.38次/分钟 | 16.69s / 27.36s |
+| V2 Full-report Factuality-first | 3,741 | 9.94M | 1.30M | 34.75分钟* | 107.66次/分钟* | 历史冻结参考 |
+
+V1 相对 V0 的输入 token 增加约122%、耗时增加约92%、吞吐下降约47.9%，说明 +5.37 pp 收益包含更多结构化证据和更多 test-time compute，不能被表述为纯提示语义贡献。V1 与 V2 的输入量每请求只相差约33 tokens，基本对应被删除的 factuality-first 段落，支持二者是近似干净的 Prompt 规则比较。V0 首轮8个失败样本、V1首轮5个失败样本均通过相同 Prompt 的定向重试恢复，最终 parse valid rate 均为100%；修复后的计时累计 smoke、initial full 和真实失败重试，不包含全量缓存扫描。
+
+\* V2 为历史冻结运行；相同 temperature 下不设置 generation seed，因此 V1/V2 仍存在运行时间不同带来的随机性残余。现有结果支持的结论是：**在 neutral arbitration 下，五份完整子树报告相对五个离散标签带来显著的准确率与位置稳定性收益；在 full-report 条件下，额外的 factuality-first 段落没有观测到总体 Strict ACC 增益。**这并不意味着视觉事实优先原则在系统中不存在作用：子树报告、演化后的 criterion 和 neutral Arbiter 的独立核验要求已经隐式编码了大量事实优先信息。当前收益应主要归因于“保留并综合完整结构化证据”，而不应归因于单独的一段优先级指令。
+
+### 17.9 Unified Full-Rubric Worker：一次调用整合全部准则的消融
+
+#### 17.9.1 实验问题与方法
 
 S0、S3 和 Clean S5-v2 都保留了某种显式分解：分别以 node、root 子树或“子树报告 + Arbiter”为推理单元。本消融进一步检验一个更激进的假设：**结构化 Rubric 是否只需作为一段完整上下文交给模型，而不必显式执行其节点和子树结构。**实验固定 Phase17 E4 的5个 roots、27个 nodes、全部 descriptions 和拓扑，不重新演化 Rubric，只改变推理方式：
 
@@ -2444,7 +2515,7 @@ S0、S3 和 Clean S5-v2 都保留了某种显式分解：分别以 node、root �
 
 模型为 `Qwen3-VL-8B-Instruct`，`temperature=0.5`、`max_tokens=2048`，不设置 generation seed，并使用两个 endpoint 的 available-slot pool。Discovery100、Dev150 和 RLHF-V heldout-500 各运行一次（`K=1`、不交换）；VL-RewardBench 严格复用冻结的1,247个样本、`K=3` counterbalanced A/B schedule，每个 replicate 独立生成后再做三次结论的多数聚合。Prompt 要求 A/B，但 parser 对模型原生 `None` 保持语义透明；只有 transport、空响应、非法 JSON、缺失字段或非法标签使用同一 Prompt 最多重试10次。
 
-#### 17.8.2 内部数据结果
+#### 17.9.2 内部数据结果
 
 | 数据集 | 显式递归 Strict ACC | S6 Strict ACC | Strict 变化 | 显式 Coverage | S6 Coverage |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -2456,7 +2527,7 @@ Discovery100 上 corrected/harmed 为9/11，Dev150 为16/17，heldout-500 为34/
 
 Dev150 的平均变化较小，但不同领域相互抵消：General 提高2 pp、Visual 提高10 pp，Reasoning 下降14 pp；按来源看，MM-RLHF 提高12 pp，而 ViLReward-73K 下降20 pp。这说明“总分接近”并不表示单次整合在各类偏好上具有相同决策行为。
 
-#### 17.8.3 VL-RewardBench 结果
+#### 17.9.3 VL-RewardBench 结果
 
 | 系统 | Strict ACC | OverallAcc | MacroAcc | Coverage | 相对 S6 的 Strict 差值 |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -2478,7 +2549,7 @@ S6 虽然覆盖全部1,247个样本，但只答对774条。相对 S0 corrected/h
 
 S6 的 Reasoning 比 S0 高0.63 pp，但 Hallucination 低13.22 pp；相对 S0 的净损失99条几乎全部来自 Hallucination。PoVid 从 S0 的89.06%降到70.31%，是最明显的来源级退化。进一步检查发现，S6 在 Hallucination 子集选择更长回答的比例为53.27%，而 S0 和 Clean S5-v2 分别为44.98%和44.04%；在 S6 相对 S0 的受损样本中，错误选中的回答有67.66%是更长回答。这与完整 Prompt 中 completeness、specificity 和 presentation 等准则对视觉事实性产生**证据稀释**的解释一致：模型容易把更丰富但未经视觉验证的细节当成质量优势。
 
-#### 17.8.4 效率、技术可靠性与结论
+#### 17.9.4 效率、技术可靠性与结论
 
 | 系统 | 每 replicate 调用数 | VL-RewardBench 逻辑请求 | 相对 S0 请求减少 |
 | --- | ---: | ---: | ---: |
@@ -2491,9 +2562,9 @@ S6 的 VL-RewardBench 主 run 耗时为1,486.1秒（24.77分钟），吞吐为15
 
 该消融否定了“只要把完整 Rubric 文本提供给模型，就能替代结构化执行”的假设。它同时说明两点：第一，S6 确实把 VL-RewardBench 请求量降到最低，证明统一调用在工程上可行；第二，**Rubric 的收益不仅来自 description 中包含了哪些知识，也来自如何隔离局部证据、保留子树分析并在最终阶段显式解决冲突。**当前结果支持继续采用“5份 Unified-Subtree 报告 → Clean Global Arbiter”的两阶段系统，而不是把全部27个准则压缩进一次判断。S6 因而作为关键负消融保留：它把“结构化执行”与“仅提供结构化文本”清楚地区分开。
 
-### 17.9 Clean S5-v2 的 Qwen2.5 跨模型迁移
+### 17.10 Clean S5-v2 的 Qwen2.5 跨模型迁移
 
-#### 17.9.1 实验问题与控制变量
+#### 17.10.1 实验问题与控制变量
 
 前述结果均以 Qwen3-VL-8B-Instruct 为 Worker。本实验进一步检验：**“五棵子树分别形成证据报告，再由 Global Arbiter 综合决策”的 Clean S5-v2 聚合机制，是否也能迁移到较弱的 Qwen2.5-VL-7B-Instruct。**实验冻结 Phase17 E4 Rubric、五棵子树、Unified-Subtree Prompt、Global Arbiter Prompt、parser、A/B 顺序和聚合协议，只替换 Worker 模型；因此它与16.7节的“Phase17 E4 Rubric 跨模型迁移”不同，本节关注的是聚合机制本身的跨模型行为。
 
@@ -2504,7 +2575,7 @@ S6 的 VL-RewardBench 主 run 耗时为1,486.1秒（24.77分钟），吞吐为15
 
 本节以全样本 `Strict ACC` 为主要指标：最终 `None` 计错。`OverallAcc` 只在有明确 A/B 判断的覆盖集合上计算，必须与 Coverage 一起解释。
 
-#### 17.9.2 内部数据结果
+#### 17.10.2 内部数据结果
 
 | 数据集 | Qwen3 Clean S5-v2 Strict ACC | Qwen2.5 Clean S5-v2 Strict ACC | Strict 变化 | Qwen3 Coverage | Qwen2.5 Coverage |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -2524,7 +2595,7 @@ Qwen2.5 还表现出明显的展示位置偏置。Discovery100 和 Dev150 的 go
 
 这说明内部数据上的下降不能只归因于 Rubric 不适配：Qwen2.5 在综合长子树报告时更偏向当前展示的 Candidate A，同时更容易在证据冲突时弃权。由于内部协议是 `K=1`，该结果只能诊断位置敏感性，不能把位置偏置与跨子树综合能力完全分离。
 
-#### 17.9.3 VL-RewardBench 主要结果
+#### 17.10.3 VL-RewardBench 主要结果
 
 | Worker / 聚合方式 | Strict ACC | OverallAcc | MacroAcc | Coverage | 正确数 |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -2547,7 +2618,7 @@ Qwen3 和 Qwen2.5 在本次冻结评测中都恰好由 Clean S5-v2 净增加14�
 
 来源级结果与该趋势一致：RLAIF-V 和 RLHF-V 分别提高8.15和10.29 pp，WildVision 提高1.17 pp，PoVid基本持平；Reasoning Tasks 则下降4.42 pp。Clean S5-v2 能帮助 Qwen2.5 统一视觉事实和幻觉证据，但较弱 Worker 在综合五份报告完成复杂推理时更容易损失已有的 reasoning 判断。
 
-#### 17.9.4 Coverage 为什么下降
+#### 17.10.4 Coverage 为什么下降
 
 内部数据最终 `None` 的来源如下：
 
@@ -2569,7 +2640,7 @@ Qwen3 和 Qwen2.5 在本次冻结评测中都恰好由 Clean S5-v2 净增加14�
 
 所以 Coverage 下降的核心机制是：**Qwen2.5 更保守的语义弃权 + 更强的 A/B 位置敏感性 + `K=3` 对分歧的放大**。技术失败有次要影响，但不是13 pp模型差距的主要来源。
 
-#### 17.9.5 Arbiter 行为、效率与结论
+#### 17.10.5 Arbiter 行为、效率与结论
 
 逐 replicate 检查显示，Qwen2.5 Arbiter 从不推翻五棵子树的5–0一致判断；对4–1强多数的30次推翻净损害3次，对3–2弱多数的146次推翻净修正46次，对平局、稀疏或大量 `None` 情况的332次推翻净修正158次。这说明 Global Arbiter 的主要价值仍来自处理弱多数和证据不完整情形，而不是重新解释已经一致的五棵子树。上述是 replicate 级诊断，经过 `K=3` 聚合后，最终样本级收益仍是14条，二者不能直接等同。
 

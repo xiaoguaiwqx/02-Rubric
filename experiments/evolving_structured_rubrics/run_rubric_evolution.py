@@ -325,6 +325,7 @@ def _config(path: Path) -> dict[str, Any]:
                        "discovery_data_v2",
                        "global_arbiter_ab_only_experiment",
                        "global_arbiter_ab_preferred_none_v2_experiment",
+                       "global_arbiter_evidence_priority_ablation_v1_experiment",
                        "internal_global_arbiter_k1_experiment",
                        "full_rubric_unified_worker_experiment",
                        "qwen25_clean_s5_transfer_experiment"}
@@ -373,6 +374,7 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("discovery_data_v2", None)
     value.pop("global_arbiter_ab_only_experiment", None)
     value.pop("global_arbiter_ab_preferred_none_v2_experiment", None)
+    value.pop("global_arbiter_evidence_priority_ablation_v1_experiment", None)
     value.pop("internal_global_arbiter_k1_experiment", None)
     value.pop("full_rubric_unified_worker_experiment", None)
     value.pop("qwen25_clean_s5_transfer_experiment", None)
@@ -3105,6 +3107,12 @@ def main() -> int:
         "vlrb-global-arbiter-ab-preferred-none-v2-run",
         "vlrb-global-arbiter-ab-preferred-none-v2-retry",
         "vlrb-global-arbiter-ab-preferred-none-v2-report",
+        "vlrb-arbiter-ablation-freeze",
+        "vlrb-arbiter-ablation-audit",
+        "vlrb-arbiter-ablation-smoke",
+        "vlrb-arbiter-ablation-run",
+        "vlrb-arbiter-ablation-retry",
+        "vlrb-arbiter-ablation-report",
         "internal-global-arbiter-freeze",
         "internal-global-arbiter-audit",
         "internal-global-arbiter-smoke",
@@ -3170,6 +3178,9 @@ def main() -> int:
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-global-arbiter-ab-preferred-none-v2-"):
         from .global_arbiter_ab_preferred_none_v2 import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-arbiter-ablation-"):
+        from .global_arbiter_evidence_priority_ablation import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith("vlrb-global-arbiter-ab-only-"):
         from .global_arbiter_ab_only import run_stage

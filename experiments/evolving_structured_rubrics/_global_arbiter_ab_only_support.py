@@ -445,6 +445,10 @@ def _process_bundle(
     response_parser: Callable[[object], dict[str, str]],
     settings_loader: Callable[[Mapping[str, Any]], dict[str, Any]],
     request_kind: str,
+    user_prompt_builder: Callable[
+        [Mapping[str, Any], Sequence[Mapping[str, Any]]], str,
+    ],
+    cache_namespace: str,
 ) -> dict[str, Any]:
     sample_id = str(row["sample_id"])
     result = {
@@ -459,8 +463,8 @@ def _process_bundle(
         reports, digest, _ = source_report_bundle(
             source_output, source_sample, replicate, source_rubric)
         call = call_one(
-            config, endpoint, target / "cache" / "arbiter",
-            user_text=global_arbiter_user_prompt(displayed, reports), row=displayed,
+            config, endpoint, target / "cache" / cache_namespace,
+            user_text=user_prompt_builder(displayed, reports), row=displayed,
             request_key={
                 "kind": request_kind, "sample_id": sample_id,
                 "replicate": replicate, "order": order,
@@ -492,6 +496,10 @@ def run_bundles(
     response_parser: Callable[[object], dict[str, str]],
     settings_loader: Callable[[Mapping[str, Any]], dict[str, Any]],
     request_kind: str,
+    user_prompt_builder: Callable[
+        [Mapping[str, Any], Sequence[Mapping[str, Any]]], str,
+    ] = global_arbiter_user_prompt,
+    cache_namespace: str = "arbiter",
 ) -> dict[str, Any]:
     spec = BackendPoolSpec.from_dict(config["backend_pool"])
     endpoints = tuple(item for item in spec.endpoints if item.endpoint_id in ENDPOINT_IDS)
@@ -531,7 +539,9 @@ def run_bundles(
                 total_attempt_limit=total_attempt_limit,
                 protocol_version=protocol_version, prompt_version=prompt_version,
                 system_prompt=system_prompt, response_parser=response_parser,
-                settings_loader=settings_loader, request_kind=request_kind)
+                settings_loader=settings_loader, request_kind=request_kind,
+                user_prompt_builder=user_prompt_builder,
+                cache_namespace=cache_namespace)
             with lock:
                 output_rows[sample_id] = value
                 completed += 1
