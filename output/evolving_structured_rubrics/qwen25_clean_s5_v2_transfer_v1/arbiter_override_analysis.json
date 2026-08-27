@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0.0",
+  "patterns": {
+    "5-0-0": {
+      "replicate_count": 1098,
+      "arbiter_follows": 1098,
+      "arbiter_overrides": 0,
+      "override_corrected": 0,
+      "override_harmed": 0
+    },
+    "4-1-0 / 4-0-1": {
+      "replicate_count": 971,
+      "arbiter_follows": 941,
+      "arbiter_overrides": 30,
+      "override_corrected": 12,
+      "override_harmed": 15
+    },
+    "3-2-0 / 3-1-1 / 3-0-2": {
+      "replicate_count": 950,
+      "arbiter_follows": 804,
+      "arbiter_overrides": 146,
+      "override_corrected": 92,
+      "override_harmed": 46
+    },
+    "tie / sparse / all-None": {
+      "replicate_count": 722,
+      "arbiter_follows": 390,
+      "arbiter_overrides": 332,
+      "override_corrected": 192,
+      "override_harmed": 34
+    }
+  },
+  "totals": {
+    "replicate_count": 3741,
+    "arbiter_follows": 3233,
+    "arbiter_overrides": 508,
+    "override_corrected": 296,
+    "override_harmed": 95,
+    "override_net_corrected": 201
+  }
+}

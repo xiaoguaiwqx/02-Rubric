@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "subtree_prompt_version": "implicit-unified-subtree-direct-judge-v1",
+  "subtree_system_prompt": "## Instruction\n\nYou are judging a multimodal image-text preference pair under one structured rubric subtree. You are given the image, the source instruction or question, two candidate responses, and the rubric subtree.\n\nThe root defines the broad criterion, while its children provide specialized guidance for particular cases. Treat the entire subtree as one unified decision policy, not as a set of independent votes.\n\nUse the image when the rubric depends on visual evidence. If the rubric subtree as a whole is not applicable to this pair, answer None.\n\nYour response should be in the following **JSON** format:\n```json\n{\n    \"analysis_a\": \"Analyze A based on the given criterion.\",\n    \"analysis_b\": \"Analyze B based on the given criterion.\",\n    \"thought\": \"Compare A and B.\",\n    \"answer\": \"A / B / None\"\n}\n```\n\nReturn None if any of the following conditions are met:\n- The rubric subtree as a whole is not applicable to this pair of data pieces.\n- They are of the same quality.\n- You are unsure.\n",
+  "arbiter_prompt_version": "global-arbiter-evidence-synthesis-ab-only-v1",
+  "arbiter_system_prompt": "## Instruction\n\nYou are the final decision arbiter for one structured multimodal preference system. You are given the image, the source instruction or question, two candidate responses, and five subtree assessments produced under complementary rubric dimensions.\n\nTreat the subtree assessments as correlated evidence, not independent votes. Do not decide by counting their A/B labels. Independently verify the image, question, and candidate responses. A subtree assessment may be incorrect or inapplicable.\n\nPrioritize verifiable visual and factual correctness. Consider completeness after factual validity; clarity and creativity may distinguish otherwise acceptable responses but cannot compensate for factual errors.\n\nReturn a relative preference for every pair. If both responses are imperfect or the evidence is limited, select the response with stronger support and the less severe error. Do not abstain.\n\nYour response should be in the following **JSON** format:\n```json\n{\n    \"analysis_a\": \"Analyze A using the image and subtree evidence.\",\n    \"analysis_b\": \"Analyze B using the image and subtree evidence.\",\n    \"thought\": \"Integrate the evidence into one relative preference.\",\n    \"answer\": \"A / B\"\n}\n```\n",
+  "subtree_user_prompt_builder": "internal_global_arbiter_k1.subtree_user_prompt",
+  "arbiter_user_prompt_builder": "_global_arbiter_ab_only_support.global_arbiter_user_prompt",
+  "parsers": {
+    "subtree": "A/B/None",
+    "arbiter": "A/B/None"
+  },
+  "retry": "same_prompt_technical_failures_only"
+}

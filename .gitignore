@@ -196,3 +196,17 @@ output/evolving_structured_rubrics/full_rubric_unified_worker_v1/*
 !output/evolving_structured_rubrics/full_rubric_unified_worker_v1/frozen_manifest.json
 !output/evolving_structured_rubrics/full_rubric_unified_worker_v1/rubric_snapshot.json
 !output/evolving_structured_rubrics/full_rubric_unified_worker_v1/rubric_serialization.json
+
+# Qwen2.5 Clean S5-v2 model-transfer experiment: raw generations and caches
+# remain local; compact protocol evidence and reviewed reports may be committed.
+output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/*
+!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/final_report.json
+!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/final_report.md
+!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/paired_comparison.json
+!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/arbiter_override_analysis.json
+!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/category_analysis.json
+!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/efficiency.json
+!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/offline_audit.json
+!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/prompt_spec.json
+!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/frozen_manifest.json
+!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/rubric_snapshot.json

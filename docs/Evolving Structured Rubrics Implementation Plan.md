@@ -2491,6 +2491,92 @@ S6 的 VL-RewardBench 主 run 耗时为1,486.1秒（24.77分钟），吞吐为15
 
 该消融否定了“只要把完整 Rubric 文本提供给模型，就能替代结构化执行”的假设。它同时说明两点：第一，S6 确实把 VL-RewardBench 请求量降到最低，证明统一调用在工程上可行；第二，**Rubric 的收益不仅来自 description 中包含了哪些知识，也来自如何隔离局部证据、保留子树分析并在最终阶段显式解决冲突。**当前结果支持继续采用“5份 Unified-Subtree 报告 → Clean Global Arbiter”的两阶段系统，而不是把全部27个准则压缩进一次判断。S6 因而作为关键负消融保留：它把“结构化执行”与“仅提供结构化文本”清楚地区分开。
 
+### 17.9 Clean S5-v2 的 Qwen2.5 跨模型迁移
+
+#### 17.9.1 实验问题与控制变量
+
+前述结果均以 Qwen3-VL-8B-Instruct 为 Worker。本实验进一步检验：**“五棵子树分别形成证据报告，再由 Global Arbiter 综合决策”的 Clean S5-v2 聚合机制，是否也能迁移到较弱的 Qwen2.5-VL-7B-Instruct。**实验冻结 Phase17 E4 Rubric、五棵子树、Unified-Subtree Prompt、Global Arbiter Prompt、parser、A/B 顺序和聚合协议，只替换 Worker 模型；因此它与16.7节的“Phase17 E4 Rubric 跨模型迁移”不同，本节关注的是聚合机制本身的跨模型行为。
+
+- Discovery100、Dev150 和 RLHF-V heldout-500 各执行一次完整的“5份子树报告 → 1次 Arbiter”流程，即每个样本6次调用、`K=1`、不交换；
+- VL-RewardBench 固定1,247个样本和原有 `K=3` counterbalanced schedule，每个 replicate 独立生成5份子树报告和1次 Arbiter 判断，最后只聚合三次 Arbiter 结论；
+- Prompt 要求优先输出 A/B，但 parser 对模型原生 `None` 保持语义透明；只有 transport、空响应、非法 JSON、缺失字段或非法标签使用同一 Prompt 重试，最多10次；
+- 两个 Qwen2.5-VL endpoint 采用 available-slot pool；不重新演化 Rubric，也不修改任何 description、权重或路由。
+
+本节以全样本 `Strict ACC` 为主要指标：最终 `None` 计错。`OverallAcc` 只在有明确 A/B 判断的覆盖集合上计算，必须与 Coverage 一起解释。
+
+#### 17.9.2 内部数据结果
+
+| 数据集 | Qwen3 Clean S5-v2 Strict ACC | Qwen2.5 Clean S5-v2 Strict ACC | Strict 变化 | Qwen3 Coverage | Qwen2.5 Coverage |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Discovery100 | 65.00% | 51.00% | -14.00 pp | 96.00% | 92.00% |
+| Dev150 | 62.67% | 58.67% | -4.00 pp | 99.33% | 92.67% |
+| RLHF-V heldout-500 | 73.40% | 62.60% | -10.80 pp | 99.20% | 96.60% |
+
+Dev150 上 Qwen2.5 的覆盖内 `OverallAcc` 为63.31%，略高于 Qwen3 的63.09%，但它只覆盖92.67%的样本，而 Qwen3 覆盖99.33%；全样本 Strict ACC 仍低4.00 pp。因此该 `OverallAcc` 不能解释为 Qwen2.5 整体更强，而是更多弃权筛掉困难样本后的选择性结果。
+
+Qwen2.5 还表现出明显的展示位置偏置。Discovery100 和 Dev150 的 gold 分别严格平衡为50/50和75/75，heldout-500也接近均衡（A/B 为244/256），但模型输出如下：
+
+| 数据集 | Gold A/B | Qwen3 输出 A/B/None | Qwen2.5 输出 A/B/None |
+| --- | ---: | ---: | ---: |
+| Discovery100 | 50 / 50 | 41 / 55 / 4 | **65 / 27 / 8** |
+| Dev150 | 75 / 75 | 68 / 81 / 1 | **105 / 34 / 11** |
+| RLHF-V heldout-500 | 244 / 256 | 265 / 231 / 4 | **333 / 150 / 17** |
+
+这说明内部数据上的下降不能只归因于 Rubric 不适配：Qwen2.5 在综合长子树报告时更偏向当前展示的 Candidate A，同时更容易在证据冲突时弃权。由于内部协议是 `K=1`，该结果只能诊断位置敏感性，不能把位置偏置与跨子树综合能力完全分离。
+
+#### 17.9.3 VL-RewardBench 主要结果
+
+| Worker / 聚合方式 | Strict ACC | OverallAcc | MacroAcc | Coverage | 正确数 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Qwen3 Explicit Recursive E4 | 70.01% | 70.29% | 64.42% | 99.60% | 873 |
+| **Qwen3 Clean S5-v2** | **71.13%** | **71.59%** | **66.24%** | 99.36% | **887** |
+| Qwen2.5 Explicit Recursive E4 | 56.94% | 57.07% | 52.95% | **99.76%** | 710 |
+| **Qwen2.5 Clean S5-v2** | **58.06%** | **59.69%** | **54.72%** | 97.27% | **724** |
+
+在 Qwen2.5 上，Clean S5-v2 相对同模型 Explicit Recursive 将 Strict ACC 从56.94%提高到58.06%，增加 **1.12 pp / 14个正确样本**；MacroAcc 提高1.77 pp。覆盖内 OverallAcc 提高2.62 pp，但 Coverage 同时下降2.49 pp，因此不能把2.62 pp当作全局收益。配对 corrected/harmed 为112/98，exact McNemar `p=0.370`：方向为正，但尚未达到统计显著。
+
+Qwen3 和 Qwen2.5 在本次冻结评测中都恰好由 Clean S5-v2 净增加14个正确样本，即 Strict ACC 均提高1.12 pp；这个数值一致说明聚合机制存在方向一致的迁移迹象，但只是单次运行中的数值巧合，不能据此声称模型无关的不变增益。相同 Clean S5-v2 下，Qwen2.5 仍比 Qwen3 低13.07 pp，paired corrected/harmed 为92/255、`p=7.56e-19`，说明底层 Worker 的视觉理解和跨报告推理能力仍是绝对性能的主要决定因素。
+
+类别结果显示迁移收益并不均匀：
+
+| 类别 | Qwen2.5 Explicit Strict ACC | Qwen2.5 Clean S5-v2 Strict ACC | 变化 |
+| --- | ---: | ---: | ---: |
+| General | 35.91% | 37.57% | +1.66 pp |
+| Hallucination | 59.28% | 62.62% | **+3.34 pp** |
+| Reasoning | **63.41%** | 58.99% | **-4.42 pp** |
+
+来源级结果与该趋势一致：RLAIF-V 和 RLHF-V 分别提高8.15和10.29 pp，WildVision 提高1.17 pp，PoVid基本持平；Reasoning Tasks 则下降4.42 pp。Clean S5-v2 能帮助 Qwen2.5 统一视觉事实和幻觉证据，但较弱 Worker 在综合五份报告完成复杂推理时更容易损失已有的 reasoning 判断。
+
+#### 17.9.4 Coverage 为什么下降
+
+内部数据最终 `None` 的来源如下：
+
+| 数据集 | 语义 `None` | 技术失败阻断 Arbiter | 最终未覆盖 |
+| --- | ---: | ---: | ---: |
+| Discovery100 | 7 | 1 | 8 |
+| Dev150 | 9 | 2 | 11 |
+| RLHF-V heldout-500 | 17 | 0 | 17 |
+
+因此 heldout-500 的覆盖下降完全来自模型主动输出 `None`，不是解析或服务故障。VL-RewardBench 的3,741次 Arbiter 调用中有52次语义 `None`、22次因未解决的子树技术失败而阻断，单次非 A/B 比例约1.98%；但 `K=3` 要求至少两个 replicate 给出相同的A或B，少量弃权会与顺序敏感造成的 A/B 分歧共同放大为最终未覆盖：
+
+| 三次 Arbiter 结论 | 最终未覆盖样本数 | 原因 |
+| --- | ---: | --- |
+| A / B / None | 26 | A/B各一票，没有两票同向多数 |
+| A / None / None | 3 | 只有一票A |
+| B / None / None | 2 | 只有一票B |
+| None / None / None | 3 | 三次均未形成A/B |
+| **合计** | **34** | Coverage = 1,213 / 1,247 = 97.27% |
+
+所以 Coverage 下降的核心机制是：**Qwen2.5 更保守的语义弃权 + 更强的 A/B 位置敏感性 + `K=3` 对分歧的放大**。技术失败有次要影响，但不是13 pp模型差距的主要来源。
+
+#### 17.9.5 Arbiter 行为、效率与结论
+
+逐 replicate 检查显示，Qwen2.5 Arbiter 从不推翻五棵子树的5–0一致判断；对4–1强多数的30次推翻净损害3次，对3–2弱多数的146次推翻净修正46次，对平局、稀疏或大量 `None` 情况的332次推翻净修正158次。这说明 Global Arbiter 的主要价值仍来自处理弱多数和证据不完整情形，而不是重新解释已经一致的五棵子树。上述是 replicate 级诊断，经过 `K=3` 聚合后，最终样本级收益仍是14条，二者不能直接等同。
+
+本实验共执行26,946个逻辑请求，其中内部数据4,500个、VL-RewardBench 22,446个。主 run 分别耗时1,330.3秒和5,793.7秒，合计约118.7分钟；技术重试额外约24.7分钟。重试后仍有61个未解决的调用级技术失败，约占全部请求0.23%，不足以解释模型间主要性能差距。两个 endpoint 的调用占比约51.2%/48.8%，available-slot 调度基本平衡。
+
+**本实验结论。** Clean S5-v2 在 Qwen2.5 上相对显式递归取得与 Qwen3 同方向的 +1.12 pp Strict ACC 点估计，说明“子树证据报告 → Global Arbiter”不是完全依赖单一 Worker 的偶然机制；但该增益未达到统计显著，且伴随 Coverage 下降和 Reasoning 退化。现有证据支持将 Clean S5-v2 描述为**具有有限跨模型可迁移性的聚合机制**，不支持声称它能消除弱 Worker 的能力差距。Qwen2.5 的 A 位置偏置、语义弃权和跨报告推理不足，是后续若继续使用较弱 Worker 时必须单独处理的问题。
+
 
 
 

@@ -326,7 +326,8 @@ def _config(path: Path) -> dict[str, Any]:
                        "global_arbiter_ab_only_experiment",
                        "global_arbiter_ab_preferred_none_v2_experiment",
                        "internal_global_arbiter_k1_experiment",
-                       "full_rubric_unified_worker_experiment"}
+                       "full_rubric_unified_worker_experiment",
+                       "qwen25_clean_s5_transfer_experiment"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -374,6 +375,7 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("global_arbiter_ab_preferred_none_v2_experiment", None)
     value.pop("internal_global_arbiter_k1_experiment", None)
     value.pop("full_rubric_unified_worker_experiment", None)
+    value.pop("qwen25_clean_s5_transfer_experiment", None)
     return value
 
 
@@ -3115,7 +3117,14 @@ def main() -> int:
         "full-rubric-worker-internal-run",
         "full-rubric-worker-vlrb-run",
         "full-rubric-worker-retry",
-        "full-rubric-worker-report"))
+        "full-rubric-worker-report",
+        "qwen25-clean-s5-freeze",
+        "qwen25-clean-s5-audit",
+        "qwen25-clean-s5-smoke",
+        "qwen25-clean-s5-internal-run",
+        "qwen25-clean-s5-vlrb-run",
+        "qwen25-clean-s5-retry",
+        "qwen25-clean-s5-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -3150,7 +3159,10 @@ def main() -> int:
         "specialize-evaluate": lambda: specialize_evaluate(config, output),
         "specialize-report": lambda: specialize_report(config, output),
     }
-    if args.stage.startswith("full-rubric-worker-"):
+    if args.stage.startswith("qwen25-clean-s5-"):
+        from .qwen25_clean_s5_transfer import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("full-rubric-worker-"):
         from .full_rubric_unified_worker import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith("internal-global-arbiter-"):
