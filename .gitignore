@@ -227,3 +227,12 @@ output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priori
 !output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/prompt_specs/*.json
 
 .agents/
+.aris/
+
+# Phase19 execution-aligned VL-RewardBench evaluation: retain reviewed reports
+# and compact offline audit; keep schedules, endpoint identities, and runtime
+# state local.
+output/evolving_structured_rubrics/vl_rewardbench_unified_subtree_arbiter_aligned_evolution_v1/*
+!output/evolving_structured_rubrics/vl_rewardbench_unified_subtree_arbiter_aligned_evolution_v1/final_report.json
+!output/evolving_structured_rubrics/vl_rewardbench_unified_subtree_arbiter_aligned_evolution_v1/final_report.md
+!output/evolving_structured_rubrics/vl_rewardbench_unified_subtree_arbiter_aligned_evolution_v1/offline_audit.json

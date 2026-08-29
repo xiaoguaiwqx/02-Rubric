@@ -19,6 +19,12 @@ RATE_LIMIT_RETRY_DELAY = 60
 RATE_LIMIT_RETRY_ATTEMPTS = 50
 FORBIDDEN_RETRY_BASE_DELAY = 1
 FORBIDDEN_RETRY_MAX_DELAY = 60
+# Keep a bounded wall-clock limit for a single HTTP request.  Without an
+# explicit timeout, a stalled OpenAI-compatible connection can leave an
+# experiment waiting indefinitely even though the surrounding retry protocol
+# is still alive.  This is an operational safeguard only; it does not alter
+# prompt, decoding, parsing, or evaluation semantics.
+API_REQUEST_TIMEOUT_SECONDS = 180.0
 WORKFLOW_AGENT_LOGFILE = os.getenv("WORKFLOW_AGENT_LOGFILE", None)
 
 
@@ -78,7 +84,8 @@ class Agent:
 
         # 每个 agent 持有自己的 client，这样请求配置始终局限在当前实例内。
         self.client = OpenAI(
-            api_key=random.choice(self.api_keys), base_url=self.base_url
+            api_key=random.choice(self.api_keys), base_url=self.base_url,
+            timeout=API_REQUEST_TIMEOUT_SECONDS
         )
         self._api_attempts = 0
         self._input_tokens = 0
@@ -142,7 +149,8 @@ class Agent:
     def _retry_with_new_client(self):
         """Rotate API key before retry to reduce shared-key throttling impact."""
         self.client = OpenAI(
-            api_key=random.choice(self.api_keys), base_url=self.base_url
+            api_key=random.choice(self.api_keys), base_url=self.base_url,
+            timeout=API_REQUEST_TIMEOUT_SECONDS
         )
 
     def chat_completion_openai(

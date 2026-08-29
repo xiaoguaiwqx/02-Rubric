@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0.0",
+  "offline_only": true,
+  "checks": {
+    "dataset_count_1247": true,
+    "schedule_k3": true,
+    "same_sample_order": true,
+    "same_model_prompts_and_decoding": true,
+    "two_endpoints": true,
+    "initial_five_roots": true,
+    "aligned_five_roots": true,
+    "phase17_control_reused": true,
+    "phase17_control_exact_replay": true,
+    "benchmark_selection_forbidden": true
+  }
+}

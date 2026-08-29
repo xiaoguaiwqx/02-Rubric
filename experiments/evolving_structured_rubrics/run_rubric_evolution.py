@@ -328,7 +328,9 @@ def _config(path: Path) -> dict[str, Any]:
                        "global_arbiter_evidence_priority_ablation_v1_experiment",
                        "internal_global_arbiter_k1_experiment",
                        "full_rubric_unified_worker_experiment",
-                       "qwen25_clean_s5_transfer_experiment"}
+                       "qwen25_clean_s5_transfer_experiment",
+                       "unified_subtree_arbiter_aligned_evolution_v1_experiment",
+                       "vlrb_unified_subtree_arbiter_aligned_evolution_v1_experiment"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -378,6 +380,8 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("internal_global_arbiter_k1_experiment", None)
     value.pop("full_rubric_unified_worker_experiment", None)
     value.pop("qwen25_clean_s5_transfer_experiment", None)
+    value.pop("unified_subtree_arbiter_aligned_evolution_v1_experiment", None)
+    value.pop("vlrb_unified_subtree_arbiter_aligned_evolution_v1_experiment", None)
     return value
 
 
@@ -3132,7 +3136,19 @@ def main() -> int:
         "qwen25-clean-s5-internal-run",
         "qwen25-clean-s5-vlrb-run",
         "qwen25-clean-s5-retry",
-        "qwen25-clean-s5-report"))
+        "qwen25-clean-s5-report",
+        "aligned-evolution-freeze",
+        "aligned-evolution-audit",
+        "aligned-evolution-smoke",
+        "aligned-evolution-run",
+        "aligned-evolution-report",
+        "aligned-evolution-heldout",
+        "vlrb-aligned-evolution-freeze",
+        "vlrb-aligned-evolution-audit",
+        "vlrb-aligned-evolution-smoke",
+        "vlrb-aligned-evolution-run",
+        "vlrb-aligned-evolution-retry",
+        "vlrb-aligned-evolution-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -3167,7 +3183,13 @@ def main() -> int:
         "specialize-evaluate": lambda: specialize_evaluate(config, output),
         "specialize-report": lambda: specialize_report(config, output),
     }
-    if args.stage.startswith("qwen25-clean-s5-"):
+    if args.stage.startswith("vlrb-aligned-evolution-"):
+        from .vl_rewardbench_aligned_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("aligned-evolution-"):
+        from .unified_subtree_arbiter_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("qwen25-clean-s5-"):
         from .qwen25_clean_s5_transfer import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith("full-rubric-worker-"):

@@ -515,6 +515,8 @@ def _prepare_refine_attempt(
     trigger_mode: str = "uniform_v1",
     forced: bool = False,
     evidence_extension: Mapping[str, Any] | None = None,
+    evidence_sample_allowlist: Sequence[str] | None = None,
+    defer_rejection_attribution: bool = False,
 ) -> dict[str, Any]:
     attempt_dir = _refine_attempt(epoch_dir, node_id, attempt_no)
     attempt_dir.mkdir(parents=True, exist_ok=True)
@@ -536,6 +538,42 @@ def _prepare_refine_attempt(
     })
     evidence, representative_rows = build_refine_evidence(
         rubric, prediction, rows, node_id, REFINE_V1)
+    if evidence_sample_allowlist is not None:
+        allowed = set(evidence_sample_allowlist)
+        original_wrong = list(evidence["wrong_cases"])
+        evidence["wrong_cases"] = [
+            item for item in original_wrong if item["sample_id"] in allowed]
+        evidence["aligned_system_attribution"] = {
+            "original_wrong_count": len(original_wrong),
+            "attributed_wrong_count": len(evidence["wrong_cases"]),
+            "attributed_sample_ids": [
+                item["sample_id"] for item in evidence["wrong_cases"]],
+        }
+        representative_ids = (
+            [item["sample_id"] for item in evidence["wrong_cases"][
+                :REFINE_V1["wrong_image_count"]]]
+            + [item["sample_id"] for item in evidence["correct_boundary_cases"][
+                :REFINE_V1["correct_image_count"]]]
+            + [item["sample_id"] for item in evidence["abstain_boundary_cases"][
+                :REFINE_V1["abstain_image_count"]]]
+        )
+        by_id = {str(row["sample_id"]): row for row in rows}
+        evidence["representative_sample_ids"] = representative_ids
+        representative_rows = tuple(by_id[sample_id] for sample_id in representative_ids)
+        minimum_attributed_wrong = (
+            5 if trigger_mode == "role_aware_v2"
+            and rubric.parent_id(node_id) is not None else 1)
+        if len(evidence["wrong_cases"]) < minimum_attributed_wrong:
+            _write(attempt_dir / "evidence.json", evidence)
+            return {
+                "node_id": node_id,
+                "decision": "not_eligible",
+                "attempt_dir": attempt_dir,
+                "trigger": trigger,
+                "aligned_evidence_insufficient": True,
+                "minimum_attributed_wrong": minimum_attributed_wrong,
+                "attributed_wrong_count": len(evidence["wrong_cases"]),
+            }
     if evidence_extension:
         overlap = set(evidence).intersection(evidence_extension)
         if overlap:
@@ -620,7 +658,7 @@ def _prepare_refine_attempt(
     decision = ("accepted" if evaluation.decision is EvolutionDecision.ACCEPT
                 else "competition_rejected")
     attribution = None
-    if decision == "competition_rejected":
+    if decision == "competition_rejected" and not defer_rejection_attribution:
         attribution_path = attempt_dir / "failure_attribution.json"
         if attribution_path.exists():
             attribution = load_json(attribution_path)
@@ -795,6 +833,7 @@ def _record_refine_state(history: dict[str, Any], result: Mapping[str, Any],
                                     else proposal.original_description_sha256),
         "proposed_description": None if proposal is None else proposal.description,
         "node_evaluation": None if evaluation is None else evaluation.to_dict(),
+        "system_evaluation": result.get("system_evaluation"),
         "natural_language_attribution": (
             None if payload is None else payload.get("natural_language_attribution")),
         "elapsed_seconds": elapsed,
@@ -3281,6 +3320,7 @@ def _integrated_locked_retry_prepare(
     rubric_memory: Mapping[str, Any],
     rubric_memory_sha256: str,
     pool: AvailableSlotBackendPool,
+    defer_rejection_attribution: bool = False,
 ) -> dict[str, Any]:
     """Rebuild only unlocked children from an exact prior failed candidate."""
     state = history["root_states"][root_id]
@@ -3294,7 +3334,27 @@ def _integrated_locked_retry_prepare(
         source_dir / "candidate_rubric.json")
     combined = PairwisePredictionOutput.load_json(
         source_dir / "combined_pairwise.json")
-    signature_values = load_json(source_dir / "error_signatures.json")["outputs"]
+    # A locked retry may reuse the pairwise artifact from an earlier attempt.
+    # In that case the retry directory intentionally contains ``pairwise_reuse``
+    # but no duplicated ErrorSignature file.  Resolve the nearest prior
+    # signature artifact for the same root slot instead of assuming that every
+    # attempt materializes a copy.
+    signature_path = source_dir / "error_signatures.json"
+    if not signature_path.exists():
+        root_slot = source_dir.parent.name
+        prior_candidates = []
+        for prior_epoch in epoch_dir.parent.glob("epoch_*"):
+            prior_root = prior_epoch / "roots" / root_slot
+            prior_candidates.extend(prior_root.glob("attempt_*/error_signatures.json"))
+        if prior_candidates:
+            signature_path = max(
+                prior_candidates, key=lambda path: path.stat().st_mtime_ns
+            )
+    if not signature_path.exists():
+        raise FileNotFoundError(
+            f"locked retry has no reusable ErrorSignature artifact: {source_dir}"
+        )
+    signature_values = load_json(signature_path)["outputs"]
     signatures = {
         sample_id: split.ErrorSignatureOutput.from_dict(value).signature
         for sample_id, value in signature_values.items()
@@ -3310,6 +3370,15 @@ def _integrated_locked_retry_prepare(
 
     attempt_dir = split._attempt(epoch_dir, root_id, attempt_no)
     attempt_dir.mkdir(parents=True, exist_ok=True)
+    # Materialize the reused bundle in every retry attempt.  Keeping a local
+    # artifact makes the retry self-describing and prevents later diagnostics
+    # from mistaking a deliberate reuse for a loss of error evidence.
+    _write(attempt_dir / "error_signatures.json", load_json(signature_path))
+    source_filter = source_dir / "aligned_evidence_filter.json"
+    if source_filter.exists():
+        filter_payload = load_json(source_filter)
+        filter_payload["reused_from"] = str(source_filter)
+        _write(attempt_dir / "aligned_evidence_filter.json", filter_payload)
     lock = dict(pending["lock"])
     locked_name = lock["criterion_name"]
     source_children = {
@@ -3475,7 +3544,7 @@ def _integrated_locked_retry_prepare(
         "changed_predictions": records, "child_retry_diagnostics": diagnostics,
         "lock": lock,
     }
-    if decision == split.COMPETITION_REJECTED:
+    if decision == split.COMPETITION_REJECTED and not defer_rejection_attribution:
         attribution = split._required_failure_attribution(
             managers["semantic_cluster"], attempt_dir, parent=parent,
             signatures=tuple(signatures.values()),
@@ -3550,6 +3619,7 @@ def _integrated_record_split_history(
             "locked_child": result.get("lock"),
             "elapsed_seconds": time.monotonic() - started[root_id],
             "history_payload": result.get("history_payload"),
+            "system_evaluation": result.get("system_evaluation"),
         }
         if (decision == split.COMPETITION_REJECTED
                 and not isinstance((record["history_payload"] or {}).get(

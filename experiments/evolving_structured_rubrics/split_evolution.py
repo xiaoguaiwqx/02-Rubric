@@ -597,9 +597,17 @@ def _signatures(target,manager,parent,trigger,node_feedback,rows_by_id,identity,
  out={sid:values[sid] for sid in trigger.decisive_wrong_sample_ids}
  return out,cache,reuse
 def _prepare(config,target,epoch_dir,root,attempt_no,rubric,pred,feedback,rows,history,managers,specs,
-             protocol:EvolutionProtocol=CONTROL_PROTOCOL,rubric_memory=None,rubric_memory_sha256=None):
+             protocol:EvolutionProtocol=CONTROL_PROTOCOL,rubric_memory=None,rubric_memory_sha256=None,
+             decisive_sample_allowlist=None):
  d=_attempt(epoch_dir,root,attempt_no);d.mkdir(parents=True,exist_ok=True);ctx=EvolutionContext(rubric,feedback);t=detect_specialize_trigger(ctx,root,config['evolution_policy']['trigger_thresholds']);_write(d/'trigger.json',t.to_dict())
  if not t.triggered:return {'root_id':root,'decision':'not_eligible','attempt_dir':d}
+ if decisive_sample_allowlist is not None:
+  allowed=set(decisive_sample_allowlist);selected=tuple(x for x in t.decisive_wrong_sample_ids if x in allowed)
+  t=type(t)(t.parent_node_id,t.triggered,t.reasons,selected,t.current_children,t.remaining_capacity)
+  _write(d/'aligned_evidence_filter.json',{'schema_version':'1.0.0','root_id':root,'original_wrong_count':len(detect_specialize_trigger(ctx,root,config['evolution_policy']['trigger_thresholds']).decisive_wrong_sample_ids),'attributed_wrong_count':len(selected),'decisive_wrong_sample_ids':list(selected)})
+  _write(d/'trigger.json',t.to_dict())
+  if len(selected)<config['evolution_policy']['trigger_thresholds']['N_min_cluster']*2:
+   return {'root_id':root,'decision':'not_eligible','attempt_dir':d,'aligned_evidence_insufficient':True}
  parent=rubric.get_node(root);pname=parent.criterion.name;parent_outputs=[x[pname].vote.value for x in pred.node_outputs]
  signature_spec=specs['error_signature'];ident=signature_identity(root,t.to_dict(),parent_outputs,signature_spec)
  if protocol.read_only_control_signatures:
@@ -677,7 +685,8 @@ def _required_failure_attribution(manager,attempt_dir,**kwargs):
  return attribution
 
 def _evaluate(config,epoch_dir,rows,rubric,pred,result,pool,manager,feedback,
-              protocol:EvolutionProtocol=CONTROL_PROTOCOL):
+              protocol:EvolutionProtocol=CONTROL_PROTOCOL,
+              defer_rejection_attribution=False):
  c=result['candidate'];after=result['after_rubric'];ids=tuple(c.node_id_by_cluster.values());child_rubric=StructuredRubric(nodes={i:after.get_node(i) for i in ids},edges=(),root_ids=ids)
  label='children'
  try:child,artifact,valid=base._generate_pairwise(config,result['attempt_dir'],child_rubric,rows,label,execution_backend_pool=pool,request_backend_id=pred.request_spec.backend_id,request_level_progress=True)
@@ -695,7 +704,7 @@ def _evaluate(config,epoch_dir,rows,rubric,pred,result,pool,manager,feedback,
    evaluation=evaluation)
   result['child_retry_diagnostics']=diagnostics
   _write(result['attempt_dir']/'child_retry_diagnostics.json',diagnostics)
- if decision==COMPETITION_REJECTED:
+ if decision==COMPETITION_REJECTED and not defer_rejection_attribution:
   attribution=_required_failure_attribution(manager,result['attempt_dir'],parent=rubric.get_node(result['root_id']),signatures=tuple(result['signatures'].values()),cluster_proposal=c.cluster_proposal.to_dict(),children=c.children,local_metrics=evaluation.to_dict(),changed_predictions=records,retry_feedback=result.get('child_retry_diagnostics'))
   result['history_payload']=_failure(result,'specialized_accuracy_below_parent',attribution=attribution)
  return result
