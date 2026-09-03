@@ -2,7 +2,7 @@
 
 本项目研究如何从多模态偏好数据中，将扁平的自然语言评价准则逐步演化为可解释的结构化 Rubric Forest。给定图像、问题和两个候选回答，系统需要判断哪些准则与当前样本相关、应当沿哪条路径执行，以及如何聚合各节点的判断。
 
-项目目前处于研究开发阶段。Rubric 的表示、执行和验证基础设施已经完成，具体的自动演化算法仍在持续设计和迭代。
+项目目前处于研究开发阶段。表示、执行、缓存校验和自动 Split/Refine 演化闭环已实现；Phase22 已完成评测，但尚未证明稳定的泛化收益。当前协议、状态和结果入口见[实验索引](docs/experiments/README.md)。
 
 ## 我们要解决的问题
 
@@ -10,13 +10,15 @@
 
 我们的目标是让 Rubric 从少量自然语言准则出发，在多模态偏好反馈的驱动下逐步生长、分化和精简。最终的层级与级联关系应当成为演化过程的自然产物，而不是预先手工固定的最终结构。
 
-## 核心思想
+## 早期设计：级联执行
+
+以下为保留的历史执行方案。当前 Phase21/22 使用完整子树的 Unified-Subtree Worker 与系统 Global Arbiter；具体分层见[架构说明](docs/architecture.md)。
 
 Rubric 被表示为由多个根节点组成的 Forest，准则是其中的节点，条件依赖是节点之间的边。通用准则可以位于上层，细粒度准则只在父节点满足相应条件时继续执行。
 
 系统将偏好投票与路径控制拆成两个通道：Pairwise Worker 负责输出权威的 `A`、`B` 或弃权投票，Gate Worker 负责提供是否进入子节点所需的状态。这样既保留原有准则的判断语义，也支持结构化的 root-to-leaf cascade。
 
-## 整体架构
+## 历史级联架构
 
 ```mermaid
 flowchart TD
@@ -42,16 +44,19 @@ flowchart TD
 - [x] Pairwise/Gate 双通道执行
 - [x] Offline replay、cache、trace、telemetry 与 backend pool
 - [x] 静态 Rubric 的 shared-output 实验
-- [ ] 自动 Rubric evolution loop
-- [ ] 基于反馈的准则与结构优化
+- [x] 自动 Rubric evolution loop（Split / Refine、重试、暂停恢复）
+- [x] 基于反馈的局部准则与结构优化实现
+- [ ] 在独立数据上证明稳定的系统收益
 
-当前基础设施已经能够稳定地表示、执行、重放和比较 Structured Rubrics。现有实验恢复了原 Pairwise baseline，但手工构造的静态 Forest 只带来了较小改善，当前 Root Router 也存在遗漏有用准则的问题。这些结果说明执行与反馈链路已经可用，下一阶段应重点演化 Rubric 本身。
+早期静态 Forest 与 Router 的局限保留在历史实验总结中。后续自动演化已经执行，不能再把“尚未实现演化闭环”作为当前状态；实现可运行与方法有效是两个不同结论。
 
 ## 当前实验入口
 
-正式的实验入口为：
+演化实验与历史 shared-output 实验分别使用：
 
 ```powershell
+conda activate critiq
+python -m experiments.evolving_structured_rubrics.run_rubric_evolution --help
 python -m experiments.evolving_structured_rubrics.run_shared_output_pool --help
 ```
 
@@ -59,6 +64,8 @@ python -m experiments.evolving_structured_rubrics.run_shared_output_pool --help
 
 相关文档：
 
+- [实验索引（当前状态）](docs/experiments/README.md)
+- [代码架构与边界](docs/architecture.md)
 - [Idea 初稿](docs/Evolving%20Structured%20Rubrics%20from%20Multimodal%20Preferences.md)
 - [实现计划](docs/Evolving%20Structured%20Rubrics%20Implementation%20Plan.md)
 - [Shared-output 实验总结](docs/experiment-results/shared_output_pool_v1_summary.md)

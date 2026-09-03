@@ -1,16 +1,13 @@
-# Research Output Manifest
+# 研究资料导航
 
-> Auto-maintained by ARIS skills. Tracks all generated artifacts across the research lifecycle.
+本文件只维护入口，不再按时间戳重复登记同一份计划或状态。
 
-| Timestamp | Skill | File | Stage | Description |
-|-----------|-------|------|-------|-------------|
-| 2026-08-28 02:38 | /experiment-plan | refine-logs/EXPERIMENT_PLAN_20260828_023832.md | implementation | Unified-Subtree + Global-Arbiter aligned evolution versioned experiment plan |
-| 2026-08-28 02:38 | /experiment-plan | refine-logs/EXPERIMENT_PLAN.md | implementation | latest aligned-evolution experiment plan |
-| 2026-08-28 02:38 | /experiment-plan | refine-logs/EXPERIMENT_TRACKER_20260828_023832.md | implementation | versioned aligned-evolution run tracker |
-| 2026-08-28 02:38 | /experiment-plan | refine-logs/EXPERIMENT_TRACKER.md | implementation | latest aligned-evolution run tracker |
-| 2026-08-28 | /experiment-bridge | experiments/evolving_structured_rubrics/aligned_system_runtime.py | implementation | incremental Unified-Subtree and Global-Arbiter evaluator |
-| 2026-08-28 | /experiment-bridge | experiments/evolving_structured_rubrics/unified_subtree_arbiter_evolution.py | implementation | Phase19 execution-aligned evolution stages |
-| 2026-08-28 | /experiment-bridge | experiments/evolving_structured_rubrics/vl_rewardbench_aligned_evolution.py | implementation | K=3 aligned-rubric VL-RewardBench evaluation |
-| 2026-08-28 | /experiment-bridge | tests/structured/test_unified_subtree_arbiter_evolution.py | verification | focused offline aligned-evolution tests |
-| 2026-08-28 | /experiment-bridge | idea-stage/docs/research_contract.md | contract | claims, anti-claims, data isolation, and success rules |
-| 2026-08-28 | /experiment-bridge | refine-logs/EXPERIMENT_CODE_REVIEW.md | verification | independent code review findings, fixes, and verification status |
+- [实验索引与当前状态](docs/experiments/README.md)
+- [系统结构与代码边界](docs/architecture.md)
+- [实现历史与正式结果](docs/Evolving%20Structured%20Rubrics%20Implementation%20Plan.md)
+- [Phase21 冻结协议](docs/experiments/phase21/protocol.md)
+- [Phase22 冻结协议](docs/experiments/phase22/protocol.md)
+- [Phase22 运行与恢复](docs/experiments/phase22/running.md)
+- [Phase22 研究约束](docs/experiments/phase22/research-contract.md)
+
+历史草稿和审查不表示当前运行状态。原始运行产物保存在本地 `output/`，不因实验结果为负而删除。

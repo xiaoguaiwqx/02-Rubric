@@ -21,6 +21,10 @@ Use four-space indentation and standard PEP 8 naming: `snake_case` for modules, 
 
 Tests use Python's `unittest` framework and follow `test_<behavior>.py`, `Test...`, and `test_...` naming. Add deterministic unit tests beside the closest structured component. Use fake or offline backends instead of live model calls. Cover successful behavior and validation/error paths; there is currently no enforced coverage percentage. Run the full suite before opening a pull request.
 
+## Research document and artifact hygiene
+
+Use `docs/experiments/README.md` as the experiment index. Update an existing experiment protocol/result section instead of creating timestamped PLAN/TRACKER/REVIEW copies. Keep pre-run frozen protocols distinct from observed results; use persisted run artifacts as the authoritative execution status. Temporary agent drafts and review rounds belong in `.local/`. Preserve negative results and necessary reproduction metadata. Do not delete a historical runner or artifact before checking downstream references. Never mutate another experiment module's global settings to select a protocol; pass an explicit protocol/configuration instead. Historical compatibility constraints must not be silently relaxed during refactoring.
+
 ## Commit & Pull Request Guidelines
 
 Recent history uses concise Conventional Commit-style subjects such as `feat: add multi-epoch split evolution`, `feat(structured): ...`, and `docs: ...`. Use an imperative subject, add a scope when useful, and keep each commit focused. Pull requests should explain the motivation, summarize code and experiment changes, list verification commands, and link relevant issues or plans. Include plots or screenshots when outputs or diagrams change, but do not commit `.env`, credentials, local endpoints, large datasets, caches, traces, predictions, or raw logs.

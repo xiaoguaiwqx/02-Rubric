@@ -1,0 +1,49 @@
+flowchart LR
+    input["输入：当前 Rubric R_t<br/>Discovery 数据、Worker 预测、错误经验、Rubric memory"] --> freeze["Epoch 开始<br/>冻结 baseline 与评估范围"]
+    freeze --> schedule{"候选调度"}
+
+    subgraph SPLIT["Split：把一个粗粒度节点拆成多个子准则"]
+        split_evidence["root 错误样本<br/>生成 ErrorSignature"] --> cluster["语义聚类<br/>形成候选 cluster"]
+        cluster --> split_proposal["Split Manager<br/>输出 child 候选集合"]
+        split_proposal --> split_eval["Pairwise Worker<br/>评估 child 候选"]
+        split_eval --> split_local["候选局部指标<br/>child ACC、support、coverage"]
+        split_local --> split_root["Root-level Unified-Subtree guard<br/>比较原 root 与 Split 后 root"]
+        split_root --> split_decision{"通过？"}
+        split_decision -->|"是"| split_accept["候选待提交<br/>必要时锁定强 child"]
+        split_decision -->|"否"| split_attr["Failure attribution<br/>解释性能下降或边界问题"]
+        split_attr --> split_retry["拒绝并写入历史<br/>后续 epoch 可重试"]
+    end
+
+    subgraph REFINE["Refine：精修一个已有准则的边界与决策规则"]
+        refine_evidence["目标节点证据<br/>错误/正确/None 代表样本 + 图片"] --> refine_manager["Refine Manager<br/>输出同一准则的新描述"]
+        refine_manager --> refine_eval["Pairwise Worker<br/>重新评估候选描述"]
+        refine_eval --> refine_local["Node-level gate<br/>选择性 ACC、support、coverage"]
+        refine_local --> refine_root["Root-level Unified-Subtree guard<br/>检查所在 root 是否受损"]
+        refine_root --> refine_decision{"通过？"}
+        refine_decision -->|"是"| refine_accept["候选待提交<br/>只替换目标节点描述"]
+        refine_decision -->|"否"| refine_attr["Failure attribution<br/>分析未改善或 non-target harm"]
+        refine_attr --> refine_retry["拒绝并写入历史<br/>后续 epoch 可重试"]
+    end
+
+    schedule --> split_evidence
+    schedule --> refine_evidence
+    split_accept --> commit["同步 Epoch Commit<br/>只合并通过的 Split/Refine 候选"]
+    refine_accept --> commit
+    split_retry --> history["更新演化历史<br/>保留失败归因与重试状态"]
+    refine_retry --> history
+    commit --> history
+    history --> next["得到 R_(t+1)<br/>更新预测、反馈与下一轮调度"]
+
+    classDef input fill:#D1FAE5,stroke:#047857,color:#064E3B,stroke-width:1.5px;
+    classDef control fill:#DBEAFE,stroke:#1D4ED8,color:#1E3A8A,stroke-width:1.5px;
+    classDef split fill:#FEF3C7,stroke:#B45309,color:#78350F,stroke-width:1.5px;
+    classDef refine fill:#EDE9FE,stroke:#6D28D9,color:#4C1D95,stroke-width:1.5px;
+    classDef decision fill:#F3F4F6,stroke:#374151,color:#111827,stroke-width:1.5px;
+    classDef output fill:#FFEDD5,stroke:#C2410C,color:#7C2D12,stroke-width:1.5px;
+
+    class input input;
+    class freeze,schedule,commit,history control;
+    class split_evidence,cluster,split_proposal,split_eval,split_local,split_root,split_accept,split_attr,split_retry split;
+    class refine_evidence,refine_manager,refine_eval,refine_local,refine_root,refine_accept,refine_attr,refine_retry refine;
+    class split_decision,refine_decision decision;
+    class next output;

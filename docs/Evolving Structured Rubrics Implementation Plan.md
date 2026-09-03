@@ -1,10 +1,10 @@
 # Evolving Structured Rubrics Implementation Plan
 
-> 状态：Phase 0–4 基础设施完成，下一阶段进入 Rubric evolution loop
+> 状态：基础设施与多轮演化实验已实现，Phase22 完成；尚未证明其具有稳定泛化收益。
 >
-> 更新日期：2026-08-03
+> 更新日期：2026-09-03
 >
-> 当前分支：`research/evolving-structured-rubrics`
+> 本文按时间记录设计与结果；早期章节中的“当前/下一阶段”属于当时语境。当前入口见[实验索引](experiments/README.md)，实际运行状态以产物为准。
 >
 > 对应 Idea：[Evolving Structured Rubrics from Multimodal Preferences.md](Evolving%20Structured%20Rubrics%20from%20Multimodal%20Preferences.md)
 
@@ -2650,239 +2650,285 @@ Qwen3 和 Qwen2.5 在本次冻结评测中都恰好由 Clean S5-v2 净增加14�
 
 
 
+---
 
+## 18. 对齐演化与反事实系统审计
 
+### 18.1 问题与共同实验设置
 
+第17章已经确定最终推理采用 Clean S5：五个 Unified-Subtree Workers 分别把一棵完整子树转化为分析报告，再由 Global Arbiter 综合五份报告输出最终偏好。但此前的 Split/Refine 主要根据 node-level Pairwise ACC 接受，演化优化的对象与最终系统实际使用的对象并不一致。
 
+这一阶段不增加 Create、Merge 等新算子，先比较两种接受目标，再由 Phase22 扩展局部竞争的评价范围（见18.7节）：
 
+- **Phase19：最终系统级接受。** 候选必须让 Discovery100 上的 Global-Arbiter Strict ACC 上升。
+- **Phase21：root-local 接受。** 候选必须改善所属 root 的 Unified-Subtree 判断，再把通过的 roots 同步提交。
+
+共同数据设置如下：
+
+| 数据集 | 样本数 | 用途 |
+| --- | ---: | --- |
+| Discovery100 | 100 | 生成错误经验、提出候选并执行接受判断 |
+| Dev150 | 150 | 每轮独立诊断，不反馈 Manager、不选择 checkpoint |
+| RLHF-V heldout-500 | 500 | 演化结束后的内部泛化测试 |
+| VL-RewardBench | 1,247 | 最终外部评测，采用 K=3 Clean S5 |
+
+所有接受比较均使用 Strict ACC：输出 None 也计错。逐样本收益定义为：
+
+$$
+\operatorname{Net}(C)
+=
+N_{\mathrm{corrected}}(C)
+-
+N_{\mathrm{harmed}}(C),
+$$
+
+其中 corrected 表示基线错而候选对，harmed 表示基线对而候选错。
+
+<a id="phase19"></a>
+
+### 18.2 Phase19：直接用最终系统收益接受候选
+
+#### 候选如何产生
+
+Phase19 的错误筛选分两步。第一步先为每个 root 定义系统归因集合：
+
+$$
+\mathcal A_r
+=
+\{x\mid \text{Global Arbiter 判错，且 root }r\text{ 的 Unified report 也判错}\}.
+$$
+
+$\mathcal A_r$ 只是第二步筛选使用的 allowlist，并不是最终进入算子的错误样本。随后再与对应节点的 Pairwise 明确错误取交集：
+
+| 算子 | 最终进入算子的错误样本 | Manager 如何使用 |
+| --- | --- | --- |
+| Split | $\mathcal E_r^{\mathrm{split}}=\mathcal A_r\cap\mathcal P_r$，其中 $\mathcal P_r$ 是 root Pairwise 明确投错的样本 | 逐样本生成 ErrorSignatures，再聚类并生成 children |
+| Refine | $\mathcal E_c^{\mathrm{refine}}=\mathcal A_r\cap\mathcal P_c$，其中 $\mathcal P_c$ 是目标 child Pairwise 明确投错的样本 | 不生成 ErrorSignatures；连同 correct/abstain boundary cases 直接交给 Refine Manager 改写一个 child description |
+
+只有 Split 使用 ErrorSignatures。该过滤只保留已经传导为系统错误的 root 问题，也会排除“root 自己判断错误、但被其他 roots 补救”的样本。
+
+#### 候选如何竞争和提交
+
+对每个候选，系统只重新生成发生变化的 root report，另外四份 epoch-start reports 直接复用；随后重新调用 Global Arbiter，并与本轮共同基线逐样本比较。只有 $\operatorname{Net}(C)>0$ 的候选才有资格提交。
+
+如果同一 root 有多个正收益 Refine，只保留系统收益最高的一个。不同 roots 都有正收益时，先把各自的候选 reports 合并，再运行一次联合 Arbiter：
+
+- 联合系统仍提高，则一起提交；
+- 联合系统不提高，则只提交最佳 singleton；
+- 提交后的 reports 直接成为下一轮基线，不重新生成。
+
+因此，Phase19 的接受语义与最终推理完全一致，但接受观测来自 Discovery100 上一次 K=1 Arbiter realization。
+
+#### 结果与问题
+
+Phase19 五轮共比较27个候选，只接受2个 Split：Completeness 和 Creativity。Rubric 从5个 roots 增长到10个 nodes。
+
+| 数据集 | Initial Strict ACC | Phase19 final | 变化 |
+| --- | ---: | ---: | ---: |
+| Discovery100 | 69.00% | 72.00% | +3.00 pp |
+| Dev150 | 70.67% | 71.33% | +0.67 pp |
+| Heldout-500 | 75.40% | 74.80% | -0.60 pp |
+| VL-RewardBench | 68.08% | 70.57% | +2.49 pp |
+
+VL-RewardBench 表中的初始值对应 Initial five-root；若与主要强 Control Phase17 E4 比较，Phase19 final 从**71.13%降至70.57%**，相差-0.56 pp。Discovery 提升没有稳定迁移。候选生成阶段使用“系统归因样本、root/child Pairwise 错误”的交集，使 Manager 能看到的**错误样本明显减少**，并排除了被其他 roots 补救的局部错误，限制了错误经验覆盖和候选多样性。候选选择阶段又让 Discovery100 同时参与错误发现和接受判断； Phase19 因而可能生成不充分的局部专家候选，并把同数据选择和采样波动误认为候选的真实系统收益。
+
+<a id="phase21"></a>
+
+### 18.3 Phase21：用完整 root subtree 做局部原子竞争
+
+Phase21 不再让 Pairwise、Specialized ACC 和 Global Arbiter 共同定义局部演化，而是把 Unified-Subtree Worker 贯穿整个 root 内闭环。
+
+#### 一轮演化如何运行
+
+每轮开始时，五个 roots 分别运行 Unified-Subtree baseline。对 root $r$：
+
+1. baseline 输出 A/B 的样本构成冻结 scope；baseline None 不进入 scope；
+2. scope 内判断与 gold 不一致的样本构成 Unified mismatches；
+3. 这些 mismatches 生成该 root 本轮的 ErrorSignatures；
+4. Split 或 Bundle Refine 根据同一批错误经验提出完整 root-subtree 候选；
+5. 候选再次运行 Unified-Subtree Worker，并在相同 frozen scope 上与 baseline 配对比较；
+6. 只有 corrected 多于 harmed 才原子接受整个 subtree 修改。
+
+候选不能通过输出更多 None 来缩小本轮评价范围：scope 始终由 epoch-start baseline 冻结，候选在该 scope 内输出 None 时按错误处理。Coverage 仍会单独报告，但不能改变接受分母。
+
+两个算子的单位也随之改变：
+
+- **Split bundle** 一次生成整套 children；不锁定强孩子、不允许部分接纳，所有 children 共同接受或拒绝。但是失败后不会重新聚类。
+- **Bundle Refine** 读取 root 和全部 children，由 Manager 选择真正需要小修的部分 descriptions；ID、criterion name 和树结构保持不变，所有 edits 共同接受或拒绝。
+
+同一 root 每轮最多一个候选。不同 roots 分别通过后全部同步提交；accepted root 直接复用候选竞争阶段的 report，未修改 root 复用 baseline report。Global Arbiter 只在提交后计算系统诊断，不能改变或回滚局部决定。Specialized ACC 同样只作只读诊断。
+
+#### 结果与问题
+
+Phase21 连续5轮为五个 roots 各产生一个 Split bundle，共25个候选。所有候选在各自 frozen scope 上都满足 $\operatorname{Net}(C)\le 0$，因此全部拒绝：
+
+- accepted Split：0；
+- accepted Bundle Refine：0；
+- 因为没有任何 Split 成功，正式全量运行没有进入 Bundle Refine；
+- final Rubric 与 initial Rubric 的相同，仍为5 roots、0 children。
+
+Phase21 的候选接受只比较单棵 root 最终输出的 A/B/None 标签是否正确，相当于把每棵子树当成独立分类器。本次25个候选的 root-local 净收益均未大于0，因此全部被拒绝，最终 Rubric 没有发生变化。然而，正式系统并不是对五个 root 标签做多数投票，而是让 Global Arbiter 阅读五份完整报告后再决策；报告中的视觉证据、答案冲突和判断理由同样会影响最终结果。后续反事实审计发现，25个局部拒绝候选中有23个反而提高了 Discovery100 上的系统 Strict ACC。这说明 root-local ACC 只是局部代理指标，不能等同于候选对最终系统的真实效用。
+
+### 18.4 两种接受目标暴露的不同问题
+
+| 协议 | 接受目标 | 优点 | 主要问题 |
+| --- | --- | --- | --- |
+| Phase19 | 同一 Discovery100 上的 Global-Arbiter 系统收益 | 与最终推理语义一致 | K=1 噪声；候选生成和接受共用数据，容易选择过拟合 |
+| Phase21 | frozen scope 上的 root-local Unified 收益 | scope、错误经验、候选评价完全一致 | 优化的是局部分类正确率，不是报告对 Arbiter 的证据价值 |
+
+这说明不能简单地在“局部指标”和“同数据系统指标”之间二选一。为判断两类指标究竟错在哪里，后续反事实审计分别检查候选进入完整系统后的效用、K=1 结果的稳定性、跨-root组合效应和独立数据迁移。
+
+<a id="counterfactual-audit"></a>
+
+### 18.5 反事实审计：局部收益能否转化为系统泛化
+
+#### 18.5.1 为什么可以做缓存级反事实实验
+
+虽然 Phase21 拒绝了全部25个 Split bundles，但每个候选在 Discovery100 上的完整 Unified-Subtree reports 已经缓存。因而可以构造反事实系统：
+
+    候选所属 epoch 的五份 baseline reports
+            │
+            ├─ 目标 root：替换为 candidate report
+            └─ 其他四个 roots：保持 baseline report
+            │
+            ▼
+    同一个 Clean S5 Global Arbiter
+            │
+            ▼
+    与该 epoch baseline 逐样本比较
+
+这个实验不重新调用 Unified-Subtree Worker，不重新生成 candidates，也不修改正式 Rubric。唯一新增变量是“Global Arbiter 是否看到该候选 root report”。因此它能够直接测量候选报告的系统效用。
+
+#### 18.5.2 K=1 rejected-candidate audit
+
+第一阶段先测试预先冻结的6个正向、边界和负向候选，确认整条反事实管线；随后补齐全部25个候选。每个候选只替换一棵 root，并重新运行100条 Discovery 样本的 K=1 Arbiter，共新增2,500次 Arbiter 请求。
+
+共同系统 baseline 为62.00%。25个局部拒绝候选中，23个反事实系统 Strict ACC 上升，2个下降，最大单候选增益为+9 pp。但“局部选择性效用”和“系统 Strict ACC 增量”的相关性很弱：
+
+| root-local 指标 | Pearson | Spearman |
+| --- | ---: | ---: |
+| frozen-scope selective utility | 0.194 | 0.164 |
+| formal root-scope net corrected | 0.244 | 0.183 |
+| covered accuracy delta | 0.204 | 0.193 |
+
+结果说明 Phase21 的局部门槛会拒绝一些可能帮助最终 Arbiter 的 reports。不过 K=1 仍可能夸大正收益，因此不能根据这25个结果重新选择 checkpoint。
+
+#### 18.5.3 K=3 singleton 与 coalition audit
+
+第二阶段先把共同 baseline 和25个 singleton 全部升级到 K=3：每个系统运行三次 Arbiter，以 A/B 多数作为最终结果，没有多数则为 None。K=1 与 K=3 的候选收益 Pearson 为0.874、Spearman 为0.830，收益符号一致率为72%；K=3 下仍有16个正收益、4个持平、5个负收益候选。说明 K=1 有噪声，但局部拒绝与系统收益错位并非完全由随机性造成。
+
+提高到 K=3 后，root-local selective utility 与系统收益的 Pearson 仍只有0.082、Spearman 只有0.054，基本没有预测能力。
+
+随后在 Epoch 1 和 Epoch 5 分别穷举五个 root 候选的全部 $2^5=32$ 个 subsets。空集是共同 baseline，单元素是 singleton，其余是多个 root reports 的联合替换。
+
+| Epoch | K=3 baseline | 最佳 singleton | 正 singleton 联合 | 五候选全部提交 |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 64.00% | Completeness：70.00%（+6） | +3 | -1 |
+| 5 | 64.00% | Completeness：67.00%（+3） | +2 | -5 |
+
+多个单独正收益候选合并后没有获得收益之和，全部提交反而下降。这表明 roots 之间存在明显交互：不同 reports 可能重复、冲突，或改变 Arbiter 对证据优先级的理解。因此，同一轮多个 roots 通过时不能按 singleton 收益机械同步提交，必须实际评价 coalition。
+
+#### 18.5.4 Dev150 transfer audit
+
+K=3 coalition audit 仍在 Discovery100 上评价和比较系统，无法排除同数据选择过拟合。为此，在查看 Dev150 结果前冻结9个系统：
+
+- 共同 baseline；
+- Epoch 1 的 Completeness、Completeness+Visual Grounding+Factuality、正 singleton 联合和全部候选；
+- Epoch 5 的 Completeness、Clarity、正 singleton 联合和全部候选。
+
+这些系统共享10个唯一 candidate roots。每个 candidate root 只在 Dev150 上生成一次 Unified reports，再由不同系统组合复用；每个冻结系统运行 K=3 Global Arbiter。Dev150 只做验证，不反向选择新的组合。
+
+| 冻结系统 | Discovery 中的角色 | Dev150 Strict ACC | 相对72.00% baseline |
+| --- | --- | ---: | ---: |
+| E1 Completeness | E1 最佳 singleton | 68.00% | -4.00 pp |
+| E1 C+V+F | E1 强 coalition | 71.33% | -0.67 pp |
+| E1 positive union | E1 正 singleton 联合 | 70.00% | -2.00 pp |
+| E1 all | E1 全候选 | 65.33% | -6.67 pp |
+| E5 Completeness | E5 最佳 singleton | **73.33%** | **+1.33 pp** |
+| E5 Clarity | E5 并列强 singleton | 71.33% | -0.67 pp |
+| E5 positive union | E5 正 singleton 联合 | 72.00% | 0.00 pp |
+| E5 all | E5 全候选 | 70.67% | -1.33 pp |
+
+Discovery 收益与 Dev 收益的 Pearson 为0.173、Spearman 为0.093，收益符号只在3/8个系统上一致。唯一保持正增益的 E5 Completeness 为5 corrected、3 harmed，但95% bootstrap CI 为[-2.00,+4.67] pp，McNemar exact $p=0.727$，尚不能认为它稳定优于 baseline。
+
+### 18.6 主要问题与证据边界
+
+Phase19、Phase21 和三次反事实审计共同暴露了五个问题：
+
+1. **局部优化目标错位。** root-local A/B/None 正确率衡量的是子树作为独立分类器的表现，不能表示完整分析报告对 Global Arbiter 的证据价值。
+2. **系统接受观测不稳定。** Discovery100 上 K=1、无 seed 的单次 Arbiter 判断存在明显波动，1–2条样本翻转就可能改变小增益候选的接受结论。
+3. **候选生成与接受共用数据。** Phase19 在 Discovery100 上发现错误、生成候选并接受候选，观察到的系统增益包含选择后偏差；其 Discovery 提升没有在 heldout 和 VLRB 上复现。
+4. **跨-root效用非加性。** singleton 候选单独为正，不代表多个候选联合提交仍为正；全部候选组合在 Epoch 1 和 Epoch 5 都出现下降。
+5. **Discovery 系统收益缺乏迁移性。** Discovery 与 Dev150 收益的 Pearson 只有0.173、Spearman 只有0.093，收益符号仅3/8一致。
+
+这些结果不能支持“Phase19 或 Phase21 优于 Phase17 E4”，也不能支持某个被拒候选已经具有稳定的泛化收益。当前能够得到的结论仅限于：**node-level、root-local 和同数据 system-level 三种接受信号都存在各自的失真来源，尚没有一种信号被证明能够稳定选择出在独立数据上更好的 Rubric。**
 
 ---
 
-## 18. Unified-Subtree + Global-Arbiter 对齐演化（Phase19）
+<a id="phase22"></a>
 
-### 18.1 为什么要做对齐演化
+### 18.7 Phase22：全样本 root-subtree 原子竞争（含条件重聚类设计）
 
-第17章已经证明，最终推理时采用“每棵子树统一分析，再由 Global Arbiter 综合五份报告”的方式，明显优于把所有 node 当作独立选票递归聚合。但是此前的 Rubric 仍由 node-level Pairwise/M1 指标驱动演化：候选 child 或 description 即使改善了局部投票，也不一定能产生更好的子树报告，更不一定能帮助最终 Arbiter。由此形成了训练时与推理时的执行语义不一致。
+#### 实验设计
 
-Phase19 的核心改动是：**保留原有 node-level Pairwise Worker、ErrorSignature、Split、locked retry 和 role-aware Refine 作为候选生成与局部诊断工具，但将候选的最终接受标准改为完整的 Unified-Subtree + Global-Arbiter 系统 Strict ACC。** 换言之，Manager 仍然负责提出结构或描述修改，最终是否把修改提交到 Rubric，则由实际部署系统在 Discovery100 上是否严格变好决定。
+Phase22 暂以“每棵树的局部改善可能带来系统改善”为工作假设，不把它当作已证明的结论。整体沿用 Phase21，只将接受范围从 baseline 输出 A/B 的 frozen scope 扩展到全部 Discovery100，并允许 Split 失败后按归因决定是否重新聚类。
 
-### 18.2 冻结的实验协议
+当前已提交的 root subtree 与候选 subtree，都以 Unified-Subtree Worker 在全部100条样本上的预测进行比较；基线复用已保存的报告，不每轮重新采样。设 $p_i^0$、$p_i^1$ 分别为修改前后的预测，$y_i$ 为 gold，则：
 
-| 项目 | 冻结设置 |
-| --- | --- |
-| 起点 | 5 个 Initial roots |
-| 候选算子 | locked-retry Split + role-aware Refine |
-| Pairwise Worker | Prompt v2，`max_tokens=2048`，两个 endpoint 的 available-slot pool |
-| Manager | Qwen3.5-397B-A17B；ErrorSignature/cluster 使用 `temperature=0.2, seed=42`，child/Refine generation 使用 `temperature=0.7, seed=42`；具体 prompt/parser identity 冻结在 manifest |
-| 演化轮数 | 最少3轮、最多5轮；本实验固定运行至第5轮 |
-| Split retry | 每个 root 最多5次；固定原 clusters；最多锁定1个 support≥15 且 net corrected≥3 的强 child |
-| 系统执行语义 | 5 个 Unified-Subtree Worker 分别生成报告，再由1个 Global Arbiter 决策 |
-| 接受指标 | Discovery100 Strict ACC；`None` 计错，持平拒绝 |
-| 同 root 竞争 | 依次比较 Strict ACC 增益、corrected 数、harmed 数及稳定 ID |
-| 同步提交 | 先选每个 root 的独立最优候选；联合提交只有在系统继续严格改善时才成立，否则只提交最佳单候选 |
-| 推理参数 | 内部数据集 `K=1`，`temperature=0.5`，不设置 generation seed，解析重试上限10次 |
-| 数据隔离 | Dev150 仅逐轮诊断；heldout-500 只在演化结束后访问；VL-RewardBench 不参与选择 |
+$$
+g_i=\mathbf{1}[p_i^1=y_i]-\mathbf{1}[p_i^0=y_i],
+\qquad G=\sum_{i=1}^{100}g_i.
+$$
 
-各数据集的作用如下：
+即错→对记+1，对→错记−1，其他记0；**只有 $G>0$ 才接受，持平也拒绝。** `None` 按错误处理；API/解析失败单独暂停处理，不作为科学负收益。
 
-| 数据集 | 样本数 | 在实验中的作用 |
-| --- | ---: | --- |
-| Discovery100 | 100 | Manager 可见；生成错误经验、提出候选并进行系统级接受 |
-| Dev150 | 150 | 每轮独立诊断，不反馈 Manager、不早停、不选择 checkpoint |
-| RLHF-V heldout-500 | 500 | 演化完成后的内部泛化检查 |
-| VL-RewardBench | 1,247 | 主要外部评测；采用 `K=3`，并与 Phase17 E4 强 Control 配对比较 |
+- **候选生成**：仍沿用 Phase21 的触发条件，错误经验来自 Unified-Subtree 的明确 A/B 错判，而非 node-level Pairwise；baseline `None` 纳入竞争，但不因此自动纳入错误签名生成。
+- **原子操作**：Split 整套 children 共同接受或拒绝；Refine 可修改 root 与 children 的部分描述，但全部 edits 共同竞争。不同 roots 独立通过后同步提交，Global Arbiter 仅作提交后诊断，不参与接受或回滚。
+- **失败重试**：归因为 `cluster_or_decomposition_error` 时重新聚类；其他科学失败复用聚类并重新生成整套 children。不锁定强 child，不部分接受。
+- **冻结设置**：从5个初始 roots 开始，最多5轮；Worker 为 Qwen3-VL-8B-Instruct，Manager 为 Qwen3.5-397B-A17B。内部推理 $K=1$、temperature=0.5、max_tokens=2048、不设 generation seed；VLRB 为 $K=3$。Dev150 只诊断，heldout-500 与 VLRB 不参与选择。本节不是 Qwen3.5-27B Worker 的结果。
 
-### 18.3 每一轮如何演化
+#### 演化过程
 
-#### 18.3.1 先定义一轮中的三个对象
+表中数字为每个候选相对当轮已提交 root 的全样本净收益；除标明 Refine 外均为 Split。
 
-设第 $t$ 轮开始时已提交的 Rubric 为 $R_t$，与它配套、已经持久化的五份 Unified-Subtree 报告和 Global-Arbiter 结果为系统基线 $B_t$。$B_0$ 在初始化时完整推理一次；后续 epoch 直接加载上一轮保存的结果，不重新采样基线。Manager 在这一轮提出的第 $j$ 个、属于 root $r$ 的修改记为 $C_{r,j}$。候选可以是：
+| Epoch | 完整性 | 视觉细节 | 事实性 | 创造性 | 清晰性 |
+| ---: | ---: | ---: | --- | ---: | ---: |
+| 1 | −6 | −1 | **Split +1，接受** | −8 | −9 |
+| 2 | −7 | −2 | **Refine +1，接受** | −3 | −9 |
+| 3 | −7 | −1 | Refine −1 | −6 | −5 |
+| 4 | −7 | −4 | Refine −2 | −6 | −12 |
+| 5 | −10 | −2 | Refine −4 | −16 | −6 |
 
-- **Split 候选**：给一个尚未完成 Split 的 root 增加一组 children；
-- **Refine 候选**：只改写一个既有 child 的 description，不改变树结构。
+25次候选竞争仅接受2次（1次 Split、1次 Refine），都发生在事实性 root；节点数从5增至9。Epoch 2之后已提交的树不再变化，不能把后续负收益候选解释成最终树持续退化。
 
-最重要的约束是：**本轮所有 $C_{r,j}$ 都从同一个 $R_t$ 生成，也都与同一个 $B_t$ 比较。** 系统不会先接受 Completeness，再用已经修改的 Rubric 去评估 Visual Grounding。这样，同一轮不同候选的收益才具有可比性。
+第一次接受修正7条、损害6条；第二次修正6条、损害5条，均净增加1条。进一步分解，两次都是“原 A/B scope 内净损失1条，原 `None` 范围内新增2条正确判断”。因此，新指标确实改变了这两个候选的接受决定，但收益并非原判断范围内的准确率提高。
 
-#### 18.3.2 第一步：决定本轮要尝试哪些算子
+#### 最终结果
 
-每轮开始时读取上一轮已经提交的 Rubric、node-level Pairwise 预测和反馈：
+以下均为 **Clean S5 最终系统（Global Arbiter）的 Strict ACC**，不是单棵 root 的准确率；`None` 计错，净变化是 Phase22 比对照多或少判断正确的样本数。
 
-1. 尚未成功 Split、且仍有重试次数的 root 进入 `split_scheduled`。每个这样的 root 本轮最多产生一个 Split 候选。
-2. 已存在的 child 满足 $0.5 < \operatorname{Acc}(c) < 0.80$、support 至少15、wrong 至少5时进入 `refine_scheduled`。每个 child 单独产生一个 Refine 候选。
-3. 尚在进行 Split 的 root 不会在同一轮 Refine 一个“本轮新生成”的 child；Refine 只能修改 epoch 开始前已经存在的节点。
+| 数据集 | 对照 | 对照 ACC | Phase22 ACC | 净变化 |
+| --- | --- | ---: | ---: | ---: |
+| Discovery100 | Initial | 68.00% | 69.00% | +1 |
+| Heldout-500 | Initial | 76.80% | 76.00% | −4 |
+| VLRB（1,247条） | Initial | 68.08% | 67.92% | −2 |
+| VLRB（1,247条） | Phase21 final | 68.48% | 67.92% | −7 |
+| VLRB（1,247条） | Phase17 E4 | 71.13% | 67.92% | −40 |
 
-因此，一轮可能同时包含多个 root 的 Split，也可能包含同一 root 下多个 child 的 Refine。例如第4轮实际同时尝试了：Visual Grounding、Factuality、Creativity、Clarity 四个 Split，以及 Completeness 两个既有 child 的 Refine，共6个候选。
+VLRB 相对 Initial、Phase21 的 McNemar exact $p$ 分别为0.927、0.600，未检测到显著差异，不等于证明等效。相对 Phase17 E4，修正46条、损害86条，下降3.21 pp，$p=0.000631$，配对 bootstrap 95% CI 为[−5.05, −1.44] pp。**71.13%是 Phase17 E4 强基线，不是 Phase22 的演化起点。** Phase21 final 与 Initial 的树相同，单次预测结果仍可因随机推理而不同。
 
-#### 18.3.3 第二步：Manager 如何获得错误经验并提出候选
+VLRB 相对 Initial 的类别净变化为 General +1、Hallucination −5、Reasoning +2；事实性 root 的局部提高没有体现为 Hallucination 类别的外部收益。最终未解决的技术失败为0；首轮162个技术失败已由 retry 清除。
 
-系统先在 Discovery100 上找出 Global Arbiter 判错的样本，再逐 root 做归因。一个样本只有同时满足以下条件，才会成为 root $r$ 的系统归因错误：
+#### 主要发现与下一步
 
-1. Global Arbiter 的最终 A/B/None 与 gold 不一致；
-2. root $r$ 的 Unified-Subtree 报告所给答案也与 gold 不一致。
+1. **局部小收益尚未转化为可靠泛化收益。** 第一次 Split 使事实性 root 从55%升到56%，Discovery 系统却从68%降到65%；第二次 Refine 后系统回到69%。这提示局部标签收益不等于报告的系统价值，但不足以否定“局部最优可能有利于全局”的一般假设，本次也未证明达到局部最优。
+2. **单次小增益需要稳定性检查。** 同一最终树在 Epoch 2–5 的 Dev150 ACC 为74.67%、71.33%、72.00%、74.00%；这不是结构变化带来的轨迹。两次接受都只有+1/100，不能直接视为可复现提升。
+3. **本次没有实际测试重聚类收益。** 16次后续 Split 重试全部复用原聚类；23次失败归因为18次过度修正、5次兄弟边界冲突，均未触发重新聚类。结果不能单独归因于“重聚类有效或无效”。
+4. **反思能指出问题，但修正闭环仍弱。** 当前失败归因最多展开6个 harmed 和3个 corrected 案例，未逐条分析候选的全部新错误。后续可保持净收益指标不变，比较“逐错误反思→汇总建议→整树 revise”，并检查合并/重新划分建议能否真正触发结构操作；在新实验中预先冻结方案，不用已查看的 VLRB 挑选候选。
 
-随后，不同算子的 Manager 还会再与 node-level 错误取交集：
+**结论：Phase22 的接受规则挡住了大量负收益候选，但只产生两次微小局部改进，没有检测到相对初始树的外部收益，且明显落后于 Phase17 E4。优先改进候选与反思质量、验证小收益稳定性，而不是仅增加演化轮数。**
 
-| 算子 | 真正交给 Manager 的错误样本 |
-| --- | --- |
-| Split | `root Pairwise decisive-wrong` ∩ `Global Arbiter wrong` ∩ `该 root Unified-Subtree wrong` |
-| Refine | `目标 child Pairwise wrong` ∩ `Global Arbiter wrong` ∩ `该 child 所属 root Unified-Subtree wrong` |
-
-这里的 `Global Arbiter wrong` 和 `Unified-Subtree wrong` 都把 `None` 视为不等于 A/B gold；但 node-level Pairwise 的 `decisive-wrong` / `wrong` 只包含解析有效且明确投 A/B、同时投错的样本，Pairwise `None` 不进入 wrong 集合，而是作为 abstain-boundary 单独处理。
-
-Split Manager 为这些样本逐条生成 ErrorSignature，再进行语义聚类，并为每个 cluster 生成一个 child。ErrorSignature 阶段能够读取该样本的图像、问题、A/B、gold、root 当前错误判断及理由；Child Manager 获得 cluster 内的 signatures、按 cluster 顺序取前3条代表样本、当前 siblings、Rubric Memory 与历史失败反馈。每个合法 cluster 至少包含5条错误样本；一次 Split 至少产生2个、最多产生5个 children，并受 root 剩余容量限制。样本不足或聚类不满足这些约束时，本轮该 root 不生成 Split 候选。
-
-Refine Manager 接收结构化 evidence：节点整体 support/correct/wrong/abstain/coverage、过滤后的 wrong cases、最多6条 correct-boundary cases 和6条 abstain-boundary cases。多模态代表样本按当前确定性顺序取最多3条 wrong、2条 correct 和1条 abstain。每个 case 包括 `sample_id`、question、A/B、gold、当前 vote 和 Worker thought，用来避免只根据一个汇总 ACC 改写 description。
-
-这意味着当前 Manager 并没有看到某个 root 的全部局部错误，而只看到“已经传导为最终系统错误”的子集。它减少了与最终任务无关的优化，但也可能把被其他 roots 暂时补救的 root 错误排除在外，导致 ErrorSignature 数量明显减少。
-
-#### 18.3.4 第三步：每个候选独立参加系统竞争
-
-对任一候选 $C_{r,j}$，系统执行以下固定过程：
-
-1. 将 $C_{r,j}$ 单独应用到 epoch-start Rubric $R_t$，得到临时 Rubric；
-2. 只重新生成发生变化的 root $r$ 的 Unified-Subtree 报告；
-3. 另外四个未变化 root 的报告直接从基线 $B_t$ 复用，避免 `temperature=0.5` 的重新采样成为隐藏变量；
-4. 将这五份报告重新交给 Global Arbiter，得到候选系统在100个样本上的最终判断；
-5. 与 $B_t$ 逐样本比较：基线错而候选对记为 `corrected`，基线对而候选错记为 `harmed`。
-
-候选的系统收益为：
-
-```text
-net_corrected = corrected - harmed
-Strict ACC delta = net_corrected / 100
-```
-
-只有 `net_corrected > 0` 且没有技术失败的候选，才称为“独立正收益候选”。`net_corrected = 0` 也拒绝。这里的技术失败指 Unified-Subtree 或 Arbiter 请求经过解析重试后仍没有形成可用结果；100条中只要仍有一条未解决，候选的 `technical_failure_rate` 就大于0，整个候选不参与准确率竞争，而不是把该样本当成普通 `None`。parent ACC、child ACC、specialized ACC、subtree ACC 和旧 M1 ACC 都会保存，但在 Phase19 中仅是诊断指标，不能推翻系统级决定。
-
-这一比较只冻结并复用了未变化的四份子树报告，候选的 Global Arbiter 仍会重新推理。由于 Arbiter 使用 `temperature=0.5`、`K=1` 且不固定 generation seed，`corrected/harmed` 同时包含候选作用和 Arbiter 采样噪声；它是当前实现的接受观测值，不是无噪声的因果效应。
-
-#### 18.3.5 第四步：同一 root 内如何竞争
-
-一个 root 在同一轮可能有多个独立正收益候选，最典型的是同一棵树下多个 child 同时满足 Refine 条件。由于这些候选都改变同一份 root 报告，协议不允许把它们未经验证地一起提交，而是先在该 root 内只选一个：
-
-1. Strict ACC 增益更大者优先；
-2. 若相同，`corrected` 更多者优先；
-3. 再相同，`harmed` 更少者优先；
-4. 仍相同时用稳定的候选 ID 打破平局，保证可复现。
-
-这里的“root 独立赢家”仅表示：**在所有只修改该 root、且单独相对 $B_t$ 有正收益的候选中排名第一。** 它还没有被写入正式 Rubric。
-
-以上是代码中冻结的统一排序键。由于本实验样本数固定，Strict delta 已由 `corrected-harmed` 决定，后续 corrected/harmed 项主要用于规定相同净增益下的确定性顺序，而不是新的独立性能证据；其中 harmed 在 Strict delta 与 corrected 都相同后实际上不会再提供额外区分。
-
-本次真实运行中，第4轮和第5轮都为 Completeness 的两个 children 生成了两个 Refine 候选，但它们都没有取得独立正收益，因此没有产生 Completeness root 赢家；同 root 排名规则实际上没有决定任何正式提交。
-
-#### 18.3.6 第五步：不同 roots 的赢家如何提交
-
-如果本轮只有一个 root 赢家，直接提交该候选。如果有多个不同 roots 的赢家，才进入“联合提交”检查：
-
-1. 将各赢家在独立评估时已经生成的 changed-root 报告拼到同一份五-root 报告集合中；
-2. 不重新采样任何 Unified-Subtree，只重新运行一次 Global Arbiter；
-3. 联合系统相对 $B_t$ 仍满足 `net_corrected > 0`，则把这些 root 修改一起提交；
-4. 若联合系统持平或变差，则不提交整个组合，只提交在所有 root 赢家中按同一排序键（Strict delta、corrected、负 harmed、稳定 ID）最高的候选；其他赢家记为 `joint_interaction_regression`。
-
-例如，假设 Completeness 候选单独为 +2、Visual Grounding 候选单独为 +1：若两者合并后为 +2或+1，当前协议会同时提交；若合并后为0或负数，则只提交 Completeness。当前实现不会穷举所有 root 子集，leave-one-root-out 只作为失败诊断。因此，“联合提交”不是把各 root 的增益相加，也不是多数表决，而是对组合后的五份报告重新做一次最终仲裁。
-
-本次实验每轮实际情况如下：
-
-| Epoch | 本轮候选 | 独立正收益 root | 最终提交 |
-| ---: | --- | --- | --- |
-| 1 | 5个 root Split | 无 | 无 |
-| 2 | 5个 root locked-retry Split | 无 | 无 |
-| 3 | 5个 root locked-retry Split | Completeness | 只提交 Completeness Split |
-| 4 | 4个 root Split + 2个 Completeness-child Refine | 无 | 无 |
-| 5 | 4个 root Split + 2个 Completeness-child Refine | Creativity | 只提交 Creativity Split |
-
-因此，Phase19 的真实结果中没有出现“多个 root 同轮联合接受”；第3轮和第5轮都走的是单候选提交路径。
-
-#### 18.3.7 第六步：哪些失败经验会反馈给下一轮 Manager
-
-候选拒绝后，系统不会只记录一句“ACC 下降”，而是区分算子保存以下信息：
-
-| 反馈对象 | 下一轮可见的信息 | 用法 |
-| --- | --- | --- |
-| Split retry Manager | 原 ErrorSignatures 与固定 clusters；代表样本和 sample packets；每个 child 的 ACC、support、coverage、net corrected；sibling conflict；局部 corrected/harmed；系统 corrected/harmed 数量、Strict delta 与失败类型 | 若存在强 child，按原 criterion 和预测锁定；不重新聚类，只改写或替换其余 children |
-| Refine Manager | 上一次 proposed description；带 question/A/B/gold/current vote/Worker thought 的 wrong、correct-boundary、abstain-boundary cases；node/subtree/M1 诊断；系统 corrected/harmed 数量、Strict delta 与失败类型 | 下一次继续改写同一 description，并避免重复已失败的改法 |
-| 已接受候选 | 新 Rubric、对应 node Pairwise 预测、新 Unified-Subtree 报告和 Arbiter 结果 | 成为下一 epoch 的唯一基线 $R_{t+1}$、$B_{t+1}$ |
-
-需要特别说明：系统级逐样本 `corrected_sample_ids` 和 `harmed_sample_ids` 会完整保存在 `system_competition.json` 中，用于审计；但当前投影给下一轮 Manager 的主要是系统 corrected/harmed **数量、Strict delta 和失败类型**，并没有把每个系统 harmed 样本的五份完整报告全部放入 Manager prompt。Manager 获得的逐样本内容仍以 ErrorSignature、局部 child diagnostics 和 node-level changed cases 为主。这是当前反馈闭环的真实边界。
-
-本轮结束时也不会重新生成下一轮基线：若没有候选提交，$R_t$ 和 $B_t$ 被原样保存为 $R_{t+1}$、$B_{t+1}$；若提交单候选或联合候选，则将竞争阶段已经得到的 candidate/joint 报告与 Arbiter 结果保存为 $B_{t+1}$。因此 Discovery 上连续无提交 epoch 的基线不会因随机重跑而漂移。
-
-系统反馈类型的含义固定为：`independent_system_improvement` 表示独立正收益；`no_system_effect` 表示 corrected 与 harmed 相同；`subtree_evidence_regression` 表示 harmed 更多；`same_root_candidate_superseded` 表示同 root 内被更强正收益候选覆盖；`joint_interaction_regression` 表示独立正收益候选在跨-root组合阶段未被提交。
-
-### 18.4 演化轨迹与最终 Rubric
-
-| Epoch | Discovery Strict ACC | Coverage | node 数 | 本轮正式提交 |
-| ---: | ---: | ---: | ---: | --- |
-| 0 | 69.00% | 100.00% | 5 | Initial |
-| 1 | 69.00% | 100.00% | 5 | 无 |
-| 2 | 69.00% | 100.00% | 5 | 无 |
-| 3 | 71.00% | 100.00% | 7 | Split Completeness |
-| 4 | 71.00% | 100.00% | 7 | 无 |
-| 5 | **72.00%** | 99.00% | 10 | Split Creativity |
-
-系统一共完成27次候选竞争，只接受2次、拒绝25次，接受率为7.41%。两次接受均为 Split，所有 Refine 候选都被系统级竞争拒绝；停止原因是达到 `max_epochs=5`，而不是已经无候选可优化。
-
-最终 Rubric 从5个 roots 扩展到10个 nodes：
-
-| Root | 最终接受的 children |
-| --- | --- |
-| Completeness and Coverage | `verifiable_visual_coverage`、`task_intent_completion_priority` |
-| Visual Grounding and Details | 无 |
-| Factuality / No Hallucination | 无 |
-| Creativity and Expressiveness | `reasoning_validity_over_presentation`、`visual_precision_over_expressive_elaboration`、`utility_appropriate_elaboration` |
-| Clarity and Coherence | 无 |
-
-Visual Grounding、Factuality 和 Clarity 虽然分别找到了局部强 child（support/net corrected 分别为79/+4、78/+5、44/+3），但这些 child 加入完整系统后没有提高 Strict ACC，因此均未正式进入 Rubric。这正是“局部专家存在”与“整个决策系统值得修改”之间的区别。
-
-### 18.5 最关键的机制发现：局部变差仍可能改善最终系统
-
-两次正式接受都不满足传统“specialized ACC 必须提高”的直觉：
-
-| 接受操作 | 局部 specialized ACC 变化 | 系统 corrected / harmed | Discovery Strict ACC 变化 |
-| --- | ---: | ---: | ---: |
-| Completeness Split | -5.15 pp | 5 / 3 | +2.00 pp |
-| Creativity Split | -6.45 pp | 8 / 7 | +1.00 pp |
-
-Completeness root 的直接标签 ACC 从59%降到52%，Creativity root 从65%降到56%；然而 children 生成的细粒度分析改变了整份子树报告，使 Global Arbiter 能够在更多关键样本上做出正确综合判断。也就是说，Unified-Subtree 的价值不等于把 child 当作额外选票：**node 可以不是更强的独立分类器，却能成为更有用的中间证据产生器。**
-
-反方向也同样成立。25个候选虽有一些局部指标改善，却大多在本次 Discovery 推理中表现为 `subtree_evidence_regression`，即新报告对应的 Arbiter 判断损害多于修正。因此，系统级接受在这一次 `K=1` realization 中过滤了“局部看起来更好、系统观测值反而更差”的修改；受 Arbiter 采样噪声影响，不能把每一次拒绝都解释为候选的稳定真实退化。
-
-### 18.6 内部数据结果与稳定性
-
-| 数据集 | Initial Strict ACC | Final Strict ACC | 变化 | Initial → Final Coverage | corrected / harmed | McNemar exact p |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Discovery100 | 69.00% | **72.00%** | +3.00 pp | 100.00% → 99.00% | 11 / 8 | 0.648 |
-| Dev150 | 70.67% | 71.33% | +0.67 pp | 100.00% → 98.00% | 11 / 10 | 1.000 |
-| RLHF-V heldout-500 | **75.40%** | 74.80% | -0.60 pp | 100.00% → 99.20% | 21 / 24 | 0.766 |
-
-Discovery 的3 pp 是同一组样本上的选择后结果，不应视为无偏泛化增益。Dev 和 heldout 均没有显示可靠提升；heldout 的轻微下降也不显著。
-
-另一个重要现象是 `K=1` 随机推理噪声较大：epoch 0–2 的 Rubric SHA 完全相同，但 Dev Strict ACC 分别为70.67%、71.33%和74.00%；epoch 3–4 的 Rubric 也相同，Dev 却为69.33%和72.67%。同一 Rubric 的自然波动可达约3.3 pp，已经大于两次接受操作的1–2 pp 增益。Dev 没有被用于选择，因此科学隔离仍成立，但 Discovery100 上单次、无 seed 的严格提升门槛对小增益并不稳定。
-
-### 18.7 VL-RewardBench 外部结果
-
-| 系统 | Strict ACC | OverallAcc | MacroAcc | Coverage |
-| --- | ---: | ---: | ---: | ---: |
-| Initial five-root | 68.08% | 68.19% | 61.65% | 99.84% |
-| Phase17 E4 Control | **71.13%** | **71.59%** | **66.24%** | 99.36% |
-| Phase19 aligned final | 70.57% | 70.97% | 64.94% | 99.44% |
-
-Phase19 相对 Phase17 E4 的 Strict ACC 为 -0.56 pp，corrected/harmed 为57/64，McNemar exact p=0.586，paired bootstrap 95% CI 为[-2.25, +1.20] pp。结果没有证明 Phase19 优于强 Control；统计上也没有显著变差，但当前实验没有按等价性检验设计，因此不能据此声称二者等价。
-
-相对 Initial five-root，Phase19 提升2.49 pp，corrected/harmed 为65/34，McNemar exact p=0.0024，bootstrap 95% CI 为[+0.96, +4.09] pp，说明最终 Rubric 仍显著优于初始系统。分类型看，相对 Phase17 E4，Phase19 在 Reasoning 上提高1.58 pp、Hallucination 下降0.40 pp、General 下降4.97 pp；主要外部损失来自通用偏好，而不是推理类。
-
-Phase19 最终仅10个 nodes，较 Phase17 E4 的27个减少62.96%，而 Strict ACC 点估计只低0.56 pp。这表明对齐演化产生了明显更紧凑的 Rubric，但“更紧凑且性能等价”仍需重复种子或等价性检验才能成立。运行方面，Initial 系统约84.3分钟，Phase19 final 约100.4分钟；Phase17 E4 Control 直接复用冻结结果，因此本实验不能给出 Phase19 与 E4 的同环境时间对比。
-
-### 18.8 本实验结论
-
-Phase19 验证了对齐演化链路在工程上已经打通，也证明系统级接受标准确实会作出不同于局部 node/subtree ACC 的选择。它支持以下结论：
-
-- Split/Refine 候选应当在真实部署语义下接受，局部分类性能不能替代最终系统效用；
-- children 可以通过提供更有用的解释证据改善 Arbiter，即使它们作为独立投票器时更弱；
-- 系统级门槛在本次 Discovery realization 中过滤了大量局部改善但系统观测值下降的候选，并得到明显更紧凑的 Rubric；
-- 但本轮在 Dev、heldout 和 VL-RewardBench 上都没有超过现有 Phase17 E4 强 Control，当前主结果仍应保留 Phase17 E4；
-- Discovery100 的样本量和 `K=1` 随机噪声不足以稳定识别1–2 pp级别的真实增益。后续若继续该路线，应优先提高接受评估的稳定性，并重新审视仅使用“Global Arbiter 错且目标 root 也错”的归因子集是否损失了过多 root 专家化经验。
+结果来源：[演化与 heldout 报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase22_all_sample_subtree_adaptive_recluster_evolution_v1/final_report.json)、[Dev150 轨迹](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase22_all_sample_subtree_adaptive_recluster_evolution_v1/dev150_trajectory.json)、[VLRB 报告](../output/evolving_structured_rubrics/vl_rewardbench_all_sample_adaptive_recluster_evolution_v1/final_report.json)。
 
 ---
 

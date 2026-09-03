@@ -1,238 +1,30 @@
-# Ignore Python bytecode and cache files
+# Python build products and local scratch/archive files
 __pycache__
 .local
 *.egg-info/
 build/
 
-# Ignore output and log directories
-output/qwen3vl_bt_reward/*
-output/*.json*
-output/*.log*
-output/*.txt*
-output/**/workflow_agent*.log
-output/**/workflow_agent*.jsonl
-output/**/cache_*/
+# Runtime artifacts are local by default, including new experiments.
+# Already tracked historical reports remain tracked and are not deleted.
+# Publish reviewed, compact evidence under docs/experiment-results/ instead
+# of extending per-experiment allowlists for predictions and local manifests.
+/output/
 
-# Environment files
+# Secrets and machine-specific configuration
 .env
+experiments/evolving_structured_rubrics/configs/local/
 
-# IDE files
+# IDE / local agent configuration
 .vscode/
 .idea/
+.agents/
+.aris/
 
-# Data files
+# Datasets and independent dataset checkouts
 data/**/*.json*
 data/**/*.csv*
 data/**/*.xlsx*
 data/**/*.arrow
 data/discovery_v2_demo_v3/
-
-# Phase 4 runtime artifacts (keep frozen manifest, rubrics, and compact reports)
-output/evolving_structured_rubrics/**/cache/
-output/evolving_structured_rubrics/**/traces/
-output/evolving_structured_rubrics/**/predictions/
-output/evolving_structured_rubrics/**/router/
-output/evolving_structured_rubrics/**/logs/
-output/evolving_structured_rubrics/**/provenance/
-output/evolving_structured_rubrics/**/quarantine/
-output/evolving_structured_rubrics/**/repairs/
-output/evolving_structured_rubrics/**/progress.json
-output/evolving_structured_rubrics/**/run.log
-output/evolving_structured_rubrics/**/heldout_started.lock
-experiments/evolving_structured_rubrics/configs/local/
-
-# Discovery-v2 runtime data. Keep code, templates, and compact reviewed
-# manifests/reports only; raw candidates, images, predictions, and review
-# queues can contain licensed or sensitive source data.
-output/**/discovery_data_v2/image_store/
-output/**/discovery_data_v2/ingest/
-output/**/discovery_data_v2/candidates/
-output/**/discovery_data_v2/screen/
-output/**/discovery_data_v2/adjudication/
-output/**/discovery_data_v2/review/
-output/**/discovery_data_v2/final/*.jsonl
-
-# Phase 5 evolution runtime artifacts; summarize reviewed findings in docs only.
-output/evolving_structured_rubrics/rubric_evolution_phase5/
-output/evolving_structured_rubrics/rubric_evolution_phase5_prompt_8001
-output/evolving_structured_rubrics/vl_rewardbench_external_transfer_v1
-output/evolving_structured_rubrics/vl_rewardbench_phase10_transfer_v1
-output/evolving_structured_rubrics/vl_rewardbench_phase10_transfer_v2_max2048
-
-# Local VL-RewardBench checkout and Prompt-v2 runtime artifacts.
-# Keep the reviewed final_report.md, frozen_manifest.json, and retry/report.json.
 data/VL_RewardBench/
-output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/final_report.json
-output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/offline_audit.json
-output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/order_schedule.json
-output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/stage_status.json
-output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/run/
-output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/smoke/
-output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/retry/attempts/
-output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/retry/combined/
-output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/retry/failure_manifest.json
-output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/retry/provenance.json
-output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/retry/retry_items.json
-output/evolving_structured_rubrics/vl_rewardbench_phase10_prompt_v2_transfer_v1/retry/structured/
-
-# Phase 14 Child-Gate runtime artifacts; keep reviewed final_report.json/.md.
-output/evolving_structured_rubrics/vl_rewardbench_phase14_full_child_gate_v1/frozen_manifest.json
-output/evolving_structured_rubrics/vl_rewardbench_phase14_full_child_gate_v1/offline_audit.json
-output/evolving_structured_rubrics/vl_rewardbench_phase14_full_child_gate_v1/order_schedule.json
-output/evolving_structured_rubrics/vl_rewardbench_phase14_full_child_gate_v1/stage_status.json
-output/evolving_structured_rubrics/vl_rewardbench_phase14_full_child_gate_v1/retry/
-output/evolving_structured_rubrics/vl_rewardbench_phase14_full_child_gate_v1/routing_contracts/
-output/evolving_structured_rubrics/vl_rewardbench_phase14_full_child_gate_v1/run/
-output/evolving_structured_rubrics/vl_rewardbench_phase14_full_child_gate_v1/smoke/
-
-# Phase16 external-transfer runtime artifacts; keep only reviewed final reports.
-output/evolving_structured_rubrics/vl_rewardbench_phase16_checkpoint_transfer_v1/
-output/evolving_structured_rubrics/vl_rewardbench_phase16_checkpoint_transfer_v2_sample_major/
-output/evolving_structured_rubrics/vl_rewardbench_phase16_checkpoint_transfer_v3_sample_major_dynamic/*
-!output/evolving_structured_rubrics/vl_rewardbench_phase16_checkpoint_transfer_v3_sample_major_dynamic/final_report.json
-!output/evolving_structured_rubrics/vl_rewardbench_phase16_checkpoint_transfer_v3_sample_major_dynamic/final_report.md
-output/evolving_structured_rubrics/vl_rewardbench_phase16_e5_root_child_router_v1/*
-!output/evolving_structured_rubrics/vl_rewardbench_phase16_e5_root_child_router_v1/final_report.json
-!output/evolving_structured_rubrics/vl_rewardbench_phase16_e5_root_child_router_v1/final_report.md
-output/evolving_structured_rubrics/vl_rewardbench_phase16_prompt_v2_evolved_v2/*
-!output/evolving_structured_rubrics/vl_rewardbench_phase16_prompt_v2_evolved_v2/final_report.json
-!output/evolving_structured_rubrics/vl_rewardbench_phase16_prompt_v2_evolved_v2/final_report.md
-
-# Phase17 Discovery-v2 transfer runtime artifacts; keep only reviewed final reports.
-output/evolving_structured_rubrics/vl_rewardbench_phase17_discovery_v2_prompt_v2_v1/*
-!output/evolving_structured_rubrics/vl_rewardbench_phase17_discovery_v2_prompt_v2_v1/final_report.json
-!output/evolving_structured_rubrics/vl_rewardbench_phase17_discovery_v2_prompt_v2_v1/final_report.md
-
-# Phase17 checkpoint-transfer runtime artifacts; keep only reviewed final reports.
-output/evolving_structured_rubrics/vl_rewardbench_phase17_checkpoint_transfer_v1/*
-!output/evolving_structured_rubrics/vl_rewardbench_phase17_checkpoint_transfer_v1/final_report.json
-!output/evolving_structured_rubrics/vl_rewardbench_phase17_checkpoint_transfer_v1/final_report.md
-
-# Qwen2.5 Phase17 E4 Worker-transfer runtime artifacts; keep reviewed reports.
-output/evolving_structured_rubrics/vl_rewardbench_qwen25_phase17_e4_transfer_v1/*
-!output/evolving_structured_rubrics/vl_rewardbench_qwen25_phase17_e4_transfer_v1/final_report.json
-!output/evolving_structured_rubrics/vl_rewardbench_qwen25_phase17_e4_transfer_v1/final_report.md
-
-# Qwen2.5 Phase18 model-specific evolution. The Phase 5 parent is ignored
-# above, so reopen only this experiment and retain compact, reviewed artifacts.
-!output/evolving_structured_rubrics/rubric_evolution_phase5/
-output/evolving_structured_rubrics/rubric_evolution_phase5/*
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/
-output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/*
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/dev150_trajectory.json
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/evolution_history.json
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/final_report.json
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/frozen_manifest.json
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/offline_audit.json
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/qwen25_offline_audit.json
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/stage_status.json
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/final/
-output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/final/*
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/final/discovery_report.json
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/final/rubric.json
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/heldout500/
-output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/heldout500/*
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/heldout500/frozen_manifest.json
-!output/evolving_structured_rubrics/rubric_evolution_phase5/phase18_qwen25_discovery_v2_prompt_v2_split_refine_v1/heldout500/report.json
-
-# Qwen2.5 Phase18 VL-RewardBench runtime artifacts; keep reviewed reports only.
-output/evolving_structured_rubrics/vl_rewardbench_qwen25_phase18_evolved_v1/*
-!output/evolving_structured_rubrics/vl_rewardbench_qwen25_phase18_evolved_v1/final_report.json
-!output/evolving_structured_rubrics/vl_rewardbench_qwen25_phase18_evolved_v1/final_report.md
-
-# Aggregation ablations: runtime caches and raw generations stay local.  The
-# final A/B-only experiment already carries the reviewed cross-system summary,
-# so only its compact reports and diagnostics are eligible for Git.
-output/evolving_structured_rubrics/vl_rewardbench_implicit_all_prompt_design_v2/
-output/evolving_structured_rubrics/vl_rewardbench_implicit_unified_subtree_prompt_v1/
-output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_v1/
-output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_only_v1/*
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_only_v1/final_report.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_only_v1/final_report.md
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_only_v1/paired_comparison.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_only_v1/s4_to_s5_transition.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_only_v1/former_s4_none_subset.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_only_v1/root_majority_override_audit.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_only_v1/response_distribution.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_only_v1/efficiency.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_only_v1/tiebreak_rescue.json
-
-# Clean Global-Arbiter experiment: retain compact reports and provenance only.
-output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/*
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/final_report.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/final_report.md
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/paired_comparison.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/root_majority_override_audit.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/category_source_analysis.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/efficiency.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/response_distribution.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/parse_failures.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/offline_audit.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/prompt_spec.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/frozen_manifest.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/source_reuse_manifest.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/s4_to_s5_transition.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_ab_preferred_none_v2/former_s4_none_subset.json
-
-# Internal K=1 diagnostic: keep only compact reports and protocol evidence.
-output/evolving_structured_rubrics/internal_global_arbiter_k1_v1/*
-!output/evolving_structured_rubrics/internal_global_arbiter_k1_v1/final_report.json
-!output/evolving_structured_rubrics/internal_global_arbiter_k1_v1/final_report.md
-!output/evolving_structured_rubrics/internal_global_arbiter_k1_v1/offline_audit.json
-!output/evolving_structured_rubrics/internal_global_arbiter_k1_v1/parse_failures.json
-!output/evolving_structured_rubrics/internal_global_arbiter_k1_v1/prompt_spec.json
-!output/evolving_structured_rubrics/internal_global_arbiter_k1_v1/frozen_manifest.json
-
-# Unified Full-Rubric Worker ablation: ignore raw generations/caches while
-# retaining compact protocol evidence and reviewed reports.
-output/evolving_structured_rubrics/full_rubric_unified_worker_v1/*
-!output/evolving_structured_rubrics/full_rubric_unified_worker_v1/final_report.json
-!output/evolving_structured_rubrics/full_rubric_unified_worker_v1/final_report.md
-!output/evolving_structured_rubrics/full_rubric_unified_worker_v1/paired_comparison.json
-!output/evolving_structured_rubrics/full_rubric_unified_worker_v1/category_analysis.json
-!output/evolving_structured_rubrics/full_rubric_unified_worker_v1/efficiency.json
-!output/evolving_structured_rubrics/full_rubric_unified_worker_v1/offline_audit.json
-!output/evolving_structured_rubrics/full_rubric_unified_worker_v1/prompt_spec.json
-!output/evolving_structured_rubrics/full_rubric_unified_worker_v1/frozen_manifest.json
-!output/evolving_structured_rubrics/full_rubric_unified_worker_v1/rubric_snapshot.json
-!output/evolving_structured_rubrics/full_rubric_unified_worker_v1/rubric_serialization.json
-
-# Qwen2.5 Clean S5-v2 model-transfer experiment: raw generations and caches
-# remain local; compact protocol evidence and reviewed reports may be committed.
-output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/*
-!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/final_report.json
-!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/final_report.md
-!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/paired_comparison.json
-!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/arbiter_override_analysis.json
-!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/category_analysis.json
-!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/efficiency.json
-!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/offline_audit.json
-!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/prompt_spec.json
-!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/frozen_manifest.json
-!output/evolving_structured_rubrics/qwen25_clean_s5_v2_transfer_v1/rubric_snapshot.json
-
-# Global-Arbiter evidence/priority ablation: keep reviewed reports, compact
-# statistics, prompt identities, and provenance; ignore request-level artifacts.
-output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/*
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/final_report.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/final_report.md
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/category_source_analysis.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/efficiency.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/frozen_manifest.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/offline_audit.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/paired_comparison.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/response_distribution.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/v2_reuse_manifest.json
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/prompt_specs/
-!output/evolving_structured_rubrics/vl_rewardbench_global_arbiter_evidence_priority_ablation_v1/prompt_specs/*.json
-
-.agents/
-.aris/
-
-# Phase19 execution-aligned VL-RewardBench evaluation: retain reviewed reports
-# and compact offline audit; keep schedules, endpoint identities, and runtime
-# state local.
-output/evolving_structured_rubrics/vl_rewardbench_unified_subtree_arbiter_aligned_evolution_v1/*
-!output/evolving_structured_rubrics/vl_rewardbench_unified_subtree_arbiter_aligned_evolution_v1/final_report.json
-!output/evolving_structured_rubrics/vl_rewardbench_unified_subtree_arbiter_aligned_evolution_v1/final_report.md
-!output/evolving_structured_rubrics/vl_rewardbench_unified_subtree_arbiter_aligned_evolution_v1/offline_audit.json
+data/Multimodal_RewardBench/
