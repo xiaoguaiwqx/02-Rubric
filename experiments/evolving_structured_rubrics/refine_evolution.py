@@ -434,6 +434,8 @@ def _refine_history_projection(history: Mapping[str, Any], node_id: str) -> list
             "proposed_description": record.get("proposed_description"),
             "node_evaluation": record.get("node_evaluation"),
             "natural_language_attribution": record.get("natural_language_attribution"),
+            "root_scope_evaluation": record.get("root_scope_evaluation"),
+            "root_scope_evidence": record.get("root_scope_evidence"),
         })
     return result
 
@@ -834,6 +836,8 @@ def _record_refine_state(history: dict[str, Any], result: Mapping[str, Any],
         "proposed_description": None if proposal is None else proposal.description,
         "node_evaluation": None if evaluation is None else evaluation.to_dict(),
         "system_evaluation": result.get("system_evaluation"),
+        "root_scope_evaluation": result.get("root_scope_evaluation"),
+        "root_scope_evidence": result.get("root_scope_evidence"),
         "natural_language_attribution": (
             None if payload is None else payload.get("natural_language_attribution")),
         "elapsed_seconds": elapsed,

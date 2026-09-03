@@ -401,7 +401,7 @@ def _history_projection(history,root,include_retry_diagnostics=False):
   if record['root_id']!=root or record['decision']==ACCEPTED:continue
   payload=record.get('history_payload') or {};failure=payload.get('structured_failure') or {};details=failure.get('details') or {}
   compact_failure={'code':failure.get('code'),'stage':failure.get('stage'),'details':{k:details[k] for k in ('type','message','parse_error','attempt_count','collisions') if k in details}}
-  item={'attempt':record['attempt'],'outcome':record['decision'],'failure':compact_failure,'cluster_summary':payload.get('cluster_summary'),'children_summary':payload.get('children_summary',[]),'local_metrics':payload.get('local_metrics'),'corrected_sample_ids':payload.get('corrected_sample_ids',[]),'harmed_sample_ids':payload.get('harmed_sample_ids',[]),'natural_language_attribution':payload.get('natural_language_attribution')}
+  item={'attempt':record['attempt'],'outcome':record['decision'],'failure':compact_failure,'cluster_summary':payload.get('cluster_summary'),'children_summary':payload.get('children_summary',[]),'local_metrics':payload.get('local_metrics'),'corrected_sample_ids':payload.get('corrected_sample_ids',[]),'harmed_sample_ids':payload.get('harmed_sample_ids',[]),'natural_language_attribution':payload.get('natural_language_attribution'),'root_scope_evaluation':record.get('root_scope_evaluation'),'root_scope_evidence':record.get('root_scope_evidence')}
   if include_retry_diagnostics:
    item['child_retry_diagnostics']=payload.get('child_retry_diagnostics')
    item['preservation_directives']=payload.get('preservation_directives',[])

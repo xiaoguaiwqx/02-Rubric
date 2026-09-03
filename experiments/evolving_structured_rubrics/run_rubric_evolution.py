@@ -330,7 +330,16 @@ def _config(path: Path) -> dict[str, Any]:
                        "full_rubric_unified_worker_experiment",
                        "qwen25_clean_s5_transfer_experiment",
                        "unified_subtree_arbiter_aligned_evolution_v1_experiment",
-                       "vlrb_unified_subtree_arbiter_aligned_evolution_v1_experiment"}
+                       "vlrb_unified_subtree_arbiter_aligned_evolution_v1_experiment",
+                       "local_unified_subtree_competition_v1_experiment",
+                       "vlrb_local_unified_subtree_competition_v1_experiment",
+                       "unified_subtree_bundle_evolution_v1_experiment",
+                       "all_sample_adaptive_recluster_evolution_v1_experiment",
+                       "vlrb_all_sample_adaptive_recluster_evolution_v1_experiment",
+                       "vlrb_unified_subtree_bundle_evolution_v1_experiment",
+                       "phase21_rejected_candidate_counterfactual_arbiter_audit_v1_experiment",
+                       "phase21_counterfactual_coalition_audit_k3_v1_experiment",
+                       "phase21_counterfactual_dev150_transfer_k3_v1_experiment"}
     if (not isinstance(value, dict)
             or not required_fields.issubset(value)
             or set(value) - required_fields - optional_fields):
@@ -382,6 +391,17 @@ def _phase5_config_view(config: Mapping[str, Any]) -> dict[str, Any]:
     value.pop("qwen25_clean_s5_transfer_experiment", None)
     value.pop("unified_subtree_arbiter_aligned_evolution_v1_experiment", None)
     value.pop("vlrb_unified_subtree_arbiter_aligned_evolution_v1_experiment", None)
+    value.pop("local_unified_subtree_competition_v1_experiment", None)
+    value.pop("vlrb_local_unified_subtree_competition_v1_experiment", None)
+    value.pop("unified_subtree_bundle_evolution_v1_experiment", None)
+    value.pop("all_sample_adaptive_recluster_evolution_v1_experiment", None)
+    value.pop("vlrb_all_sample_adaptive_recluster_evolution_v1_experiment", None)
+    value.pop("vlrb_unified_subtree_bundle_evolution_v1_experiment", None)
+    value.pop(
+        "phase21_rejected_candidate_counterfactual_arbiter_audit_v1_experiment",
+        None)
+    value.pop("phase21_counterfactual_coalition_audit_k3_v1_experiment", None)
+    value.pop("phase21_counterfactual_dev150_transfer_k3_v1_experiment", None)
     return value
 
 
@@ -3148,7 +3168,66 @@ def main() -> int:
         "vlrb-aligned-evolution-smoke",
         "vlrb-aligned-evolution-run",
         "vlrb-aligned-evolution-retry",
-        "vlrb-aligned-evolution-report"))
+        "vlrb-aligned-evolution-report",
+        "local-subtree-evolution-freeze",
+        "local-subtree-evolution-audit",
+        "local-subtree-evolution-smoke",
+        "local-subtree-evolution-run",
+        "local-subtree-evolution-report",
+        "local-subtree-evolution-heldout",
+        "vlrb-local-subtree-evolution-freeze",
+        "vlrb-local-subtree-evolution-audit",
+        "vlrb-local-subtree-evolution-smoke",
+        "vlrb-local-subtree-evolution-run",
+        "vlrb-local-subtree-evolution-retry",
+        "vlrb-local-subtree-evolution-report",
+        "subtree-bundle-evolution-freeze",
+        "subtree-bundle-evolution-audit",
+        "subtree-bundle-evolution-smoke",
+        "subtree-bundle-evolution-run",
+        "subtree-bundle-evolution-report",
+        "subtree-bundle-evolution-heldout",
+        "subtree-bundle-evolution-final-report",
+        "all-sample-adaptive-evolution-freeze",
+        "all-sample-adaptive-evolution-audit",
+        "all-sample-adaptive-evolution-smoke",
+        "all-sample-adaptive-evolution-run",
+        "all-sample-adaptive-evolution-report",
+        "all-sample-adaptive-evolution-heldout",
+        "all-sample-adaptive-evolution-final-report",
+        "vlrb-all-sample-adaptive-freeze",
+        "vlrb-all-sample-adaptive-audit",
+        "vlrb-all-sample-adaptive-smoke",
+        "vlrb-all-sample-adaptive-run",
+        "vlrb-all-sample-adaptive-retry",
+        "vlrb-all-sample-adaptive-report",
+        "vlrb-subtree-bundle-freeze",
+        "vlrb-subtree-bundle-audit",
+        "vlrb-subtree-bundle-smoke",
+        "vlrb-subtree-bundle-run",
+        "vlrb-subtree-bundle-retry",
+        "vlrb-subtree-bundle-report",
+        "counterfactual-arbiter-audit-freeze",
+        "counterfactual-arbiter-audit-audit",
+        "counterfactual-arbiter-audit-smoke",
+        "counterfactual-arbiter-audit-stage1",
+        "counterfactual-arbiter-audit-stage2",
+        "counterfactual-arbiter-audit-retry",
+        "counterfactual-arbiter-audit-report",
+        "counterfactual-coalition-freeze",
+        "counterfactual-coalition-audit",
+        "counterfactual-coalition-smoke",
+        "counterfactual-coalition-singletons",
+        "counterfactual-coalition-coalitions",
+        "counterfactual-coalition-retry",
+        "counterfactual-coalition-report",
+        "counterfactual-dev-transfer-freeze",
+        "counterfactual-dev-transfer-audit",
+        "counterfactual-dev-transfer-smoke",
+        "counterfactual-dev-transfer-root-reports",
+        "counterfactual-dev-transfer-run",
+        "counterfactual-dev-transfer-retry",
+        "counterfactual-dev-transfer-report"))
     parser.add_argument("--parent-node-id")
     args = parser.parse_args()
     config = _config(args.config.resolve())
@@ -3183,7 +3262,34 @@ def main() -> int:
         "specialize-evaluate": lambda: specialize_evaluate(config, output),
         "specialize-report": lambda: specialize_report(config, output),
     }
-    if args.stage.startswith("vlrb-aligned-evolution-"):
+    if args.stage.startswith("vlrb-all-sample-adaptive-"):
+        from .vl_rewardbench_all_sample_adaptive_recluster_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("counterfactual-dev-transfer-"):
+        from .counterfactual_dev150_transfer_audit import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("counterfactual-coalition-"):
+        from .counterfactual_coalition_audit import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("counterfactual-arbiter-audit-"):
+        from .rejected_candidate_counterfactual_arbiter_audit import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("all-sample-adaptive-evolution-"):
+        from .all_sample_adaptive_recluster_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-subtree-bundle-"):
+        from .vl_rewardbench_unified_subtree_bundle_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("subtree-bundle-evolution-"):
+        from .unified_subtree_bundle_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-local-subtree-evolution-"):
+        from .vl_rewardbench_local_unified_subtree_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("local-subtree-evolution-"):
+        from .local_unified_subtree_evolution import run_stage
+        run_stage(config, output, args.stage)
+    elif args.stage.startswith("vlrb-aligned-evolution-"):
         from .vl_rewardbench_aligned_evolution import run_stage
         run_stage(config, output, args.stage)
     elif args.stage.startswith("aligned-evolution-"):
