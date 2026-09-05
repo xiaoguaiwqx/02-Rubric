@@ -4,6 +4,7 @@
 
 | 实验 | 已确认状态 | 设计与结果 |
 | --- | --- | --- |
+| Phase17：27B Manager 替换 | 最小参数化实现完成；未正式运行 | [实验设置与运行命令](phase17-manager-qwen35-27b/plan.md)；只更换Manager、Worker端点与并发 |
 | Phase19 系统级接受 | 已完成；尚无稳定泛化优势 | [主计划18.2节](../Evolving%20Structured%20Rubrics%20Implementation%20Plan.md#phase19) |
 | Phase20 混合局部接受 | 历史探索；不作为新实验默认入口 | [冻结协议](phase20/protocol.md)；保留其已被后续协议引用的基线产物 |
 | Phase21 子树原子竞争 | 已完成；25个候选全部拒绝 | [冻结协议](phase21/protocol.md)、[主计划18.3节](../Evolving%20Structured%20Rubrics%20Implementation%20Plan.md#phase21) |

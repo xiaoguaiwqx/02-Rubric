@@ -12,6 +12,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Mapping
 
+from critiq.structured.cache import _io_path
 from critiq.structured.telemetry import ModelCallMetrics
 
 
@@ -43,6 +44,7 @@ def canonical_sha256(value: object) -> str:
 
 
 def atomic_write_json(path: Path, value: object) -> None:
+    path = _io_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     # Keep atomic sibling names short for legacy Windows MAX_PATH.
     temporary = path.with_name(f".tmp-{uuid.uuid4().hex[:12]}")

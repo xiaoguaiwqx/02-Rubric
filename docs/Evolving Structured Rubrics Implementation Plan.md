@@ -1,6 +1,6 @@
 # Evolving Structured Rubrics Implementation Plan
 
-> 状态：基础设施与多轮演化实验已实现，Phase22 完成；尚未证明其具有稳定泛化收益。
+> 状态：Phase22、本地27B Manager演化及其Epoch 5完整候选评测已完成；完整候选显示迁移收益，但接受机制尚未证明能稳定选出泛化更好的Rubric。
 >
 > 更新日期：2026-09-03
 >
@@ -2932,7 +2932,89 @@ VLRB 相对 Initial 的类别净变化为 General +1、Hallucination −5、Reas
 
 ---
 
-## 19. 后续候选
+## 19. 本地 Qwen3.5-27B Manager 演化与完整候选诊断
+
+### 19.1 实验设置与演化结果
+
+目的：降低 Manager 成本的同时，检查小参数量 Manager 模型生成的准则是否有效。沿用 Phase17 的 Discovery100、Dev150、五个初始 roots、最多5轮、局部 Split 竞争、Locked-Child retry、Role-aware Refine 和同步提交；Pairwise Worker 仍为 Qwen3-VL-8B-Instruct，Prompt v2、temperature=0.5、max_tokens=2048。Phase17 是**子准则多数投票递归**的聚合方式，所以当前实验默认是这个聚合方式。
+
+本节记录最终完成的 `no_thinking_compact_ids` 运行：Manager 为本地 Qwen3.5-27B，`enable_thinking=false`、`max_completion_tokens=16384`；解析失败最多重试3次，最小 cluster 从5降为2，样本标识改为简单序号并在代码中映射回来 (因为输出过错误样本id，样本的id过于复杂)。**因此不是严格的“只换 Manager”单变量消融，也不与早期 thinking-on 运行混用。** 具体配置和运行命令见[实验计划](experiments/phase17-manager-qwen35-27b/plan.md)。
+
+- Split 共21次：1次接受、18次竞争拒绝、2次提案无效；仅 Factuality 在 Epoch 1 接受。
+- Refine 共20次：1次接受、4次竞争拒绝、15次提案无效；Epoch 3 接受 Factuality 下几何推理孩子的修改。
+- 最终仅有5个 roots + 5个孩子，共10节点；Discovery Strict ACC 从64%升到65%。
+- RLHF-V heldout-500 为75.60%（378/500），初始对照为75.80%（379/500）；
+- VL-RewardBench Overall ACC 为57.49%、Macro ACC 为54.43%；相对历史 Phase17 E5（69.91%、64.06%，869条正确），分别下降12.42、9.63个百分点，正确数从869降至706，净减少163条；最终技术失败为0。
+
+### 19.2 Epoch 5 完整 Rubric：不按竞争结果筛掉孩子
+
+为区分“生成的准则差”与“筛选丢掉了有用准则”，固定上述已完成运行：Completeness、Visual Grounding、Creativity、Clarity 各取 Epoch 5 最后一次候选子树，包含被拒绝的孩子；Factuality 保留最终已接受子树及 Refine。孩子数依次为5、5、5、5、3，共 **28节点**。不累加历史候选，不重新调用 Manager，也不是从第一轮开始全部接受的重新演化实验。
+
+仅替换输入 Rubric，继续使用原节点推理与子树聚合：孩子形成明确多数时采用孩子判断，否则回退父节点；最后五棵子树等权投票。VL-RewardBench 固定1,247条样本、$K=3$ 平衡 A/B 顺序，两台相同 Worker 服务各并发100、合计200。三次遗留的3个技术失败全部恢复。3小时推理完成，一共推理 104,748 次，吞吐为 **575.38 次逻辑推理/分钟**。
+
+| 最终评测方案 | 正确数 / 1247 | Overall ACC | Macro ACC | Strict ACC |
+|---|---:|---:|---:|---:|
+| 原始 Qwen3-VL-8B（Native VL-RB Prompt，无结构化 Rubric） | 675 | 54.52% | 53.56% | 54.13% |
+| 初始五个 roots（历史 Prompt v2 对照） | 712 | 58.12% | 54.60% | 57.10% |
+| Phase17 E5（397B Manager，27节点） | 869 | 69.91% | 64.06% | 69.69% |
+| 27B 正常竞争版，10节点（上次运行） | 706 | 57.49% | 54.43% | 56.62% |
+| **27B Epoch 5 完整候选，28节点** | **886** | **71.39%** | **66.09%** | **71.05%** |
+
+Overall ACC 排除最终平局/弃权，Strict ACC 以全部样本为分母。完整候选相对 **Phase17 E5** 提升1.48个百分点 Overall ACC、2.03个百分点 Macro ACC，多正确17条；相对初始五个 roots 和原始模型分别提升13.27、16.87个百分点 Overall ACC。原始模型使用 Native 通用评判 Prompt，其他方案使用结构化 Prompt v2；
+
+历史基线来源：[Phase17 E5 报告](../output/evolving_structured_rubrics/vl_rewardbench_phase17_discovery_v2_prompt_v2_v1/final_report.json)（含初始五个 roots）、[Native 最终重试报告](../output/evolving_structured_rubrics/vl_rewardbench_phase10_transfer_v2_max2048/native_retry_max10/report.json)。此处 Phase17 指原397B Manager的正式E5结果，不是探索性选择的E4。
+
+### 19.3 子树贡献：父节点与完整子树对比
+
+复用本次 retry 后的同批节点预测，分别计算父节点单独判断和完整子树判断，再按 $K=3$ 多数聚合。以下均为全部1,247条样本上的 **Strict ACC**，平局/弃权计错；“纠正/改错”以父节点判断为对照，不是该子树对五树系统的独立贡献。
+
+| Root | 父节点 ACC | 完整子树 ACC | 纠正 / 改错 | 净收益 |
+|---|---:|---:|---:|---:|
+| Completeness | 50.76% | **73.70%** | 344 / 58 | **+286** |
+| Visual Grounding | 55.25% | **66.24%** | 172 / 35 | **+137** |
+| Factuality | **69.21%** | 68.40% | 58 / 68 | −10 |
+| Creativity | 51.32% | **72.81%** | 310 / 42 | **+268** |
+| Clarity | 53.97% | **70.01%** | 231 / 31 | **+200** |
+
+**补回被拒绝孩子的四棵树全部改善，Completeness 和 Creativity 收益最大。** 不同子树可能纠正同一条样本，因此净收益不能相加。Factuality 净减少10条正确样本，McNemar exact $p=0.423$，不足以认定为稳定退化。
+
+Completeness 子树单独的 Strict ACC 为73.70%，高于五棵树等权聚合后的71.05%，提示聚合可能稀释强子树的判断。不过，这是查看测试结果后的诊断，不能在当前测试集上挑出最佳子树并替代正式五树结果。
+
+### 19.4 分组收益与代表性孩子准则
+
+以下 ACC 均在各组产生明确最终判断的样本上计算；Phase17 E5 为历史397B Manager结果，竞争版本为本次同批预测的离线聚合。
+
+| 类别 | 样本数 | Phase17 E5 ACC | 同批竞争版本 ACC | 完整版本 ACC | 相对同批竞争版正确数变化 |
+|---|---:|---:|---:|---:|---:|
+| General | 181 | 50.00% | 38.07% | **55.00%** | +32 |
+| Hallucination | 749 | 76.47% | 57.35% | **77.88%** | +156 |
+| Reasoning | 317 | 65.71% | **66.13%** | 65.40% | −1 |
+
+**相对竞争版本的改善主要来自幻觉判断，其次是 General，没有显示推理能力的普遍提升。** 相比历史 Phase17 E5，完整版本在三类中的正确数变化分别为+9、+9、−1，合计+17。
+
+下面四个孩子强调“事实准确优先于完整、具体、表达丰富或语言流畅”。表中是各单节点三次聚合后的指标，不是整棵子树的指标；
+
+| 孩子准则（简写） | 所属 Root | 覆盖率 | 覆盖范围 ACC |
+|---|---|---:|---:|
+| 证据依据 vs 虚构完整性 | Completeness（完整性与覆盖） | 85.24% | 80.62% |
+| 视觉内容忠实 vs 虚构细节 | Visual Grounding（视觉依据与细节） | 82.04% | 80.84% |
+| 视觉事实性 vs 风格性幻觉 | Creativity（创造性与表现力） | 87.01% | 78.16% |
+| 视觉事实准确 vs 表达流畅 | Clarity（清晰性与连贯性） | 81.64% | 76.92% |
+
+不同孩子的覆盖样本不同，不能把覆盖范围 ACC 当作全样本准确率直接比较。结合准则内容与分组结果，一个可能的解释是：孩子不仅细化父准则，还纠正了 Completeness、Creativity、Clarity 对丰富、完整或流畅表达的偏好，将判断拉回事实依据。多个 roots 同时发生这种变化，也可能强化系统的事实性偏好。**这仍是待逐样本验证的解释，不是已经证明的因果结论。**
+
+### 19.5 主要发现
+
+1. **27B 能生成有迁移价值的准则。** 子树对比显示，被拒绝的候选中仍包含有效准则。多个孩子强调“事实依据优先于完整、丰富或流畅表达”，与幻觉类收益一致。
+2. **局部接受指标不等于系统收益。** 最后一轮 Completeness、Creativity 的局部竞争 ACC 分别下降约1.06、1.08个百分点而被拒绝，但当时保存的全系统诊断 ACC 分别从65%升至68%、67%。另两棵树在 Discovery 上下降、在 VL-RewardBench 上改善，说明数据分布也可能影响筛选。
+
+**结论：这次瓶颈不只是准则生成能力，还包括能否识别并保留已经生成的有效准则。**
+
+结果来源：[27B演化与heldout](../output/evolving_structured_rubrics/phase17_manager_qwen35_27b_no_thinking_compact_ids/rubric_evolution_phase5/phase17_discovery_v2_prompt_v2_split_refine_v1/final_report.json)、[正常竞争版VLRB](../output/evolving_structured_rubrics/vl_rewardbench_phase17_manager_qwen35_27b_no_thinking_v1/final_report.json)、[完整候选VLRB](../output/evolving_structured_rubrics/vlrb_27b_full/final_report.json)、[完整候选最终预测](../output/evolving_structured_rubrics/vlrb_27b_full/retry/combined/logical_votes.json)。本地原始产物保留用于复核，不随文档提交。
+
+---
+
+## 20. 后续候选
 
 - **Merge / Drop**：在前三个算子稳定后再处理节点重挂接和历史生存状态；
 - **删除 parent 的 Split 消融**：与正式的“保留 parent 并挂载 children”Split 分开；
@@ -2941,7 +3023,7 @@ VLRB 相对 Initial 的类别净变化为 General +1、Hallucination −5、Reas
 
 ---
 
-## 20. Review Checklist
+## 21. Review Checklist
 
 - [x] Phase5–18 的传统 Split/Refine 由 node-level Pairwise/local 指标驱动；Phase19 明确作为独立 aligned protocol，保留 Pairwise 反馈用于触发、候选生成与诊断，但以 Unified-Subtree + Global-Arbiter Strict ACC 决定正式提交
 - [x] Gate 只控制 status-dependent edges，不覆盖 Pairwise vote
@@ -2963,7 +3045,7 @@ VLRB 相对 Initial 的类别净变化为 General +1、Hallucination −5、Reas
 
 ---
 
-## 21. Rationale Matters 的 VL-RewardBench 对照结果
+## 22. Rationale Matters 的 VL-RewardBench 对照结果
 
 下表转录自 *Rationale Matters: Learning Transferable Rubrics via Proxy-Guided Critique for VLM Reward Models* 中展示的 VL-RewardBench 结果。数值单位为百分比；粗体保留原图中的重点标记。
 

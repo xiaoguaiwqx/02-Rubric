@@ -1,5 +1,7 @@
 import json
+import tempfile
 import unittest
+from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 
@@ -8,6 +10,10 @@ from critiq.structured import DualWorkerRequestSpec
 from experiments.evolving_structured_rubrics import (
     discovery_v2_prompt_v2_evolution as evolution,
 )
+from experiments.evolving_structured_rubrics import (
+    run_rubric_evolution as runner,
+)
+from experiments.evolving_structured_rubrics import split_evolution as split
 from experiments.evolving_structured_rubrics import (
     vl_rewardbench_discovery_v2 as vlrb,
 )
@@ -32,6 +38,34 @@ class TestDiscoveryV2PromptV2Evolution(unittest.TestCase):
         )
         self.assertEqual(self.config["vlrb_discovery_v2"], vlrb.SETTINGS)
 
+    def test_heldout_reference_output_defaults_to_current_output(self):
+        output = Path("isolated-output")
+        self.assertEqual(
+            evolution._heldout_reference_output(self.config, output), output)
+
+    def test_heldout_reference_output_accepts_historical_root(self):
+        config = deepcopy(self.config)
+        config["discovery_v2_heldout_reference_output"] = (
+            "output/evolving_structured_rubrics/rubric_evolution_phase5")
+        self.assertEqual(
+            evolution._heldout_reference_output(config, Path("isolated")),
+            runner.ROOT
+            / "output/evolving_structured_rubrics/rubric_evolution_phase5",
+        )
+
+    def test_phase5_config_loader_allows_heldout_reference_output(self):
+        config = deepcopy(self.config)
+        config["discovery_v2_heldout_reference_output"] = (
+            "output/evolving_structured_rubrics/rubric_evolution_phase5")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            path.write_text(json.dumps(config), encoding="utf-8")
+            loaded = runner._config(path)
+        self.assertEqual(
+            loaded["discovery_v2_heldout_reference_output"],
+            config["discovery_v2_heldout_reference_output"],
+        )
+
     def test_runtime_uses_prompt_v2_and_independent_splits(self):
         runtime = evolution._runtime_config(self.config)
         self.assertEqual(runtime["_pairwise_prompt_mode"], "v2_cache")
@@ -47,6 +81,63 @@ class TestDiscoveryV2PromptV2Evolution(unittest.TestCase):
             runtime["evolution_policy"]["trigger_thresholds"]["tau_split"],
             0.75,
         )
+        self.assertEqual(
+            runtime["evolution_policy"]["trigger_thresholds"]["N_min_cluster"],
+            5,
+        )
+        self.assertFalse(runtime["_manager_compact_sample_ids"])
+
+    def test_runtime_allows_experiment_local_min_cluster_override(self):
+        config = deepcopy(self.config)
+        config["discovery_v2_prompt_v2_evolution"][
+            "split_min_cluster_size"] = 2
+        evolution._config(config)
+        runtime = evolution._runtime_config(config)
+        self.assertEqual(
+            runtime["evolution_policy"]["trigger_thresholds"]["N_min_cluster"],
+            2,
+        )
+        self.assertEqual(
+            config["evolution_policy"]["trigger_thresholds"]["N_min_cluster"],
+            5,
+        )
+
+    def test_runtime_allows_compact_manager_sample_ids(self):
+        config = deepcopy(self.config)
+        config["discovery_v2_prompt_v2_evolution"][
+            "compact_manager_sample_ids"] = True
+        evolution._config(config)
+        runtime = evolution._runtime_config(config)
+        self.assertTrue(runtime["_manager_compact_sample_ids"])
+
+    def test_frozen_manager_contract_uses_runtime_compact_id_setting(self):
+        config = deepcopy(self.config)
+        config["discovery_v2_prompt_v2_evolution"][
+            "compact_manager_sample_ids"] = True
+        for profile in config["specialize_managers"].values():
+            profile["api_key_env"] = None
+            profile["vllm_identity"] = None
+        config["refine_manager"]["api_key_env"] = None
+
+        runtime = evolution._runtime_config(config)
+        protocol = evolution._protocol(runtime)
+        _, _, expected_specs, _ = split._managers(runtime, protocol)
+
+        contract = evolution._manager_contract(config)
+        self.assertEqual(contract["specs"], expected_specs)
+
+    def test_manager_runtime_uses_configured_retry_counts(self):
+        config = deepcopy(self.config)
+        config["structured_max_retries"] = 3
+        config["api_retry_attempts"] = 7
+        config["_manager_compact_sample_ids"] = True
+        for profile in config["specialize_managers"].values():
+            profile["api_key_env"] = None
+            profile["vllm_identity"] = None
+        manager, _, _, _ = runner._manager_runtime(config, "error_signature")
+        self.assertEqual(manager.structured_max_retries, 3)
+        self.assertEqual(manager.api_retry_attempts, 7)
+        self.assertTrue(manager.compact_sample_ids)
 
     def test_dev_is_diagnostic_only(self):
         settings = evolution.SETTINGS
@@ -109,6 +200,27 @@ class TestDiscoveryV2PromptV2Evolution(unittest.TestCase):
         self.assertNotIn("primary_external_evaluation", generic)
         self.assertEqual(vlrb.TREATMENT_SYSTEM,
                          "phase17_discovery_v2_final_equal")
+
+    def test_vlrb_explicit_rubric_loads_without_evolution_reports(self):
+        from experiments.evolving_structured_rubrics import (
+            vl_rewardbench_prompt_v2_evolved as shared,
+        )
+        config = deepcopy(self.config)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "rubric.json"
+            rubric = runner.build_multicrit_open_ended_init_rubric()
+            rubric.save_json(path)
+            output = Path(directory) / "evaluation"
+            config["vlrb_discovery_v2"].update(
+                rubric_path=str(path), output_dir=str(output))
+            adapted = vlrb._adapt_config(config)
+            self.assertEqual(shared._target(adapted), output)
+            self.assertEqual(
+                shared._rubric(Path(directory) / "no_evolution", adapted)
+                .rubric_sha256, rubric.rubric_sha256)
+        del config["vlrb_discovery_v2"]["output_dir"]
+        with self.assertRaisesRegex(ValueError, "own output_dir"):
+            vlrb._adapt_config(config)
 
     def test_vlrb_wrapper_declares_phase16_direct_baseline(self):
         from experiments.evolving_structured_rubrics import (

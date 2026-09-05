@@ -18,7 +18,7 @@ from . import vl_rewardbench_prompt_v2 as control
 from . import vl_rewardbench_prompt_v2_evolved as shared
 
 
-EXPERIMENT_DIR = "vl_rewardbench_phase17_discovery_v2_prompt_v2_v1"
+EXPERIMENT_DIR = "vl_rewardbench_phase17_manager_qwen35_27b_no_thinking_v1"
 PROTOCOL_VERSION = "vlrb-discovery-v2-prompt-v2-v1"
 TREATMENT_SYSTEM = "phase17_discovery_v2_final_equal"
 
@@ -46,13 +46,18 @@ SETTINGS = {
 }
 
 
-def _activate() -> None:
+def _activate(config: Mapping[str, Any] | None = None) -> None:
     """Configure the generic Prompt-v2 transfer implementation for Phase17."""
 
     shared.EXPERIMENT_DIR = EXPERIMENT_DIR
     shared.PROTOCOL_VERSION = PROTOCOL_VERSION
     shared.CONTROL_EXPERIMENT = control.EXPERIMENT_DIR
     shared.TREATMENT_SYSTEM = TREATMENT_SYSTEM
+    if config is not None:
+        endpoint_ids = tuple(
+            item.endpoint_id for item in base.BackendPoolSpec.from_dict(
+                config["backend_pool"]).endpoints)
+        shared.ENDPOINT_IDS = endpoint_ids
     shared.SCHEDULER = "sample_major_available_slot_dynamic"
     shared.EXTRA_BASELINE_REPORTS = {
         "phase16_final_equal_prompt_v2": (
@@ -72,18 +77,30 @@ def _activate() -> None:
 
 
 def _adapt_config(config: Mapping[str, Any]) -> dict[str, Any]:
-    value = config.get("vlrb_discovery_v2")
-    if value != SETTINGS:
+    value = dict(config.get("vlrb_discovery_v2", {}))
+    rubric_path = value.pop("rubric_path", None)
+    output_dir = value.pop("output_dir", None)
+    if rubric_path is not None and not output_dir:
+        raise ValueError("an explicit rubric_path requires its own output_dir")
+    expected = dict(SETTINGS)
+    expected["endpoint_ids"] = [
+        item.endpoint_id for item in base.BackendPoolSpec.from_dict(
+            config["backend_pool"]).endpoints]
+    if value != expected:
         raise RuntimeError("vlrb_discovery_v2 must match the frozen v1 protocol")
     adapted = deepcopy(dict(config))
+    if rubric_path is not None:
+        adapted["_vlrb_rubric_path"] = rubric_path
+    if output_dir is not None:
+        adapted["_vlrb_output_dir"] = output_dir
     # The shared implementation validates this internal generic protocol view.
     adapted["vlrb_prompt_v2_evolved"] = {
-        key: item for key, item in SETTINGS.items()
+        key: item for key, item in expected.items()
         if key not in {"primary_external_evaluation"}
     }
     return adapted
 
 
 def run_stage(config: Mapping[str, Any], output: Path, stage: str) -> None:
-    _activate()
+    _activate(config)
     shared.run_stage(_adapt_config(config), output, stage)

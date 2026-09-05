@@ -14,6 +14,7 @@ import json
 import time
 from collections import Counter
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -88,6 +89,29 @@ def _target(output: Path) -> Path:
     return output / EXPERIMENT_DIR
 
 
+def _heldout_reference_output(config: Mapping[str, Any], output: Path) -> Path:
+    value = config.get("discovery_v2_heldout_reference_output")
+    if value is None:
+        return output
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(
+            "discovery_v2_heldout_reference_output must be a non-empty path")
+    return base._path(value)
+
+
+def _protocol(config: Mapping[str, Any]) -> split.EvolutionProtocol:
+    manager_models = {
+        str(item["model"]) for item in config["specialize_managers"].values()}
+    manager_models.add(str(config["refine_manager"]["model"]))
+    if len(manager_models) != 1:
+        raise ValueError("Phase17 requires one shared model for every Manager role")
+    return replace(
+        PROTOCOL,
+        manager_model=manager_models.pop(),
+        pairwise_endpoint=config["backend_pool"]["endpoints"][0]["endpoint_id"],
+    )
+
+
 def _same_pairwise_scientific_request_identity(
     source: PairwisePredictionOutput,
     generated: PairwisePredictionOutput,
@@ -155,13 +179,39 @@ def _runtime_config(config: Mapping[str, Any]) -> dict[str, Any]:
         "heldout": HELDOUT_COUNT,
     }
     value["evolution_policy"]["trigger_thresholds"]["tau_split"] = 0.75
+    experiment = config.get("discovery_v2_prompt_v2_evolution", {})
+    value["_manager_compact_sample_ids"] = bool(
+        experiment.get("compact_manager_sample_ids", False))
+    value["evolution_policy"]["trigger_thresholds"]["N_min_cluster"] = int(
+        experiment.get(
+            "split_min_cluster_size",
+            value["evolution_policy"]["trigger_thresholds"]["N_min_cluster"],
+        )
+    )
     return value
 
 
 def _config(config: Mapping[str, Any]) -> dict[str, Any]:
     refine._config(config)
     value = config.get("discovery_v2_prompt_v2_evolution")
-    if value != SETTINGS:
+    if not isinstance(value, Mapping):
+        raise ValueError(
+            "discovery_v2_prompt_v2_evolution must equal the frozen v1 protocol")
+    expected = dict(SETTINGS)
+    configured_settings = dict(value)
+    expected.pop("worker_endpoints")
+    configured_endpoints = configured_settings.pop("worker_endpoints", None)
+    split_min_cluster_size = configured_settings.pop(
+        "split_min_cluster_size", 5)
+    compact_manager_sample_ids = configured_settings.pop(
+        "compact_manager_sample_ids", False)
+    if (isinstance(split_min_cluster_size, bool)
+            or not isinstance(split_min_cluster_size, int)
+            or split_min_cluster_size < 1):
+        raise ValueError("split_min_cluster_size must be a positive integer")
+    if not isinstance(compact_manager_sample_ids, bool):
+        raise ValueError("compact_manager_sample_ids must be bool")
+    if configured_settings != expected:
         raise ValueError(
             "discovery_v2_prompt_v2_evolution must equal the frozen v1 protocol")
     request = config.get("worker_request_kwargs")
@@ -170,8 +220,12 @@ def _config(config: Mapping[str, Any]) -> dict[str, Any]:
             or request.get("max_tokens") != 2048):
         raise ValueError("Phase17 requires temperature=.5/max_tokens=2048")
     pool = base.BackendPoolSpec.from_dict(config["backend_pool"])
-    if {item.endpoint_id for item in pool.endpoints} != set(ENDPOINT_IDS):
-        raise ValueError("Phase17 requires vllm-8000 and vllm-8001")
+    pool_endpoint_ids = [item.endpoint_id for item in pool.endpoints]
+    if configured_endpoints != pool_endpoint_ids:
+        raise ValueError(
+            "Phase17 worker_endpoints must match backend_pool endpoint order")
+    if not configured_endpoints:
+        raise ValueError("Phase17 requires at least one Worker endpoint")
     if pool.global_request_concurrency != sum(
             item.max_concurrency for item in pool.endpoints):
         raise ValueError("Phase17 requires the full available-slot pool capacity")
@@ -186,9 +240,12 @@ def _rows(config: Mapping[str, Any], split_name: str):
 
 
 def _manager_contract(config: Mapping[str, Any]) -> dict[str, Any]:
-    managers, profiles, specs, identities = split._managers(config, PROTOCOL)
-    refine_manager, refine_profile = refine._manager(config)
-    _, retry_specs = refine._integrated_retry_specs(config, PROTOCOL)
+    runtime = _runtime_config(config)
+    protocol = _protocol(runtime)
+    managers, profiles, specs, identities = split._managers(runtime, protocol)
+    refine_manager, refine_profile = refine._manager(
+        runtime, expected_model=protocol.manager_model)
+    _, retry_specs = refine._integrated_retry_specs(runtime, protocol)
     return {
         "profiles": profiles,
         "specs": specs,
@@ -633,7 +690,7 @@ def run(config: Mapping[str, Any], output: Path) -> None:
     if not history.get("completed"):
         refine._run_five_root_locked_split_refine_impl(
             _runtime_config(config), target=target, manifest=manifest,
-            history=history, settings=settings, protocol=PROTOCOL,
+            history=history, settings=settings, protocol=_protocol(config),
             log_prefix="Discovery-v2 Prompt-v2 evolution",
             execution_backend_pool=config["backend_pool"])
     _ensure_dev_trajectory(config, target)
@@ -690,6 +747,7 @@ def report(config: Mapping[str, Any], output: Path) -> None:
 def heldout(config: Mapping[str, Any], output: Path) -> None:
     _config(config)
     target = _target(output)
+    reference_output = _heldout_reference_output(config, output)
     _load_frozen(config, output)
     discovery_report_path = target / "final" / "discovery_report.json"
     if not discovery_report_path.exists():
@@ -697,17 +755,17 @@ def heldout(config: Mapping[str, Any], output: Path) -> None:
     final_rubric = StructuredRubric.load_json(target / "final" / "rubric.json")
     initial_rubric = base.build_multicrit_open_ended_init_rubric()
     phase10_rubric = StructuredRubric.load_json(
-        output / phase16.SOURCE_PHASE10 / "final" / "rubric.json")
+        reference_output / phase16.SOURCE_PHASE10 / "final" / "rubric.json")
     phase16_rubric = StructuredRubric.load_json(
-        output / phase16.EXPERIMENT_DIR / "final" / "rubric.json")
-    phase16_prediction_path = (output / phase16.EXPERIMENT_DIR
+        reference_output / phase16.EXPERIMENT_DIR / "final" / "rubric.json")
+    phase16_prediction_path = (reference_output / phase16.EXPERIMENT_DIR
                                / "heldout500" / "combined_pairwise.json")
     if not phase16_prediction_path.is_file():
         raise RuntimeError("completed Phase16 Prompt-v2 heldout artifact is required")
     phase16_prediction = PairwisePredictionOutput.load_json(phase16_prediction_path)
     rows = _rows(config, "heldout")
     phase10_prediction, phase10_source = phase16._load_v2_source(
-        config, output, phase10_rubric, rows, "heldout")
+        config, reference_output, phase10_rubric, rows, "heldout")
     initial_prediction = project_pairwise_prediction(
         phase10_prediction, initial_rubric)
     source_descriptions = {item.name: item.description

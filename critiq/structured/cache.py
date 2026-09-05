@@ -196,7 +196,7 @@ class JsonPredictionCache:
         self._locks: dict[tuple[str, str], threading.Lock] = {}
         if mode is not CacheMode.DISABLED:
             for kind in ("node", "router", "pairwise", "gate"):
-                (self.root / kind).mkdir(parents=True, exist_ok=True)
+                _io_path(self.root / kind).mkdir(parents=True, exist_ok=True)
 
     def lock_for(self, kind: str, key_sha256: str) -> threading.Lock:
         storage_key = self._storage_key(key_sha256)

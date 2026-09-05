@@ -24,7 +24,7 @@ FORBIDDEN_RETRY_MAX_DELAY = 60
 # experiment waiting indefinitely even though the surrounding retry protocol
 # is still alive.  This is an operational safeguard only; it does not alter
 # prompt, decoding, parsing, or evaluation semantics.
-API_REQUEST_TIMEOUT_SECONDS = 180.0
+API_REQUEST_TIMEOUT_SECONDS = 900.0
 WORKFLOW_AGENT_LOGFILE = os.getenv("WORKFLOW_AGENT_LOGFILE", None)
 
 

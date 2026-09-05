@@ -3,6 +3,7 @@
 本文件只维护入口，不再按时间戳重复登记同一份计划或状态。
 
 - [实验索引与当前状态](docs/experiments/README.md)
+- [Phase17 本地27B Manager替换实验](docs/experiments/phase17-manager-qwen35-27b/plan.md)
 - [系统结构与代码边界](docs/architecture.md)
 - [实现历史与正式结果](docs/Evolving%20Structured%20Rubrics%20Implementation%20Plan.md)
 - [Phase21 冻结协议](docs/experiments/phase21/protocol.md)

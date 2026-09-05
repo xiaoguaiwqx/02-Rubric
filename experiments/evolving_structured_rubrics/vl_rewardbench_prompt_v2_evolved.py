@@ -46,7 +46,9 @@ STAGE_RETRY = "vlrb-prompt-v2-evolved-retry"
 STAGE_REPORT = "vlrb-prompt-v2-evolved-report"
 
 
-def _target() -> Path:
+def _target(config: Mapping[str, Any] | None = None) -> Path:
+    if config is not None and config.get("_vlrb_output_dir"):
+        return base._path(config["_vlrb_output_dir"])
     return base.ROOT / "output/evolving_structured_rubrics" / EXPERIMENT_DIR
 
 
@@ -54,7 +56,9 @@ def _control_target() -> Path:
     return base.ROOT / "output/evolving_structured_rubrics" / CONTROL_EXPERIMENT
 
 
-def _rubric_path(output: Path) -> Path:
+def _rubric_path(output: Path, config: Mapping[str, Any] | None = None) -> Path:
+    if config is not None and config.get("_vlrb_rubric_path"):
+        return base._path(config["_vlrb_rubric_path"])
     return output / evolution.EXPERIMENT_DIR / "final" / "rubric.json"
 
 
@@ -101,8 +105,10 @@ def _protocol(config: Mapping[str, Any]) -> dict[str, Any]:
     return dict(value)
 
 
-def _rubric(output: Path) -> StructuredRubric:
-    path = _rubric_path(output)
+def _rubric(output: Path, config: Mapping[str, Any] | None = None) -> StructuredRubric:
+    path = _rubric_path(output, config)
+    if config is not None and config.get("_vlrb_rubric_path"):
+        return StructuredRubric.load_json(path)
     if not path.is_file():
         raise RuntimeError("run prompt-v2-evolution-report before VL-RewardBench")
     final_report_path = output / evolution.EXPERIMENT_DIR / "final_report.json"
@@ -154,7 +160,7 @@ def _validate_prompt_v2_control_logical(
 def _manifest(config: Mapping[str, Any], output: Path, records, schedule,
               *, include_endpoints: bool) -> dict[str, Any]:
     protocol = _protocol(config)
-    rubric = _rubric(output)
+    rubric = _rubric(output, config)
     control_manifest_path = _control_target() / "frozen_manifest.json"
     control_report_path = _control_target() / "final_report.json"
     control_logical_path = _control_logical_path()
@@ -186,8 +192,8 @@ def _manifest(config: Mapping[str, Any], output: Path, records, schedule,
         "structured_worker_request_spec": request_spec,
         "prompt_version": PAIRWISE_WORKER_PROMPT_V2_CACHE_PILOT_VERSION,
         "source": {
-            "rubric_path": str(_rubric_path(output).resolve()),
-            "rubric_file_sha256": file_sha256(_rubric_path(output)),
+            "rubric_path": str(_rubric_path(output, config).resolve()),
+            "rubric_file_sha256": file_sha256(_rubric_path(output, config)),
             "rubric_sha256": rubric.rubric_sha256,
             "node_count": len(rubric.nodes),
             "control_manifest_path": str(control_manifest_path.resolve()),
@@ -229,7 +235,7 @@ def _manifest(config: Mapping[str, Any], output: Path, records, schedule,
 
 
 def _load_frozen(config: Mapping[str, Any], output: Path):
-    target = _target()
+    target = _target(config)
     _require(target, STAGE_FREEZE)
     records = _records()
     schedule = legacy._order_schedule(records)
@@ -238,7 +244,7 @@ def _load_frozen(config: Mapping[str, Any], output: Path):
     if {key: value for key, value in stored.items()
             if key != "endpoint_identities"} != expected:
         raise RuntimeError("VL-RB evolved frozen manifest drift")
-    return target, stored, records, schedule, _rubric(output)
+    return target, stored, records, schedule, _rubric(output, config)
 
 
 def _verify_live(config: Mapping[str, Any], manifest: Mapping[str, Any]) -> None:
@@ -255,7 +261,7 @@ def _verify_live(config: Mapping[str, Any], manifest: Mapping[str, Any]) -> None
 
 
 def freeze(config: Mapping[str, Any], output: Path) -> None:
-    target = _target()
+    target = _target(config)
     records = _records()
     schedule = legacy._order_schedule(records)
     manifest = _manifest(config, output, records, schedule, include_endpoints=True)

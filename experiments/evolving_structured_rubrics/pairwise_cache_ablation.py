@@ -140,8 +140,6 @@ def _protocol(config: Mapping[str, Any]) -> dict[str, Any]:
 
 def _pool_spec(config: Mapping[str, Any]) -> BackendPoolSpec:
     spec = BackendPoolSpec.from_dict(config["backend_pool"])
-    if tuple(sorted(item.endpoint_id for item in spec.endpoints)) != ENDPOINT_IDS:
-        raise RuntimeError("cache ablation requires exactly vllm-8000 and vllm-8001")
     if spec.common_checkpoint_id != config["model"]:
         raise RuntimeError("cache ablation endpoint checkpoint identity mismatch")
     return spec

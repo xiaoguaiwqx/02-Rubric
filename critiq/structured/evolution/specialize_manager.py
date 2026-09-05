@@ -15,7 +15,11 @@ from critiq.specialize_prompts import (
     CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC_LOCKED_RETRY_V3,
     CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC_RETRY_V2,
     ERROR_SIGNATURE_PROMPT,
+    ERROR_SIGNATURE_PROMPT_COMPACT_IDS,
     SEMANTIC_CLUSTER_PROMPT,
+    SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS,
+    SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS_GLOBAL_RUBRIC,
+    SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS_GLOBAL_RUBRIC_RETRY_V2,
     SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC,
     SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC_RETRY_V2,
     SPLIT_FAILURE_ATTRIBUTION_PROMPT,
@@ -29,7 +33,10 @@ from ..telemetry import ModelCallMetrics
 from ..version import (
     CHILD_GENERATION_GLOBAL_RUBRIC_PROMPT_VERSION,
     CHILD_GENERATION_PROMPT_VERSION,
+    ERROR_SIGNATURE_COMPACT_IDS_PROMPT_VERSION,
     ERROR_SIGNATURE_PROMPT_VERSION,
+    SEMANTIC_CLUSTER_COMPACT_IDS_GLOBAL_RUBRIC_PROMPT_VERSION,
+    SEMANTIC_CLUSTER_COMPACT_IDS_PROMPT_VERSION,
     SEMANTIC_CLUSTER_GLOBAL_RUBRIC_PROMPT_VERSION,
     SEMANTIC_CLUSTER_PROMPT_VERSION,
     SEMANTIC_CLUSTER_PARSER_VERSION,
@@ -82,7 +89,8 @@ class SpecializeManager:
                  child_input_mode: str = "multimodal",
                  image_field: str = "image_path",
                  rubric_memory_mode: str = "none",
-                 retry_feedback_mode: str = "aggregate_v1") -> None:
+                 retry_feedback_mode: str = "aggregate_v1",
+                 compact_sample_ids: bool = False) -> None:
         self.model = model
         self.backend_pool = backend_pool
         self.api_keys = api_keys
@@ -96,6 +104,9 @@ class SpecializeManager:
             raise ValueError("child_input_mode must be multimodal or text")
         self.child_input_mode = child_input_mode
         self.image_field = image_field
+        if not isinstance(compact_sample_ids, bool):
+            raise TypeError("compact_sample_ids must be bool")
+        self.compact_sample_ids = compact_sample_ids
         if rubric_memory_mode not in {"none", "global_rubric_v1"}:
             raise ValueError("rubric_memory_mode must be none or global_rubric_v1")
         self.rubric_memory_mode = rubric_memory_mode
@@ -132,11 +143,30 @@ class SpecializeManager:
     def request_specs(self) -> dict[str, SpecializeManagerRequestSpec]:
         retry_v2 = self.retry_feedback_mode == "child_diagnostic_v2"
         retry_v3 = self.retry_feedback_mode == "locked_sample_v3"
-        cluster_prompt = (SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC_RETRY_V2
+        signature_prompt = (ERROR_SIGNATURE_PROMPT_COMPACT_IDS
+                            if self.compact_sample_ids
+                            else ERROR_SIGNATURE_PROMPT)
+        signature_version = (ERROR_SIGNATURE_COMPACT_IDS_PROMPT_VERSION
+                             if self.compact_sample_ids
+                             else ERROR_SIGNATURE_PROMPT_VERSION)
+        cluster_prompt = (
+                          SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS_GLOBAL_RUBRIC_RETRY_V2
+                          if self.compact_sample_ids and retry_v2 else
+                          SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS_GLOBAL_RUBRIC
+                          if self.compact_sample_ids and self.rubric_memory_mode == "global_rubric_v1" else
+                          SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS
+                          if self.compact_sample_ids else
+                          SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC_RETRY_V2
                           if retry_v2 else SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC
                           if self.rubric_memory_mode == "global_rubric_v1"
                           else SEMANTIC_CLUSTER_PROMPT)
-        cluster_version = ("semantic-cluster-global-rubric-retry-v2"
+        cluster_version = ("semantic-cluster-compact-ids-global-rubric-retry-v2"
+                           if self.compact_sample_ids and retry_v2 else
+                           SEMANTIC_CLUSTER_COMPACT_IDS_GLOBAL_RUBRIC_PROMPT_VERSION
+                           if self.compact_sample_ids and self.rubric_memory_mode == "global_rubric_v1" else
+                           SEMANTIC_CLUSTER_COMPACT_IDS_PROMPT_VERSION
+                           if self.compact_sample_ids else
+                           "semantic-cluster-global-rubric-retry-v2"
                            if retry_v2 else SEMANTIC_CLUSTER_GLOBAL_RUBRIC_PROMPT_VERSION
                            if self.rubric_memory_mode == "global_rubric_v1"
                            else SEMANTIC_CLUSTER_PROMPT_VERSION)
@@ -157,9 +187,9 @@ class SpecializeManager:
                                if retry_v3 else "split-failure-attribution-retry-v2"
                                if retry_v2 else SPLIT_FAILURE_ATTRIBUTION_PROMPT_VERSION)
         return {
-            "error_signature": self._spec(ERROR_SIGNATURE_PROMPT,
+            "error_signature": self._spec(signature_prompt,
                                            self.analysis_request_kwargs,
-                                           ERROR_SIGNATURE_PROMPT_VERSION),
+                                           signature_version),
             "semantic_cluster": self._spec(
                                             cluster_prompt,
                                             self.clustering_request_kwargs,
@@ -216,7 +246,10 @@ class SpecializeManager:
                         error: ErrorSampleRef) -> ErrorSignatureOutput:
         if row.get("sample_id") != error.sample_id or error.outcome != "wrong":
             raise ValueError("signature input must match a decisive-wrong reference")
-        prompt = ERROR_SIGNATURE_PROMPT.format(
+        prompt_template = (ERROR_SIGNATURE_PROMPT_COMPACT_IDS
+                           if self.compact_sample_ids
+                           else ERROR_SIGNATURE_PROMPT)
+        prompt = prompt_template.format(
             criterion_name=parent.criterion.name,
             criterion_description=parent.criterion.description,
             sample_id=error.sample_id, question=row["question"], A=row["A"], B=row["B"],
@@ -233,7 +266,9 @@ class SpecializeManager:
                 structured_attempt=attempt, request_kwargs=self.analysis_request_kwargs)
             calls.append(metrics); last_raw = raw if isinstance(raw, str) else None
             try:
-                signature = parse_error_signature_response(raw, expected_sample_id=error.sample_id)
+                signature = parse_error_signature_response(
+                    raw, expected_sample_id=error.sample_id,
+                    compact_ids=self.compact_sample_ids)
                 return ErrorSignatureOutput(signature, last_raw, None, attempt,
                     self._metrics(calls), spec)
             except SpecializeParseError as exc:
@@ -252,16 +287,37 @@ class SpecializeManager:
             raise ValueError("global_rubric_v1 clustering requires rubric_memory")
         if self.retry_feedback_mode in {"child_diagnostic_v2", "locked_sample_v3"} and retry_feedback is None:
             raise ValueError(f"{self.retry_feedback_mode} clustering requires retry_feedback")
-        prompt_template = (SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC_RETRY_V2
+        prompt_template = (
+                           SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS_GLOBAL_RUBRIC_RETRY_V2
+                           if self.compact_sample_ids and self.retry_feedback_mode == "child_diagnostic_v2"
+                           else SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS_GLOBAL_RUBRIC
+                           if self.compact_sample_ids and self.rubric_memory_mode == "global_rubric_v1"
+                           else SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS
+                           if self.compact_sample_ids
+                           else SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC_RETRY_V2
                            if self.retry_feedback_mode == "child_diagnostic_v2"
                            else SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC
                            if self.rubric_memory_mode == "global_rubric_v1"
                            else SEMANTIC_CLUSTER_PROMPT)
+        if self.compact_sample_ids:
+            key_to_sample_id = {
+                f"S{index:03d}": item.sample_id
+                for index, item in enumerate(signatures, start=1)
+            }
+            signature_payload = []
+            for signature_key, item in zip(key_to_sample_id, signatures):
+                value = item.to_dict()
+                value.pop("sample_id")
+                signature_payload.append({"signature_key": signature_key, **value})
+        else:
+            key_to_sample_id = {item.sample_id: item.sample_id
+                                for item in signatures}
+            signature_payload = [item.to_dict() for item in signatures]
         prompt = prompt_template.format(
             criterion_name=criterion_name, min_cluster_size=min_cluster_size,
             max_clusters=max_clusters,
-            signatures_json=json.dumps([item.to_dict() for item in signatures],
-                                       indent=2, ensure_ascii=False),
+            signatures_json=json.dumps(signature_payload, indent=2,
+                                       ensure_ascii=False),
             split_failure_history_json=json.dumps(list(prior_failures), indent=2,
                                                   ensure_ascii=False),
             rubric_memory_json=json.dumps(rubric_memory, indent=2,
@@ -278,10 +334,23 @@ class SpecializeManager:
             calls.append(metrics); last_raw = raw if isinstance(raw, str) else None
             combined = self._metrics(calls)
             try:
-                return parse_cluster_proposal_response(
-                    raw, expected_sample_ids=tuple(item.sample_id for item in signatures),
+                proposal = parse_cluster_proposal_response(
+                    raw, expected_sample_ids=tuple(key_to_sample_id),
                     min_cluster_size=min_cluster_size, max_clusters=max_clusters,
                     attempt_count=attempt, metrics=combined, request_spec=spec)
+                if not self.compact_sample_ids:
+                    return proposal
+                return ClusterProposal(
+                    tuple(SemanticCluster(
+                        cluster.cluster_id, cluster.label,
+                        cluster.shared_failure, cluster.distinction,
+                        tuple(key_to_sample_id[key] for key in cluster.sample_ids),
+                    ) for cluster in proposal.clusters),
+                    tuple(key_to_sample_id[key]
+                          for key in proposal.unclustered_sample_ids),
+                    proposal.raw_response, proposal.attempt_count,
+                    proposal.metrics, proposal.request_spec,
+                )
             except SpecializeParseError as exc:
                 last_error = str(exc)
         raise SpecializeManagerFailure("semantic_cluster", last_raw, last_error, total,

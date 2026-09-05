@@ -211,11 +211,12 @@ class SpecializeTests(unittest.TestCase):
 
     def test_manager_cluster_retries_and_request_spec_is_deeply_immutable(self):
         ids = tuple(f"s{i}" for i in range(10))
+        keys = tuple(f"S{i:03d}" for i in range(1, 11))
         valid = json.dumps({"clusters": [
             {"cluster_id": "a", "label": "A", "shared_failure": "fa",
-             "distinction": "da", "sample_ids": list(ids[:5])},
+             "distinction": "da", "sample_ids": list(keys[:5])},
             {"cluster_id": "b", "label": "B", "shared_failure": "fb",
-             "distinction": "db", "sample_ids": list(ids[5:])}],
+             "distinction": "db", "sample_ids": list(keys[5:])}],
             "unclustered_sample_ids": []})
 
         class FakePool:
@@ -235,14 +236,19 @@ class SpecializeTests(unittest.TestCase):
             analysis_request_kwargs={"temperature": 0, "seed": 42, "nested": {"x": [1]}},
             clustering_request_kwargs={"temperature": 0, "seed": 42,
                                        "nested": {"x": [1]}},
-            generation_request_kwargs={"temperature": .7, "seed": 42})
+            generation_request_kwargs={"temperature": .7, "seed": 42},
+            compact_sample_ids=True)
         signatures = tuple(ErrorSignature(sample_id, "task", "focus", "diff", "failure", "sub")
                            for sample_id in ids)
         result = manager.cluster(signatures, criterion_name="parent",
                                  min_cluster_size=5, max_clusters=5)
         self.assertEqual(result.attempt_count, 2)
         self.assertEqual(result.metrics.api_attempts, 2)
-        self.assertTrue(all(sample_id in pool.calls[0][0][0] for sample_id in ids))
+        self.assertEqual(result.clusters[0].sample_ids, ids[:5])
+        self.assertEqual(result.clusters[1].sample_ids, ids[5:])
+        self.assertIn('"signature_key": "S001"', pool.calls[0][0][0])
+        self.assertIn('"signature_key": "S010"', pool.calls[0][0][0])
+        self.assertNotIn('"sample_id":', pool.calls[0][0][0])
         self.assertEqual(pool.calls[0][1]["agent_args"]["request_kwargs"]["temperature"], 0)
         self.assertEqual(pool.calls[0][0][0], pool.calls[1][0][0])
         spec = manager.request_specs()["semantic_cluster"]
@@ -407,6 +413,51 @@ class SpecializeTests(unittest.TestCase):
                                            expected_sample_id="s1")
         with self.assertRaises(SpecializeParseError):
             parse_error_signature_response(json.dumps(payload), expected_sample_id="s2")
+
+    def test_error_signature_compact_parser_injects_sample_id(self):
+        payload = {"task_pattern": "qa", "visual_focus": "objects",
+                   "candidate_difference": "identity", "parent_failure": "too broad",
+                   "suggested_subdomain": "object identity"}
+        result = parse_error_signature_response(
+            json.dumps(payload), expected_sample_id="long-sample-id",
+            compact_ids=True)
+        self.assertEqual(result.sample_id, "long-sample-id")
+        with self.assertRaises(SpecializeParseError):
+            parse_error_signature_response(
+                json.dumps({"sample_id": "long-sample-id", **payload}),
+                expected_sample_id="long-sample-id", compact_ids=True)
+
+    def test_manager_compact_signature_does_not_ask_model_to_copy_id(self):
+        response = json.dumps({
+            "task_pattern": "qa", "visual_focus": "objects",
+            "candidate_difference": "identity", "parent_failure": "too broad",
+            "suggested_subdomain": "object identity",
+        })
+
+        class FakePool:
+            backend_id = "pool"
+
+            def call(self, content, **kwargs):
+                return response, AgentCallMetrics(api_attempts=1)
+
+        manager = SpecializeManager(
+            model="model", backend_pool=FakePool(), compact_sample_ids=True)
+        captured = {}
+
+        def capture_prompt(prompt, _rows):
+            captured["prompt"] = prompt
+            return prompt
+
+        error = ErrorSampleRef(
+            "long-sample-id", "parent", Vote.B, "A", "wrong", "thought")
+        with patch.object(manager, "_multimodal", side_effect=capture_prompt):
+            output = manager.infer_signature(
+                {"sample_id": "long-sample-id", "question": "Q",
+                 "A": "A", "B": "B"},
+                _rubric().get_node("parent"), error)
+        self.assertEqual(output.signature.sample_id, "long-sample-id")
+        self.assertNotIn("Sample ID:", captured["prompt"])
+        self.assertNotIn('"sample_id"', captured["prompt"])
 
     def test_error_signature_parser_repairs_unescaped_latex_commands(self):
         raw = (

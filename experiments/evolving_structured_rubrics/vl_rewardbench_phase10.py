@@ -88,10 +88,8 @@ def _require(target: Path, stage: str) -> None:
 
 def _pool_spec(config: Mapping[str, Any]) -> BackendPoolSpec:
     spec = BackendPoolSpec.from_dict(config["backend_pool"])
-    if tuple(sorted(item.endpoint_id for item in spec.endpoints)) != ENDPOINT_IDS:
-        raise RuntimeError("Phase10 VL-RewardBench requires exactly vllm-8000 and vllm-8001")
     if spec.common_checkpoint_id != config["model"]:
-        raise RuntimeError("dual endpoints do not declare the configured common checkpoint")
+        raise RuntimeError("backend pool does not declare the configured common checkpoint")
     return spec
 
 

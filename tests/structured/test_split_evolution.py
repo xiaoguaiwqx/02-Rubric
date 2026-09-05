@@ -9,7 +9,7 @@ from experiments.evolving_structured_rubrics.split_evolution import (
  ACCEPTED, ATTRIBUTION_INVALID, COMPETITION_REJECTED, POLICY_V1, PROPOSAL_INVALID,
  SCIENTIFIC_ATTEMPT_OUTCOMES, TRANSPORT_FAILED, AttributionInvalid, TransportFailed,
  MEMORY_CONFIG_V1, MEMORY_PROTOCOL,
- _abort_program, _history_projection, _manager_failure_kind, _pause_transport, colliding_roots, merge_accepted_rubrics,
+ _abort_program, _child_artifact_path, _history_projection, _manager_failure_kind, _pause_transport, colliding_roots, merge_accepted_rubrics,
  _require_split_clusters, _signatures, freeze_rubric_memory, rubric_memory_snapshot, root_shard,
  _required_failure_attribution, non_degenerate_acceptance_check, require_heldout_treatment, retryable_roots,
  runtime_acceptance_policy, should_stop_after_epoch, signature_identity, validate_phase5_lineage, validate_policy)
@@ -49,6 +49,14 @@ class SplitEvolutionStateTests(unittest.TestCase):
  def test_exact_policy(self):
   config={'split_evolution':dict(POLICY_V1),'evolution_policy':{'trigger_thresholds':{'tau_split':.7,'tau_cov_high':.8}}};self.assertEqual(validate_policy(config),POLICY_V1);config['split_evolution']['max_epochs']=6
   with self.assertRaises(ValueError):validate_policy(config)
+ def test_child_artifact_path_is_short_and_reuses_legacy_file(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   attempt=Path(tmp);cluster_id='factuality_'+'very_long_cluster_name_'*8
+   short=_child_artifact_path(attempt,cluster_id,1)
+   self.assertEqual(short,attempt/'children'/'child_01.json')
+   legacy=attempt/'children'/f'{cluster_id}.json';legacy.parent.mkdir(parents=True)
+   legacy.write_text('{}',encoding='utf-8')
+   self.assertEqual(_child_artifact_path(attempt,cluster_id,1),legacy)
  def test_memory_policy_is_explicit_and_does_not_change_control_validation(self):
   config={'split_evolution':dict(POLICY_V1),'evolution_policy':{'trigger_thresholds':{'tau_split':.7,'tau_cov_high':.8}}}
   self.assertEqual(validate_policy(config),POLICY_V1)

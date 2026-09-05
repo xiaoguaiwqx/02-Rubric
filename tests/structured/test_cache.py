@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from critiq.structured import cache as cache_module
 from critiq.structured import (
     Applicability,
     CacheCorruptionError,
@@ -60,6 +61,18 @@ def node_output():
 
 
 class JsonPredictionCacheTest(unittest.TestCase):
+    def test_cache_directory_creation_uses_io_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "cache"
+            with patch.object(
+                    cache_module, "_io_path",
+                    wraps=cache_module._io_path) as io_path:
+                JsonPredictionCache(root)
+            self.assertEqual(
+                [call.args[0] for call in io_path.call_args_list],
+                [root / kind for kind in ("node", "router", "pairwise", "gate")],
+            )
+
     @unittest.skipUnless(os.name == "nt", "Windows extended path behavior")
     def test_round_trip_when_compact_cache_file_exceeds_legacy_max_path(self):
         with tempfile.TemporaryDirectory() as directory:

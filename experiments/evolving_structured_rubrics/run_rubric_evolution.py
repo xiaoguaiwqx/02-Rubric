@@ -308,6 +308,7 @@ def _config(path: Path) -> dict[str, Any]:
                        "five_root_locked_split_refine_experiment",
                        "prompt_v2_aligned_evolution",
                        "discovery_v2_prompt_v2_evolution",
+                       "discovery_v2_heldout_reference_output",
                        "root_boundary_pre_refine_experiment",
                        "pairwise_cache_prompt_ablation",
                        "vlrb_prompt_v2_transfer",
@@ -571,8 +572,8 @@ def _manager_runtime(config: Mapping[str, Any], stage: str, *,
     request = profile["request_kwargs"]
     manager = SpecializeManager(
         model=profile["model"], backend_pool=pool, api_keys=api_keys,
-        api_retry_attempts=SPECIALIZE_MANAGER_POLICY["api_retry_attempts"],
-        structured_max_retries=SPECIALIZE_MANAGER_POLICY["structured_max_retries"],
+        api_retry_attempts=config["api_retry_attempts"],
+        structured_max_retries=config["structured_max_retries"],
         analysis_request_kwargs=(request if stage == "error_signature"
                                  else SPECIALIZE_MANAGER_POLICY["analysis_request_kwargs"]),
         clustering_request_kwargs=(request if stage == "semantic_cluster"
@@ -581,6 +582,7 @@ def _manager_runtime(config: Mapping[str, Any], stage: str, *,
                                    else SPECIALIZE_MANAGER_POLICY["generation_request_kwargs"]),
         child_input_mode=profile["input_mode"],
         rubric_memory_mode=rubric_memory_mode,
+        compact_sample_ids=bool(config.get("_manager_compact_sample_ids", False)),
     )
     public_profile = {
         "model": profile["model"], "backend_pool": spec.to_dict(),

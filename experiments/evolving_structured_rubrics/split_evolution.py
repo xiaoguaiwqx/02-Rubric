@@ -75,6 +75,7 @@ class EvolutionProtocol:
  source_experiment_dir: str | None = None
  allow_configured_endpoint_pool: bool = False
  allow_legacy_signature_reuse: bool = True
+ manager_model: str = MANAGER_MODEL
 
  @property
  def is_memory_treatment(self):return self.rubric_memory_mode=='global_rubric_v1'
@@ -134,6 +135,11 @@ def validate_phase5_lineage(output:Path):
 
 def _write(path:Path,value:Any):
  path.parent.mkdir(parents=True,exist_ok=True);atomic_write_json(path,value)
+
+def _child_artifact_path(attempt_dir:Path,cluster_id:str,index:int)->Path:
+ legacy=attempt_dir/'children'/f'{cluster_id}.json'
+ if legacy.is_file():return legacy
+ return attempt_dir/'children'/f'child_{index:02d}.json'
 
 def validate_policy(config,protocol:EvolutionProtocol=CONTROL_PROTOCOL):
  if config.get('split_evolution')!=POLICY_V1:raise ValueError('split_evolution must equal frozen v1 policy')
@@ -282,7 +288,7 @@ def _managers(config,protocol:EvolutionProtocol=CONTROL_PROTOCOL):
    # v2's boundary packets are intentionally multimodal even though the
    # historic global Split configuration used text-only child generation.
    m.child_input_mode='multimodal';p=dict(p);p['input_mode']='multimodal'
-  if p['model']!=MANAGER_MODEL:raise RuntimeError(f'{stage} must use {MANAGER_MODEL}')
+  if p['model']!=protocol.manager_model:raise RuntimeError(f'{stage} must use {protocol.manager_model}')
   managers[stage]=m;profiles[stage]=p;specs[stage]=m.request_specs()[stage].to_dict();identities[stage]=ids
   if stage=='semantic_cluster':
    specs['split_failure_attribution']=m.request_specs()['split_failure_attribution'].to_dict()
@@ -559,7 +565,8 @@ def _signatures(target,manager,parent,trigger,node_feedback,rows_by_id,identity,
   source_outputs=load_json(signatures_path)['outputs']
  def accept(sid,value,shard,source_kind):
   if value.signature is None:
-   details={'sample_id':sid,'parse_error':value.parse_error,'metrics':value.metrics.to_dict()}
+   details={'sample_id':sid,'parse_error':value.parse_error,
+            'raw_response':value.raw_response,'metrics':value.metrics.to_dict()}
    if value.raw_response is None and value.metrics.api_attempts>0 and value.metrics.error_count>=value.metrics.api_attempts:raise TransportFailed('error_signature',f'transport failed for signature {sid}',details)
    raise ProposalInvalid('error_signature',f'invalid signature {sid}: {value.parse_error}',details)
   if value.request_spec.to_dict()!=spec:raise RuntimeError('signature request identity mismatch')
@@ -635,7 +642,7 @@ def _prepare(config,target,epoch_dir,root,attempt_no,rubric,pred,feedback,rows,h
  _require_split_clusters(cluster)
  children=[]
  for i,c in enumerate(cluster.clusters,1):
-  reps=c.sample_ids[:3];child_path=d/'children'/f'{c.cluster_id}.json'
+  reps=c.sample_ids[:3];child_path=_child_artifact_path(d,c.cluster_id,i)
   child=ChildCriterionProposal.from_dict(load_json(child_path)) if child_path.exists() else managers['child_generation'].generate_child(parent=parent,cluster=c,signatures=[signatures[x] for x in c.sample_ids],representative_rows=[rows_by_id[x] for x in reps],siblings=children,prior_failures=prior,rubric_memory=rubric_memory,retry_feedback=retry_feedback)
   children.append(child)
   if not child_path.exists():_write(child_path,child.to_dict())
@@ -1410,7 +1417,7 @@ def locked_retry_v2_run(config,output):
   retry_feedback=_v2_retry_feedback(lock={'locked_criterion_names':locked_names,'locked_metrics':state['lock_metrics'],'selection_trace':load_json(target/'frozen_source'/'lock_selection.json')['selection_trace']},diagnostics=diagnostics,history=state,attempt=attempt_no)
   _write(d/'retry_feedback.json',retry_feedback);_write(d/'frozen_cluster_proposal.json',current.cluster_proposal.to_dict())
   rows_by_id={str(row['sample_id']):row for row in rows};children=[];generated=[];packets=[]
-  for cluster in current.cluster_proposal.clusters:
+  for cluster_index,cluster in enumerate(current.cluster_proposal.clusters,1):
    old=next(x for x in current.children if x.cluster_id==cluster.cluster_id)
    if old.criterion_name in locked_names:
     children.append(next(x for x in source_candidate.children if x.criterion_name==old.criterion_name));continue
@@ -1419,7 +1426,7 @@ def locked_retry_v2_run(config,output):
    packet=_v2_packet(current,current_combined,rows,parent_name,old.criterion_name,signatures);packet['requested_action']=action;packets.append(packet)
    rep=[rows_by_id[sid] for sid in packet['representative_sample_ids']]
    extra=[rows_by_id[x['sample_id']] for x in packet['samples'] if x['sample_id'] not in packet['representative_sample_ids']]
-   child_path=d/'children'/f'{cluster.cluster_id}.json'
+   child_path=_child_artifact_path(d,cluster.cluster_id,cluster_index)
    child=ChildCriterionProposal.from_dict(load_json(child_path)) if child_path.exists() else managers['child_generation'].generate_child(
     parent=parent,cluster=cluster,signatures=[signatures[x] for x in cluster.sample_ids],representative_rows=rep,
     supplemental_rows=extra,siblings=children,prior_failures=state['attempts'],

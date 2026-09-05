@@ -267,12 +267,13 @@ def _five_root_locked_split_refine_config(
     return dict(value)
 
 
-def _manager(config: Mapping[str, Any]) -> tuple[RefineManager, dict[str, Any]]:
+def _manager(config: Mapping[str, Any], *,
+             expected_model: str = MANAGER_MODEL) -> tuple[RefineManager, dict[str, Any]]:
     profile = config.get("refine_manager")
     if not isinstance(profile, Mapping):
         raise ValueError("config must define refine_manager")
-    if profile.get("model") != MANAGER_MODEL:
-        raise ValueError(f"Refine Manager must use {MANAGER_MODEL}")
+    if profile.get("model") != expected_model:
+        raise ValueError(f"Refine Manager must use {expected_model}")
     spec = BackendPoolSpec.from_dict(profile["backend_pool"])
     api_key_env = profile.get("api_key_env")
     api_keys = "EMPTY" if api_key_env is None else os.environ.get(api_key_env, "")
@@ -616,7 +617,7 @@ def _prepare_refine_attempt(
     node_rubric = StructuredRubric({node_id: node}, (), (node_id,))
     try:
         candidate_prediction, artifact, valid_rate = base._generate_pairwise(
-            config, attempt_dir, node_rubric, rows, "candidate_pairwise",
+            config, attempt_dir, node_rubric, rows, "refine",
             execution_backend_pool=pool,
             request_backend_id=prediction.request_spec.backend_id,
             request_level_progress=True,
@@ -672,7 +673,7 @@ def _prepare_refine_attempt(
                     rubric_memory=rubric_memory,
                 )
             except RefineManagerFailure as exc:
-                _write(attempt_dir / "failure_attribution_failure.json", exc.to_dict())
+                _write(attempt_dir / "attribution_failure.json", exc.to_dict())
                 if split._manager_failure_kind(exc) == split.TRANSPORT_FAILED:
                     raise RefineTransportPause(str(exc)) from exc
                 _write(attempt_dir / "attribution_invalid.json", {
@@ -690,7 +691,7 @@ def _prepare_refine_attempt(
         "node_evaluation": evaluation.to_dict(),
         "proposed_description": proposal.description,
     }
-    _write(attempt_dir / "history_projection_result.json", {
+    _write(attempt_dir / "decision.json", {
         "decision": decision, "history_payload": history_payload})
     return {
         "node_id": node_id, "decision": decision, "attempt_dir": attempt_dir,
@@ -3416,11 +3417,13 @@ def _integrated_locked_retry_prepare(
     fresh_children = []
     packets = []
     retry_manager = managers["child_generation"]
-    for cluster in candidate.cluster_proposal.clusters:
+    for cluster_index, cluster in enumerate(
+            candidate.cluster_proposal.clusters, start=1):
         old_child = next(
             item for item in candidate.children
             if item.cluster_id == cluster.cluster_id)
-        child_path = attempt_dir / "children" / f"{cluster.cluster_id}.json"
+        child_path = split._child_artifact_path(
+            attempt_dir, cluster.cluster_id, cluster_index)
         if old_child.criterion_name == locked_name:
             children.append(old_child)
             _write(child_path, old_child.to_dict())
@@ -3740,7 +3743,7 @@ def _run_five_root_locked_split_refine_impl(
     retry_managers, retry_specs = _integrated_retry_specs(config, protocol)
     if retry_specs != manifest["locked_retry_manager_request_specs"]:
         raise RuntimeError(f"{log_prefix} locked-retry Manager request identity drift")
-    refine_manager, _ = _manager(config)
+    refine_manager, _ = _manager(config, expected_model=protocol.manager_model)
     expected_refine_specs = {
         key: value.to_dict()
         for key, value in refine_manager.request_specs().items()}

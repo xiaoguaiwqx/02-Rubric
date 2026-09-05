@@ -95,12 +95,19 @@ def _parse(raw: object, label: str) -> Mapping[str, Any]:
     return value
 
 
-def parse_error_signature_response(raw: object, *, expected_sample_id: str) -> ErrorSignature:
-    fields = {"sample_id", "task_pattern", "visual_focus", "candidate_difference",
+def parse_error_signature_response(
+    raw: object, *, expected_sample_id: str, compact_ids: bool = False,
+) -> ErrorSignature:
+    fields = {"task_pattern", "visual_focus", "candidate_difference",
               "parent_failure", "suggested_subdomain"}
+    if not compact_ids:
+        fields.add("sample_id")
     value = _exact(_parse(raw, "error signature"), fields, "error signature")
     try:
-        result = ErrorSignature(**{field: value[field] for field in fields})
+        payload = {field: value[field] for field in fields}
+        if compact_ids:
+            payload["sample_id"] = expected_sample_id
+        result = ErrorSignature(**payload)
     except (TypeError, ValueError) as exc:
         raise SpecializeParseError(str(exc)) from exc
     if result.sample_id != expected_sample_id:

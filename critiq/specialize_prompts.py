@@ -30,6 +30,34 @@ Return exactly one JSON object with exactly these string fields:
 }}
 Do not output Markdown or additional fields."""
 
+ERROR_SIGNATURE_PROMPT_COMPACT_IDS = """## Task
+Analyze one decisive error made by the parent rubric criterion. Identify the
+judging failure pattern that could recur across samples. Focus on why the
+parent criterion failed to distinguish the human-preferred answer. Do not
+cluster by the pictured object or scene alone.
+
+## Parent criterion
+Name: {criterion_name}
+Description: {criterion_description}
+
+## Preference pair
+Question: {question}
+Candidate A: {A}
+Candidate B: {B}
+Human preference: {gold}
+Parent vote: {parent_vote}
+Parent worker thought: {thought}
+
+Return exactly one JSON object with exactly these string fields:
+{{
+  "task_pattern": "...",
+  "visual_focus": "...",
+  "candidate_difference": "...",
+  "parent_failure": "...",
+  "suggested_subdomain": "..."
+}}
+Do not output Markdown or additional fields."""
+
 SEMANTIC_CLUSTER_PROMPT = """## Task
 Group the supplied parent-error signatures into reusable judging-failure
 subdomains. A cluster must express a shared criterion failure, not merely a
@@ -59,6 +87,42 @@ Return exactly one JSON object:
       "shared_failure": "...",
       "distinction": "...",
       "sample_ids": ["..."]
+    }}
+  ],
+  "unclustered_sample_ids": ["..."]
+}}
+Do not output Markdown or additional fields."""
+
+SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS = """## Task
+Group the supplied parent-error signatures into reusable judging-failure
+subdomains. A cluster must express a shared criterion failure, not merely a
+shared image topic. Produce only meaningful clusters; do not force the maximum.
+
+Parent criterion: {criterion_name}
+Minimum samples per cluster: {min_cluster_size}
+Maximum clusters allowed in this edit: {max_clusters}
+
+Error signatures (each `signature_key` is a short identifier assigned by the
+program):
+{signatures_json}
+
+Previous failed Split attempts for this parent (may be empty):
+{split_failure_history_json}
+Use this history only to avoid repeating failed semantic partitions or criterion descriptions.
+The current signatures remain authoritative.
+
+Every signature key must occur exactly once, either in one cluster or in
+unclustered_sample_ids.
+
+Return exactly one JSON object:
+{{
+  "clusters": [
+    {{
+      "cluster_id": "...",
+      "label": "...",
+      "shared_failure": "...",
+      "distinction": "...",
+      "sample_ids": ["S001", "S002"]
     }}
   ],
   "unclustered_sample_ids": ["..."]
@@ -210,6 +274,24 @@ Every sample ID must occur exactly once, either in one cluster or in
 unclustered_sample_ids.""",
 )
 
+SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS_GLOBAL_RUBRIC = (
+    SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS.replace(
+        "Every signature key must occur exactly once, either in one cluster or in\n"
+        "unclustered_sample_ids.",
+        """## Current committed Rubric (global memory)
+{rubric_memory_json}
+
+Use the current error signatures as the authoritative evidence for clustering.
+Use the global Rubric only to locate meaningful boundaries with existing
+criteria and to avoid creating a renamed duplicate of an existing criterion.
+Do not force novelty, merge distinct failures merely to look different, or
+sacrifice the cluster's discriminability and expected accuracy.
+
+Every signature key must occur exactly once, either in one cluster or in
+unclustered_sample_ids.""",
+    )
+)
+
 CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC = CHILD_GENERATION_PROMPT_V2.replace(
     "Return exactly one JSON object:",
     """## Current committed Rubric (global memory)
@@ -243,6 +325,11 @@ set failed collectively.
 
 SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC_RETRY_V2 = (
     SEMANTIC_CLUSTER_PROMPT_GLOBAL_RUBRIC + RETRY_FEEDBACK_GUIDANCE
+)
+
+SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS_GLOBAL_RUBRIC_RETRY_V2 = (
+    SEMANTIC_CLUSTER_PROMPT_COMPACT_IDS_GLOBAL_RUBRIC
+    + RETRY_FEEDBACK_GUIDANCE
 )
 
 CHILD_GENERATION_PROMPT_GLOBAL_RUBRIC_RETRY_V2 = (
