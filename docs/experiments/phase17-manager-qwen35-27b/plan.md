@@ -230,3 +230,57 @@ $Output = "output/evolving_structured_rubrics/vlrb_27b_full"
     }
 }
 ```
+
+## 后续诊断：Epoch 5 完整 Rubric + Clean S5-v2
+
+固定上面的28节点 Rubric，只将显式递归投票替换为第17章的 Clean S5-v2：五个 Unified Subtree Worker 各生成一份完整子树报告，再由 Global Arbiter 形成判断。复用 `aligned_system_runtime.evaluate()` 及已有 Prompt、parser、缓存和指标函数，不修改任何推理或演化实现；本地调用脚本为 `.local/phase17_27b_full/run_clean_s5.py`（与本地配置一起保留，不是新增的公共实验框架）。
+
+- 参数不变：Qwen3-VL-8B-Instruct、temperature=0.5、max_tokens=2048、最多10次解析重试、不设置 generation seed，原生 `None` 是有效弃权，不强制补成 A/B。
+- 两个服务端、checkpoint 和各100并发读取既有 `.local/phase17_27b_full/config.json`。仅在内存中将端点名称映射为运行时已有的 `vllm-8000`、`vllm-8001`，不改服务地址或原配置文件，不修改模块全局变量。
+- 复用 `vlrb_27b_full/order_schedule.json` 的1,247条样本、三次 A/B 顺序。逻辑请求为18,705次子树推理 + 3,741次 Arbiter推理，共22,446次。旧 Pairwise 输出不能充当子树报告；本次报告重新生成。
+- 主对照是同一28节点 Rubric的显式递归结果（Overall ACC 71.39%、Macro ACC 66.09%、Strict ACC 71.05%），不是 Phase10 或旧 Phase17 E4。报告包含配对纠正/改错数，结果独立写入 `output/evolving_structured_rubrics/vlrb_27b_full_s5/final_report.json`。
+- `check` 为离线检查；`smoke` 测20条，`run` 正式推理，`retry` 复用成功缓存并补失败请求，`report` 只做离线统计。进度按样本报告：一个完整样本包含三次重复的18个请求，不再显示 `prompt_v2_replicate_01`。同一样本的调用沿用现有端点亲和调度，因此完成首条进度前需要等待多个请求。
+
+从仓库根目录运行整段命令；遇错立即停止，恢复时保留输出和缓存，不删除旧实验：
+
+```powershell
+conda activate critiq
+$Config = ".local/phase17_27b_full/config.json"
+$Rubric = ".local/phase17_27b_full/rubric.json"
+$Control = "output/evolving_structured_rubrics/vlrb_27b_full"
+$Output = "output/evolving_structured_rubrics/vlrb_27b_full_s5"
+& {
+    $ErrorActionPreference = "Stop"
+    foreach ($Stage in @("check", "smoke", "run", "retry", "report")) {
+        python .local/phase17_27b_full/run_clean_s5.py $Stage --config $Config --rubric $Rubric --control-dir $Control --output-dir $Output
+        if ($LASTEXITCODE -ne 0) { throw "Stage failed: $Stage" }
+    }
+}
+```
+
+实现验证：已通过实际28节点/1,247条数据的离线 `check`，两个 System Prompt 与历史 Clean S5 对应文本一致，parser 接受原生 `None`。本地假后端测试覆盖 smoke→run→retry→report；尚未启动真实 smoke 或正式推理。本实验是已见测试集上的聚合诊断，不将结果用于反向选择 Rubric。
+
+## 后续模型替换：完整 Rubric + Clean S5-v2 + Qwen3.5-27B
+
+等8B实验全部完成（包括 retry/report）后，再将两台服务部署为 `Qwen/Qwen3.5-27B`，服务端默认设置 `--default-chat-template-kwargs '{"enable_thinking":false}'`，确保 served model name 与配置一致。地址和端口沿用本地配置；不要在8B运行中切换模型。
+
+仅使用新配置 `.local/phase17_27b_full/config_qwen35_27b.json`：模型及公共 checkpoint 标识改为27B，每个端点并发20、总并发40。端点 `checkpoint_root` 暂用模型标识 `Qwen/Qwen3.5-27B`（不是已验证的磁盘路径），现有本地脚本仅用其作缓存身份，实际API按 `model` 选模型。其余复制原配置，Manager字段不参与本次评测。Rubric、Prompt、temperature=0.5、max_tokens=2048、K=3顺序、原生None及重试规则不变，算法代码与调用脚本均不修改。关闭思考由服务端负责，离线 check 不验证服务端设置。
+
+新结果和缓存独立写入 `vlrb_27b_full_s5_qwen35`。脚本内置报告仍对比8B显式递归；模型替换的主要科学对照应是已完成的8B Clean S5-v2，待运行后离线配对比较，不把控制目录换成S5目录（其产物格式不同）。并发变化同时影响性能，耗时不能只归因于模型规模。
+
+部署完成后，从仓库根目录运行：
+
+```powershell
+conda activate critiq
+$Config = ".local/phase17_27b_full/config_qwen35_27b.json"
+$Rubric = ".local/phase17_27b_full/rubric.json"
+$Control = "output/evolving_structured_rubrics/vlrb_27b_full"
+$Output = "output/evolving_structured_rubrics/vlrb_27b_full_s5_qwen35"
+& {
+    $ErrorActionPreference = "Stop"
+    foreach ($Stage in @("check", "smoke", "run", "retry", "report")) {
+        python .local/phase17_27b_full/run_clean_s5.py $Stage --config $Config --rubric $Rubric --control-dir $Control --output-dir $Output
+        if ($LASTEXITCODE -ne 0) { throw "Stage failed: $Stage" }
+    }
+}
+```

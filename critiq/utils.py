@@ -51,15 +51,18 @@ class PairData(TypedDict):
     answer: Literal["A", "B"]
 
 
-def parse_json(text: str) -> dict:
+def parse_json(text: str, *, allow_invalid_escapes: bool = False) -> dict:
     """从带噪声的模型输出中提取最外层 JSON 对象。"""
     try:
         text = "{" + text.split("{", 1)[-1].strip().rsplit("}", 1)[0].strip() + "}"
-        result = json.loads(
-            text,
-            strict=False,
-        )
-        return result
+        while True:
+            try:
+                return json.loads(text, strict=False)
+            except json.JSONDecodeError as error:
+                if not allow_invalid_escapes or error.msg != "Invalid \\escape":
+                    raise
+                # Preserve the literal backslash; leave valid JSON escapes alone.
+                text = text[:error.pos] + "\\" + text[error.pos:]
     except Exception as e:
         raise ValueError(f"Failed to parse JSON: {text}") from e
 

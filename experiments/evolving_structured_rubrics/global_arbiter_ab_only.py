@@ -114,7 +114,7 @@ def _settings(config: Mapping[str, Any]) -> dict[str, Any]:
 def parse_global_arbiter_ab_only_response(raw: object) -> dict[str, str]:
     if not isinstance(raw, str):
         raise ValueError("A/B-only Global-Arbiter response must be text")
-    payload = parse_json(raw)
+    payload = parse_json(raw, allow_invalid_escapes=True)
     if not isinstance(payload, dict):
         raise ValueError("A/B-only Global-Arbiter response must be one JSON object")
     answer = payload.get("answer")

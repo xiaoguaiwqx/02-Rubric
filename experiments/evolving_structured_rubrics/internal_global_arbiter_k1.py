@@ -135,7 +135,7 @@ def _dataset_path(config: Mapping[str, Any], split: str) -> Path:
 def parse_subtree_response(raw: object) -> dict[str, str]:
     if not isinstance(raw, str):
         raise ValueError("Unified-Subtree response must be text")
-    payload = parse_json(raw)
+    payload = parse_json(raw, allow_invalid_escapes=True)
     if not isinstance(payload, dict):
         raise ValueError("Unified-Subtree response must be one JSON object")
     answer = payload.get("answer")
