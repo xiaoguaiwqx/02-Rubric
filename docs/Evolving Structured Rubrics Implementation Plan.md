@@ -2684,8 +2684,6 @@ $$
 
 其中 corrected 表示基线错而候选对，harmed 表示基线对而候选错。
 
-<a id="phase19"></a>
-
 ### 18.2 Phase19：直接用最终系统收益接受候选
 
 #### 候选如何产生
@@ -2732,8 +2730,6 @@ Phase19 五轮共比较27个候选，只接受2个 Split：Completeness 和 Crea
 
 VL-RewardBench 表中的初始值对应 Initial five-root；若与主要强 Control Phase17 E4 比较，Phase19 final 从**71.13%降至70.57%**，相差-0.56 pp。Discovery 提升没有稳定迁移。候选生成阶段使用“系统归因样本、root/child Pairwise 错误”的交集，使 Manager 能看到的**错误样本明显减少**，并排除了被其他 roots 补救的局部错误，限制了错误经验覆盖和候选多样性。候选选择阶段又让 Discovery100 同时参与错误发现和接受判断； Phase19 因而可能生成不充分的局部专家候选，并把同数据选择和采样波动误认为候选的真实系统收益。
 
-<a id="phase21"></a>
-
 ### 18.3 Phase21：用完整 root subtree 做局部原子竞争
 
 Phase21 不再让 Pairwise、Specialized ACC 和 Global Arbiter 共同定义局部演化，而是把 Unified-Subtree Worker 贯穿整个 root 内闭环。
@@ -2753,7 +2749,7 @@ Phase21 不再让 Pairwise、Specialized ACC 和 Global Arbiter 共同定义局�
 
 两个算子的单位也随之改变：
 
-- **Split bundle** 一次生成整套 children；不锁定强孩子、不允许部分接纳，所有 children 共同接受或拒绝。但是失败后不会重新聚类。
+- **Split bundle** 一次生成整套 children；不锁定强孩子、不允许部分接纳，所有 children 共同接受或拒绝。
 - **Bundle Refine** 读取 root 和全部 children，由 Manager 选择真正需要小修的部分 descriptions；ID、criterion name 和树结构保持不变，所有 edits 共同接受或拒绝。
 
 同一 root 每轮最多一个候选。不同 roots 分别通过后全部同步提交；accepted root 直接复用候选竞争阶段的 report，未修改 root 复用 baseline report。Global Arbiter 只在提交后计算系统诊断，不能改变或回滚局部决定。Specialized ACC 同样只作只读诊断。
@@ -2777,8 +2773,6 @@ Phase21 的候选接受只比较单棵 root 最终输出的 A/B/None 标签是�
 | Phase21 | frozen scope 上的 root-local Unified 收益 | scope、错误经验、候选评价完全一致 | 优化的是局部分类正确率，不是报告对 Arbiter 的证据价值 |
 
 这说明不能简单地在“局部指标”和“同数据系统指标”之间二选一。为判断两类指标究竟错在哪里，后续反事实审计分别检查候选进入完整系统后的效用、K=1 结果的稳定性、跨-root组合效应和独立数据迁移。
-
-<a id="counterfactual-audit"></a>
 
 ### 18.5 反事实审计：局部收益能否转化为系统泛化
 
@@ -2864,8 +2858,6 @@ Phase19、Phase21 和三次反事实审计共同暴露了五个问题：
 这些结果不能支持“Phase19 或 Phase21 优于 Phase17 E4”，也不能支持某个被拒候选已经具有稳定的泛化收益。当前能够得到的结论仅限于：**node-level、root-local 和同数据 system-level 三种接受信号都存在各自的失真来源，尚没有一种信号被证明能够稳定选择出在独立数据上更好的 Rubric。**
 
 ---
-
-<a id="phase22"></a>
 
 ### 18.7 Phase22：全样本 root-subtree 原子竞争（含条件重聚类设计）
 
