@@ -178,6 +178,10 @@ def _manifest(config: Mapping[str, Any], output: Path, records, schedule,
     request_scientific = dict(request_spec); request_scientific.pop("backend_id")
     control_scientific = dict(control_manifest["structured_worker_request_spec"])
     control_scientific.pop("backend_id")
+    # Explicit cross-model experiment; all other request settings stay frozen.
+    if config.get("_vlrb_allow_model_change", False):
+        request_scientific.pop("model")
+        control_scientific.pop("model")
     if request_scientific != control_scientific:
         raise RuntimeError("treatment and Control Prompt v2 request identity differ")
     value = {

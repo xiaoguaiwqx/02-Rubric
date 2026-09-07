@@ -2942,9 +2942,9 @@ VLRB 相对 Initial 的类别净变化为 General +1、Hallucination −5、Reas
 
 - Split 共21次：1次接受、18次竞争拒绝、2次提案无效；仅 Factuality 在 Epoch 1 接受。
 - Refine 共20次：1次接受、4次竞争拒绝、15次提案无效；Epoch 3 接受 Factuality 下几何推理孩子的修改。
-- 最终仅有5个 roots + 5个孩子，共10节点；Discovery Strict ACC 从64%升到65%。
+- 最终**仅有5个 roots + 5个孩子，共10节点**；Discovery Strict ACC 从64%升到65%。
 - RLHF-V heldout-500 为75.60%（378/500），初始对照为75.80%（379/500）；
-- VL-RewardBench Overall ACC 为57.49%、Macro ACC 为54.43%；相对历史 Phase17 E5（69.91%、64.06%，869条正确），分别下降12.42、9.63个百分点，正确数从869降至706，净减少163条；最终技术失败为0。
+- VL-RewardBench Overall ACC 为57.49%、Macro ACC 为54.43%；相对历史 Phase17 E5（69.91%、64.06%，869条正确），分别**下降12.42、9.63个百分点**，正确数从869降至706，净减少163条；最终技术失败为0。
 
 ### 19.2 Epoch 5 完整 Rubric：不按竞争结果筛掉孩子
 
@@ -3006,7 +3006,7 @@ Completeness 子树单独的 Strict ACC 为73.70%，高于五棵树等权聚合�
 ### 19.5 主要发现
 
 1. **27B 能生成有迁移价值的准则。** 子树对比显示，被拒绝的候选中仍包含有效准则。多个孩子强调“事实依据优先于完整、丰富或流畅表达”，与幻觉类收益一致。
-2. **局部接受指标不等于系统收益。** 最后一轮 Completeness、Creativity 的局部竞争 ACC 分别下降约1.06、1.08个百分点而被拒绝，但当时保存的全系统诊断 ACC 分别从65%升至68%、67%。另两棵树在 Discovery 上下降、在 VL-RewardBench 上改善，说明数据分布也可能影响筛选。
+2. **竞争指标和数据分布是否影响演化的结果**。最后只有一个子树竞争成功，但是其他子树并不是没有效益，在bench上测试的收益也不少，但是在演化过程中不断被拒绝，然后继续修改再拒绝的迭代模式中。
 
 **结论：这次瓶颈不只是准则生成能力，还包括能否识别并保留已经生成的有效准则。**
 
@@ -3021,7 +3021,7 @@ Completeness 子树单独的 Strict ACC 为73.70%，高于五棵树等权聚合�
 固定19.2节的 Epoch 5 完整候选（5个 roots、23个孩子，共28节点），不重新演化。复用第17章 **Clean S5-v2（A/B-preferred，原生 `None`）**：五个 Unified-Subtree Workers 各读取一棵完整子树，Global Arbiter 综合五份报告；每个样本运行三次，再按既有多数规则聚合。两组使用相同的1,247条 VL-RewardBench 样本、$K=3$ 平衡 A/B 顺序、提示词和 Rubric，`temperature=0.5`、常规 `max_tokens=2048`。Rubric SHA-256 为 `fa5286cbe828af4527ddd239bf9a522ad96d83451ff1a1c24338d5056474fc7f`。
 
 - **实验A：8B Clean S5-v2**，子树 Worker 和 Arbiter 均为 Qwen3-VL-8B-Instruct。
-- **实验B：27B Clean S5-v2**，两者均换为 Qwen3.5-27B，服务端关闭 thinking，两服务各并发20、合计40。不是只换 Arbiter；少量解析与预算补救见19.8节。
+- **实验B：27B Clean S5-v2**，两者均换为 Qwen3.5-27B，服务端关闭 thinking，两服务各并发20、合计40。不是只换 Arbiter；包含非法转义解析恢复及两条4096输出上限补救，恢复记录见19.7节末链接。
 
 下表同时加入的**标准 VL-RewardBench 仓库原生评测**。其 $K=5$、与本地 Clean S5-v2 每样本18次逻辑调用（共22,446次，不含重试）并非等预算。
 
@@ -3092,6 +3092,80 @@ Overall ACC 排除最终平票/弃权；Strict ACC 以全部1,247条为分母。
 **结论与限制：** 当前支持“完整Rubric + Clean S5-v2在27B上获得明显更高的系统性能，并在其原生基线上增加81条正确判断”；
 
 结果来源：[8B最终报告](../output/evolving_structured_rubrics/vlrb_27b_full_s5/final_report.json)、[27B最终报告](../output/evolving_structured_rubrics/vlrb_27b_full_s5_qwen35/final_report.json)、[27B最终预测](../output/evolving_structured_rubrics/vlrb_27b_full_s5_qwen35/predictions/full.json)、[最后JSON恢复记录](../output/evolving_structured_rubrics/vlrb_27b_full_s5_qwen35/rescue_4096/final_json_recovery.json)。
+
+---
+
+### 19.8 27B + 完整 Rubric + 递归投票：与 Clean S5-v2 对照
+
+#### 设置与最终结果（2026-09-07）
+
+复用19.2节的节点推理和递归算法，只将 Worker 换为 Qwen3.5-27B，并发40，关闭 thinking。固定同一28节点 Rubric（哈希见19.6节）、1,247条样本、$K=3$ 和 A/B 顺序，`temperature=0.5`、常规 `max_tokens=2048`。孩子形成明确多数时覆盖父判断，否则回退父节点，最后五根等权投票。主要对照是 **27B Clean S5-v2**，不是原入口报告中沿用的历史 Phase10。
+
+| 模型与完整 Rubric 推理方式 | 正确数 / 1247 | Overall ACC | Macro ACC | Strict ACC |
+|---|---:|---:|---:|---:|
+| 8B 递归投票 | 886 | 71.39% | 66.09% | 71.05% |
+| 8B Clean S5-v2 | 879 | 72.11% | 65.36% | 70.49% |
+| 27B 原生 | 950 | 76.37% | 72.54% | 76.18% |
+| **27B 递归投票（本次）** | **988** | **80.00%** | **75.23%** | **79.23%** |
+| **27B Clean S5-v2** | **1,031** | **83.08%** | **78.79%** | **82.68%** |
+
+递归版相对27B S5少正确43条，Overall、Macro、Strict分别下降3.08、3.56、3.45个百分点。“S5 → 递归”：纠正22条、改错65条
+
+三次单独评测的Strict分别为79.15%、78.83%、78.75%，S5对应81.96%、82.12%、81.96%，每次均领先；这些是同一次运行的重复/顺序评测，不是三个独立seed实验。原生27B参考结果为950条正确、Strict 76.18%：本次多正确38条，但原生的提示词、$K=5$及解析流程不同，不是等预算对照。
+
+#### 分类差异：Reasoning 降幅最大
+
+以下统一为全部组内样本上的 **Strict ACC**；纠正/改错仍以27B S5为对照。
+
+| 类别 | 样本数 | 27B S5 | 27B 递归 | 纠正 / 改错 | 净变化 |
+|---|---:|---:|---:|---:|---:|
+| General | 181 | 62.98% | 58.56% | 6 / 14 | −8 |
+| Hallucination | 749 | 85.71% | 83.31% | 11 / 29 | −18 |
+| Reasoning | 317 | 86.75% | 81.39% | 5 / 22 | −17 |
+
+三个类别均下降；Hallucination损失数量最多，但Reasoning降幅最大（5.36个百分点）。差距并非来自最后一个解析失败，也不局限于单一类别。
+
+#### 孩子仍然有价值，但 Factuality 被孩子多数拖累
+
+复用本次同批节点预测，比较父准则单独判断与完整子树递归判断，均按$K=3$聚合、以全部1,247条计算Strict。不是子树对五树系统的独立贡献。
+
+| Root | 父准则 Strict | 完整子树 Strict | 纠正 / 改错 | 净收益 |
+|---|---:|---:|---:|---:|
+| Completeness | 67.76% | 79.87% | 203 / 52 | +151 |
+| Visual Grounding | 70.81% | 77.47% | 112 / 29 | +83 |
+| Factuality | 80.51% | 77.87% | 30 / 63 | **−33** |
+| Creativity | 67.84% | 79.47% | 182 / 37 | +145 |
+| Clarity | 71.13% | 78.11% | 126 / 39 | +87 |
+
+四棵子树改善，净收益不能跨树相加。同批初始五根等权投票正确913条（Strict 73.22%），完整递归正确988条（79.23%），增加75条，说明孩子准则整体有用。Factuality父准则独自正确1,004条，子树仅971条：当前规则不是父子共同投票，而是孩子有多数便覆盖父判断。这是需要检查的具体退化来源，不能据测试结果直接删除孩子。
+
+#### 离线诊断：差距不全来自最后的 Arbiter
+
+取已生成的27B S5五份子树报告，仅使用其答案做五根等权投票，再沿用原$K=3$聚合；不重新推理、不改变正式结果。
+
+| 推理与汇总方式 | 正确数 | Strict ACC | Overall ACC | 最终覆盖数 |
+|---|---:|---:|---:|---:|
+| 独立节点 → 递归投票 | 988 | 79.23% | 80.00% | 1,235 |
+| S5子树报告 → 五根多数投票（离线诊断） | 1,010 | 80.99% | 83.20% | 1,214 |
+| S5子树报告 → Arbiter | 1,031 | 82.68% | 83.08% | 1,241 |
+
+即使不使用Arbiter，S5报告多数投票也比递归多正确22条；在同一批报告上，Arbiter又纠正40条、改错19条，净增加21条（McNemar exact $p=0.00864$），同时扩大覆盖。多数投票的Overall略高，但少正确21条，不能忽略覆盖差异而认为它更优。
+
+#### 推理成本与结论
+
+| 已记录成本 | 27B 递归 | 27B S5 | 递归 / S5 |
+|---|---:|---:|---:|
+| 逻辑调用 | 104,748 | 22,446 | 4.67倍 |
+| API尝试 | 106,667 | 24,563 | 4.34倍 |
+| 输入tokens | 158,464,958 | 79,752,044 | 1.99倍 |
+| 输出tokens | 39,408,017 | 9,935,301 | 3.97倍 |
+| 总tokens | 197,872,975 | 89,687,345 | **2.21倍** |
+
+递归主运行三次累计约23小时13分钟，吞吐75.17次逻辑推理/分钟。
+
+**结论：完整Rubric有用，但在当前27B实验中，递归投票使用约2.21倍tokens，仍比Clean S5-v2少正确43条。** 可能原因包括准则错误相关、多数投票丢失判断理由，以及强父判断被孩子多数覆盖；这些是待验证解释。8B中S5未明显优于递归、27B中却明显领先，也提示推理方式与模型能力可能存在交互，而非某种聚合规则普遍更好。
+
+复现与证据：[运行计划](experiments/phase17-manager-qwen35-27b/plan.md)、[最终报告](../output/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35/final_report.json)、[配对及成本](../output/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35/comparison_clean_s5.json)、[节点及子树聚合结果](../output/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35/retry/combined/logical_votes.json)、[历史输出恢复记录](../output/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35/history_recovery.json)。离线诊断复用这些结果与19.7节链接的S5最终预测；原始产物不随文档提交。
 
 ---
 

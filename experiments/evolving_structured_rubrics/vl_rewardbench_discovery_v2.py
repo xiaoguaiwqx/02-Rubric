@@ -80,6 +80,9 @@ def _adapt_config(config: Mapping[str, Any]) -> dict[str, Any]:
     value = dict(config.get("vlrb_discovery_v2", {}))
     rubric_path = value.pop("rubric_path", None)
     output_dir = value.pop("output_dir", None)
+    allow_model_change = value.pop("allow_model_change", False)
+    if not isinstance(allow_model_change, bool):
+        raise ValueError("allow_model_change must be boolean")
     if rubric_path is not None and not output_dir:
         raise ValueError("an explicit rubric_path requires its own output_dir")
     expected = dict(SETTINGS)
@@ -89,6 +92,7 @@ def _adapt_config(config: Mapping[str, Any]) -> dict[str, Any]:
     if value != expected:
         raise RuntimeError("vlrb_discovery_v2 must match the frozen v1 protocol")
     adapted = deepcopy(dict(config))
+    adapted["_vlrb_allow_model_change"] = allow_model_change
     if rubric_path is not None:
         adapted["_vlrb_rubric_path"] = rubric_path
     if output_dir is not None:

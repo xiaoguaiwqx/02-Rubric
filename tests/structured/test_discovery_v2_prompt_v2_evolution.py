@@ -38,6 +38,21 @@ class TestDiscoveryV2PromptV2Evolution(unittest.TestCase):
         )
         self.assertEqual(self.config["vlrb_discovery_v2"], vlrb.SETTINGS)
 
+    def test_cross_model_comparison_is_opt_in(self):
+        self.assertFalse(vlrb._adapt_config(self.config)["_vlrb_allow_model_change"])
+        config = deepcopy(self.config)
+        config["vlrb_discovery_v2"]["allow_model_change"] = True
+        self.assertTrue(vlrb._adapt_config(config)["_vlrb_allow_model_change"])
+        config["vlrb_discovery_v2"]["allow_model_change"] = "true"
+        with self.assertRaises(ValueError):
+            vlrb._adapt_config(config)
+
+    def test_cross_model_option_does_not_relax_protocol(self):
+        config = deepcopy(self.config)
+        config["vlrb_discovery_v2"].update(allow_model_change=True, k=5)
+        with self.assertRaises(RuntimeError):
+            vlrb._adapt_config(config)
+
     def test_heldout_reference_output_defaults_to_current_output(self):
         output = Path("isolated-output")
         self.assertEqual(

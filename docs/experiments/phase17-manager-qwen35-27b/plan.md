@@ -268,6 +268,8 @@ $Output = "output/evolving_structured_rubrics/vlrb_27b_full_s5"
 
 新结果和缓存独立写入 `vlrb_27b_full_s5_qwen35`。脚本内置报告仍对比8B显式递归；模型替换的主要科学对照应是已完成的8B Clean S5-v2，待运行后离线配对比较，不把控制目录换成S5目录（其产物格式不同）。并发变化同时影响性能，耗时不能只归因于模型规模。
 
+**已完成运行的恢复提醒：** 该27B Clean S5-v2实验已完成，最终报告技术失败为0，包含解析恢复与两条4096补救；不要对其已有输出直接重跑下列整段命令。结果与限制见主文档第19章。本段命令保留作为最初运行协议，下一项递归实验使用独立目录。
+
 部署完成后，从仓库根目录运行：
 
 ```powershell
@@ -284,3 +286,59 @@ $Output = "output/evolving_structured_rubrics/vlrb_27b_full_s5_qwen35"
     }
 }
 ```
+
+## 新对照：Qwen3.5-27B + Epoch 5 完整 Rubric + 子准则多数投票递归
+
+目的：固定同一27B与28节点Rubric，对比“逐节点判断、子准则多数投票递归、五根等权投票”和“完整子树报告 → Clean S5-v2 Arbiter”。这是两种完整推理方式的比较，不是只改最后一次投票公式。主要对照为已完成的27B Clean S5-v2（Overall 83.08%、Macro 78.79%、Strict 82.68%），不是历史Phase10。
+
+### 最小改动与固定设置
+
+- 复用8B完整Rubric的 `vlrb-discovery-v2-*` 入口，不改节点Prompt、递归多数规则、父节点回退、五根聚合、样本或解析器。
+- 新配置：`.local/phase17_27b_full/config_recursive_qwen35_27b.json`。沿用两个本地API地址，模型为 `Qwen/Qwen3.5-27B`，各20并发、总40；两台服务端默认 `enable_thinking=false`。配置本身不覆盖服务端thinking设置。
+- 同一 `.local/phase17_27b_full/rubric.json`，SHA-256 为 `fa5286cbe828af4527ddd239bf9a522ad96d83451ff1a1c24338d5056474fc7f`；1,247样本，K=3、seed=42生成原有平衡A/B顺序，temperature=0.5、max_tokens=2048。
+- 独立输出：`output/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35`。模型与输出目录不复用8B缓存，也不覆盖27B Clean S5-v2结果。
+- 原入口要求与历史8B对照的模型完全一致，会阻止模型替换。仅新增 `vlrb_discovery_v2.allow_model_change=true` 配置开关：默认关闭，开启时只放行模型字段差异，其他请求参数仍严格匹配；完整模型身份照常写入manifest。此处改变的是参数入口校验，不是算法。
+- 主体逻辑调用数为 $1247\times3\times28=104748$，Clean S5-v2为22,446；递归版调用数约为其4.67倍，但单次输入/输出长度不同，不能据此直接推断耗时比。
+
+### 解析、补救和比较规则
+
+保留原节点解析与现有重试设置，技术retry最多10次，不把格式失败当作有效 `None`，不按答案正确性选择重试结果。本次**不预先把失败预算提高到4096**，也不套用子树/Arbiter专用解析补救；若原重试后仍失败，停下检查，再单独记录补救范围和参数。不要删除输出后重跑。
+
+原 `report` 仍会显示历史Phase10对照。新增本地**离线分析脚本** `.local/phase17_27b_full/compare_recursive_qwen35.py`，不参与推理：检查Rubric、样本和A/B顺序一致且技术失败为0，复用已有指标及配对函数，生成 `comparison_clean_s5.json`。比较方向固定为“27B Clean S5-v2 → 27B递归”：报告Overall/Macro/Strict、覆盖率、分类结果、纠正/改错、净收益和McNemar检验。
+
+效率同时记录逻辑调用数、API尝试数、输入/输出tokens和实际阶段耗时。递归报告主运行telemetry与额外retry消耗分列；Clean S5-v2从唯一缓存键汇总已持久化调用，包括失败重试和4096补救，排除备份，避免重复计数。请求延迟求和不是并发墙钟时间；Clean S5-v2的 `full.json.wall_seconds` 是最后一次31秒retry，不是总耗时，**不能拿它计算速度倍数**。下列命令逐阶段追加本次实际耗时，恢复执行也保留记录；历史S5若没有完整计时，不编造端到端速度比。
+
+### 运行命令
+
+在仓库根目录、两台服务均为27B且关闭thinking后运行。freeze/audit只做冻结与检查；smoke起才发模型推理请求。配置已生成，不要再执行旧的8B `prepare.py` 来覆盖它。
+
+```powershell
+conda activate critiq
+$Config = ".local/phase17_27b_full/config_recursive_qwen35_27b.json"
+$Output = "output/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35"
+& {
+    $ErrorActionPreference = "Stop"
+    New-Item -ItemType Directory -Force -Path $Output | Out-Null
+    foreach ($Stage in @(
+        "vlrb-discovery-v2-freeze",
+        "vlrb-discovery-v2-audit",
+        "vlrb-discovery-v2-smoke",
+        "vlrb-discovery-v2-run",
+        "vlrb-discovery-v2-retry",
+        "vlrb-discovery-v2-report"
+    )) {
+        $startedAt = (Get-Date).ToString("o")
+        $timer = [System.Diagnostics.Stopwatch]::StartNew()
+        python -m experiments.evolving_structured_rubrics.run_rubric_evolution $Stage --config $Config --output-dir $Output
+        $stageExit = $LASTEXITCODE
+        $timer.Stop()
+        @{stage=$Stage; started_at=$startedAt; wall_seconds=$timer.Elapsed.TotalSeconds; exit_code=$stageExit} |
+            ConvertTo-Json -Compress | Add-Content -Encoding UTF8 -LiteralPath "$Output/stage_times.jsonl"
+        if ($stageExit -ne 0) { throw "Stage failed: $Stage" }
+    }
+    python .local/phase17_27b_full/compare_recursive_qwen35.py
+    if ($LASTEXITCODE -ne 0) { throw "Offline comparison failed; inspect failures and artifacts." }
+}
+```
+
+本节是待运行协议，不填入预期分数。新配置及分析脚本属于本地产物，公共实现仅增加上述显式跨模型参数开关。
