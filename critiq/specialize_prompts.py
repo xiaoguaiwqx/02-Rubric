@@ -102,6 +102,8 @@ Parent criterion: {criterion_name}
 Minimum samples per cluster: {min_cluster_size}
 Maximum clusters allowed in this edit: {max_clusters}
 
+Every cluster must contain at least {min_cluster_size} samples; move smaller groups to unclustered_sample_ids unless a semantically coherent merge is possible.
+
 Error signatures (each `signature_key` is a short identifier assigned by the
 program):
 {signatures_json}

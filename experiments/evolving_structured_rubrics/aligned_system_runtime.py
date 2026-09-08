@@ -618,6 +618,7 @@ def evaluate(
     baseline: Mapping[str, Any] | None = None,
     changed_root_ids: Sequence[str] | None = None,
     total_attempt_limit: int | None = None,
+    endpoint_ids: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     """Run or resume a system evaluation and persist a replayable artifact."""
     changed = None if changed_root_ids is None else frozenset(changed_root_ids)
@@ -625,10 +626,13 @@ def evaluate(
         raise ValueError("changed roots must belong to the candidate rubric")
     old = _baseline_index(baseline)
     pool = BackendPoolSpec.from_dict(config["backend_pool"])
+    selected_ids = ENDPOINT_IDS if endpoint_ids is None else tuple(endpoint_ids)
     endpoints = tuple(item for item in pool.endpoints
-                      if item.endpoint_id in ENDPOINT_IDS)
-    if tuple(item.endpoint_id for item in endpoints) != ENDPOINT_IDS:
-        raise RuntimeError("aligned runtime requires vllm-8000 and vllm-8001")
+                      if item.endpoint_id in selected_ids)
+    if not selected_ids or tuple(item.endpoint_id for item in endpoints) != selected_ids:
+        raise RuntimeError(f"aligned runtime endpoint order must match {selected_ids}")
+    if endpoint_ids is not None and sum(e.max_concurrency for e in endpoints) > pool.global_request_concurrency:
+        raise ValueError("selected endpoint slots exceed global request concurrency")
     attempts = total_attempt_limit or 1 + settings.max_parse_retries
     pending: queue.Queue[Mapping[str, Any]] = queue.Queue()
     for row in rows:

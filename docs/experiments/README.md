@@ -4,6 +4,7 @@
 
 | 实验 | 已确认状态 | 设计与结果 |
 | --- | --- | --- |
+| 27B Manager 联合系统接受 Split-only | 最小实现与离线测试完成；未正式运行；单8B端点100并发 | [计划与运行命令](joint-split-27b/plan.md)；局部错误生成、整批接受，不用Refine |
 | Phase17：27B Manager 替换 | 最小参数化实现完成；未正式运行 | [实验设置与运行命令](phase17-manager-qwen35-27b/plan.md)；只更换Manager、Worker端点与并发 |
 | Phase19 系统级接受 | 已完成；尚无稳定泛化优势 | [主计划18.2节](../Evolving%20Structured%20Rubrics%20Implementation%20Plan.md#phase19) |
 | Phase20 混合局部接受 | 历史探索；不作为新实验默认入口 | [冻结协议](phase20/protocol.md)；保留其已被后续协议引用的基线产物 |

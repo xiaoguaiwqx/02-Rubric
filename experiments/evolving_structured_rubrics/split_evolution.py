@@ -6,7 +6,7 @@ from __future__ import annotations
 import json, re, time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 from critiq.structured import (
@@ -603,9 +603,14 @@ def _signatures(target,manager,parent,trigger,node_feedback,rows_by_id,identity,
     print(f'split-evolution signatures completed={completed}/{total} root={parent.node_id} sample={sid}',flush=True)
  out={sid:values[sid] for sid in trigger.decisive_wrong_sample_ids}
  return out,cache,reuse
+def _root_scoped_child(child, root):
+ prefix = root + '__'
+ return child if child.criterion_name.startswith(prefix) else replace(
+  child, criterion_name=prefix + child.criterion_name)
+
 def _prepare(config,target,epoch_dir,root,attempt_no,rubric,pred,feedback,rows,history,managers,specs,
              protocol:EvolutionProtocol=CONTROL_PROTOCOL,rubric_memory=None,rubric_memory_sha256=None,
-             decisive_sample_allowlist=None):
+             decisive_sample_allowlist=None, prior_failures_override=None, root_scoped_names=False):
  d=_attempt(epoch_dir,root,attempt_no);d.mkdir(parents=True,exist_ok=True);ctx=EvolutionContext(rubric,feedback);t=detect_specialize_trigger(ctx,root,config['evolution_policy']['trigger_thresholds']);_write(d/'trigger.json',t.to_dict())
  if not t.triggered:return {'root_id':root,'decision':'not_eligible','attempt_dir':d}
  if decisive_sample_allowlist is not None:
@@ -628,6 +633,7 @@ def _prepare(config,target,epoch_dir,root,attempt_no,rubric,pred,feedback,rows,h
  if protocol.read_only_control_signatures:signature_artifact.update({'control_signature_source':CONTROL_EXPERIMENT_DIR,'generated':reuse['generated']})
  _write(d/'error_signatures.json',signature_artifact)
  thresholds=config['evolution_policy']['trigger_thresholds'];prior=_prior(history,root,protocol.is_retry_treatment);retry_feedback=_retry_feedback(prior) if protocol.is_retry_treatment else None
+ if prior_failures_override is not None:prior=list(prior_failures_override)
  _write(d/'history_projection.json',{'schema_version':'1.0.0','root_id':root,'attempt':attempt_no,'history':prior,'projection_sha256':canonical_sha256(prior)})
  if protocol.is_retry_treatment:_write(d/'retry_feedback.json',retry_feedback)
  cluster_path=d/'cluster_proposal.json'
@@ -644,6 +650,10 @@ def _prepare(config,target,epoch_dir,root,attempt_no,rubric,pred,feedback,rows,h
  for i,c in enumerate(cluster.clusters,1):
   reps=c.sample_ids[:3];child_path=_child_artifact_path(d,c.cluster_id,i)
   child=ChildCriterionProposal.from_dict(load_json(child_path)) if child_path.exists() else managers['child_generation'].generate_child(parent=parent,cluster=c,signatures=[signatures[x] for x in c.sample_ids],representative_rows=[rows_by_id[x] for x in reps],siblings=children,prior_failures=prior,rubric_memory=rubric_memory,retry_feedback=retry_feedback)
+  if root_scoped_names:
+   normalized = _root_scoped_child(child, root)
+   if normalized != child:_write(child_path,normalized.to_dict())
+   child = normalized
   children.append(child)
   if not child_path.exists():_write(child_path,child.to_dict())
   print(f'split-evolution children {i}/{len(cluster.clusters)} root={root}',flush=True)
