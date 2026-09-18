@@ -110,14 +110,14 @@ def _materialize_image(target: Path, image_bytes: bytes) -> tuple[str, Path]:
     return digest, path
 
 
-def _read_records(target: Path) -> tuple[dict[str, Any], ...]:
+def _read_records(target: Path, *, parquet_path: Path | None = None) -> tuple[dict[str, Any], ...]:
     """Load parquet records and losslessly materialize their image bytes."""
 
     try:
         import pandas as pd
     except ImportError as exc:  # pragma: no cover - environment dependency
         raise RuntimeError("pandas with parquet support is required for VL-RewardBench") from exc
-    path = _parquet_path()
+    path = _parquet_path() if parquet_path is None else parquet_path
     if not path.is_file():
         raise RuntimeError(f"VL-RewardBench parquet is missing: {path}")
     frame = pd.read_parquet(path)

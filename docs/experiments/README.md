@@ -4,7 +4,7 @@
 
 | 实验 | 已确认状态 | 设计与结果 |
 | --- | --- | --- |
-| 27B Manager 联合系统接受 Split-only | 最小实现与离线测试完成；未正式运行；单8B端点100并发 | [计划与运行命令](joint-split-27b/plan.md)；局部错误生成、整批接受，不用Refine |
+| Framework v6：五根 Split 初始化与分层反思演化 | 2026-09-17 实现及离线验证完成，未真实运行；122B thinking Manager，Worker 全局并发50 | [计划与完整运行命令](joint-split-27b/plan.md)、[框架PPT](joint-split-27b/framework-editable-v6.pptx)；S0之后最多五轮，严格优于当前版本才整批接受 |
 | Phase17：27B Manager 替换 | 最小参数化实现完成；未正式运行 | [实验设置与运行命令](phase17-manager-qwen35-27b/plan.md)；只更换Manager、Worker端点与并发 |
 | Phase19 系统级接受 | 已完成；尚无稳定泛化优势 | [主计划18.2节](../Evolving%20Structured%20Rubrics%20Implementation%20Plan.md#phase19) |
 | Phase20 混合局部接受 | 历史探索；不作为新实验默认入口 | [冻结协议](phase20/protocol.md)；保留其已被后续协议引用的基线产物 |
@@ -15,6 +15,8 @@
 Phase22 的 Worker 是 Qwen3-VL-8B-Instruct，不是 Qwen3.5-27B。其 VLRB Strict ACC 为67.92%，相对 Initial净−2条、相对Phase17 E4净−40条；实际没有触发重新聚类。完整统计只维护在主计划18.7节。
 
 ## 哪些信息以哪里为准
+
+Framework v6 在 `codex/framework-v6-clean` 上从 `cf4a799` 重新起步。该提交中 `docs/experiments/joint-split-27b/plan.md` 保存旧版27B协议；当前同路径明确描述新协议，旧实验状态和运行命令不适用于新框架。旧分支及产物保持原样。
 
 - **设计约束**：对应实验的冻结协议及运行 manifest；结果不好也不回改历史假设。
 - **当前运行状态**：该次运行的 `stage_status.json`、完整性检查与最终报告。旧 tracker 不覆盖实际产物。

@@ -55,6 +55,7 @@ class RuntimeSettings:
     max_tokens: int
     max_parse_retries: int
     generation_seed_policy: str = "unset"
+    retain_arbiter_reason: bool = False
 
     def as_loader(self):
         value = {
@@ -127,10 +128,13 @@ def _call_arbiter(
             "order": order,
         },
         total_attempt_limit=attempts,
-        protocol_version=PROTOCOL_VERSION,
+        protocol_version=(PROTOCOL_VERSION + "-full-reason"
+                          if settings.retain_arbiter_reason else PROTOCOL_VERSION),
         prompt_version=unified.ARBITER_PROMPT_VERSION,
         system_prompt=arbiter.GLOBAL_ARBITER_AB_ONLY_SYSTEM_PROMPT,
-        response_parser=arbiter.parse_global_arbiter_ab_only_response,
+        response_parser=(arbiter.parse_global_arbiter_with_reason
+                         if settings.retain_arbiter_reason
+                         else arbiter.parse_global_arbiter_ab_only_response),
         settings_loader=settings.as_loader(),
     )
 

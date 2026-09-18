@@ -123,6 +123,17 @@ def parse_global_arbiter_ab_only_response(raw: object) -> dict[str, str]:
     return {"answer": str(answer)}
 
 
+def parse_global_arbiter_with_reason(raw: object) -> dict[str, str]:
+    """Retain the emitted justification for reflection without changing votes."""
+    result = parse_global_arbiter_ab_only_response(raw)
+    payload = parse_json(raw, allow_invalid_escapes=True)
+    for field in ("analysis_a", "analysis_b", "thought"):
+        if not isinstance(payload.get(field), str) or not payload[field].strip():
+            raise ValueError(f"Global-Arbiter {field} is missing")
+        result[field] = payload[field]
+    return result
+
+
 def _controls(
     output: Path, records: Sequence[Mapping[str, Any]], rubric: Any,
 ) -> tuple[dict[str, list[list[int | None]]], dict[str, Any]]:
