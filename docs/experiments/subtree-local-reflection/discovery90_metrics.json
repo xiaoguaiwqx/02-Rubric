@@ -1,0 +1,338 @@
+{
+  "discovery": {
+    "initial": {
+      "roots": {
+        "init_01_completeness_and_coverage": {
+          "correct": 59,
+          "covered": 86,
+          "total": 90,
+          "covered_acc": 0.686046511627907,
+          "strict": 0.6555555555555556
+        },
+        "init_02_visual_grounding_and_details": {
+          "correct": 62,
+          "covered": 88,
+          "total": 90,
+          "covered_acc": 0.7045454545454546,
+          "strict": 0.6888888888888889
+        },
+        "init_03_factuality_no_hallucination": {
+          "correct": 60,
+          "covered": 88,
+          "total": 90,
+          "covered_acc": 0.6818181818181818,
+          "strict": 0.6666666666666666
+        },
+        "init_04_creativity_and_expressiveness": {
+          "correct": 56,
+          "covered": 81,
+          "total": 90,
+          "covered_acc": 0.691358024691358,
+          "strict": 0.6222222222222222
+        },
+        "init_05_clarity_and_coherence": {
+          "correct": 66,
+          "covered": 88,
+          "total": 90,
+          "covered_acc": 0.75,
+          "strict": 0.7333333333333333
+        }
+      },
+      "majority": {
+        "correct": 60,
+        "covered": 87,
+        "total": 90,
+        "covered_acc": 0.6896551724137931,
+        "strict": 0.6666666666666666
+      },
+      "arbiter": {
+        "correct": 66,
+        "covered": 89,
+        "total": 90,
+        "covered_acc": 0.7415730337078652,
+        "strict": 0.7333333333333333
+      },
+      "arbiter_corrected": 7,
+      "arbiter_harmed": 1
+    },
+    "final": {
+      "roots": {
+        "init_01_completeness_and_coverage": {
+          "correct": 61,
+          "covered": 85,
+          "total": 90,
+          "covered_acc": 0.7176470588235294,
+          "strict": 0.6777777777777778
+        },
+        "init_02_visual_grounding_and_details": {
+          "correct": 62,
+          "covered": 88,
+          "total": 90,
+          "covered_acc": 0.7045454545454546,
+          "strict": 0.6888888888888889
+        },
+        "init_03_factuality_no_hallucination": {
+          "correct": 59,
+          "covered": 84,
+          "total": 90,
+          "covered_acc": 0.7023809523809523,
+          "strict": 0.6555555555555556
+        },
+        "init_04_creativity_and_expressiveness": {
+          "correct": 64,
+          "covered": 85,
+          "total": 90,
+          "covered_acc": 0.7529411764705882,
+          "strict": 0.7111111111111111
+        },
+        "init_05_clarity_and_coherence": {
+          "correct": 66,
+          "covered": 88,
+          "total": 90,
+          "covered_acc": 0.75,
+          "strict": 0.7333333333333333
+        }
+      },
+      "majority": {
+        "correct": 64,
+        "covered": 90,
+        "total": 90,
+        "covered_acc": 0.7111111111111111,
+        "strict": 0.7111111111111111
+      },
+      "arbiter": {
+        "correct": 65,
+        "covered": 89,
+        "total": 90,
+        "covered_acc": 0.7303370786516854,
+        "strict": 0.7222222222222222
+      },
+      "arbiter_corrected": 4,
+      "arbiter_harmed": 3
+    }
+  },
+  "dev": {
+    "initial": {
+      "roots": {
+        "init_01_completeness_and_coverage": {
+          "correct": 111,
+          "covered": 139,
+          "total": 150,
+          "covered_acc": 0.7985611510791367,
+          "strict": 0.74
+        },
+        "init_02_visual_grounding_and_details": {
+          "correct": 97,
+          "covered": 138,
+          "total": 150,
+          "covered_acc": 0.7028985507246377,
+          "strict": 0.6466666666666666
+        },
+        "init_03_factuality_no_hallucination": {
+          "correct": 104,
+          "covered": 144,
+          "total": 150,
+          "covered_acc": 0.7222222222222222,
+          "strict": 0.6933333333333334
+        },
+        "init_04_creativity_and_expressiveness": {
+          "correct": 95,
+          "covered": 128,
+          "total": 150,
+          "covered_acc": 0.7421875,
+          "strict": 0.6333333333333333
+        },
+        "init_05_clarity_and_coherence": {
+          "correct": 108,
+          "covered": 143,
+          "total": 150,
+          "covered_acc": 0.7552447552447552,
+          "strict": 0.72
+        }
+      },
+      "majority": {
+        "correct": 113,
+        "covered": 147,
+        "total": 150,
+        "covered_acc": 0.7687074829931972,
+        "strict": 0.7533333333333333
+      },
+      "arbiter": {
+        "correct": 107,
+        "covered": 148,
+        "total": 150,
+        "covered_acc": 0.722972972972973,
+        "strict": 0.7133333333333334
+      },
+      "arbiter_corrected": 3,
+      "arbiter_harmed": 9
+    },
+    "final": {
+      "roots": {
+        "init_01_completeness_and_coverage": {
+          "correct": 100,
+          "covered": 131,
+          "total": 150,
+          "covered_acc": 0.7633587786259542,
+          "strict": 0.6666666666666666
+        },
+        "init_02_visual_grounding_and_details": {
+          "correct": 97,
+          "covered": 138,
+          "total": 150,
+          "covered_acc": 0.7028985507246377,
+          "strict": 0.6466666666666666
+        },
+        "init_03_factuality_no_hallucination": {
+          "correct": 91,
+          "covered": 121,
+          "total": 150,
+          "covered_acc": 0.7520661157024794,
+          "strict": 0.6066666666666667
+        },
+        "init_04_creativity_and_expressiveness": {
+          "correct": 97,
+          "covered": 133,
+          "total": 150,
+          "covered_acc": 0.7293233082706767,
+          "strict": 0.6466666666666666
+        },
+        "init_05_clarity_and_coherence": {
+          "correct": 108,
+          "covered": 143,
+          "total": 150,
+          "covered_acc": 0.7552447552447552,
+          "strict": 0.72
+        }
+      },
+      "majority": {
+        "correct": 113,
+        "covered": 147,
+        "total": 150,
+        "covered_acc": 0.7687074829931972,
+        "strict": 0.7533333333333333
+      },
+      "arbiter": {
+        "correct": 109,
+        "covered": 147,
+        "total": 150,
+        "covered_acc": 0.7414965986394558,
+        "strict": 0.7266666666666667
+      },
+      "arbiter_corrected": 6,
+      "arbiter_harmed": 10
+    }
+  },
+  "vlrb": {
+    "initial": {
+      "roots": {
+        "init_01_completeness_and_coverage": {
+          "correct": 758,
+          "covered": 1203,
+          "total": 1247,
+          "covered_acc": 0.6300914380714879,
+          "strict": 0.6078588612670409
+        },
+        "init_02_visual_grounding_and_details": {
+          "correct": 830,
+          "covered": 1198,
+          "total": 1247,
+          "covered_acc": 0.6928213689482471,
+          "strict": 0.6655974338412189
+        },
+        "init_03_factuality_no_hallucination": {
+          "correct": 858,
+          "covered": 1211,
+          "total": 1247,
+          "covered_acc": 0.708505367464905,
+          "strict": 0.6880513231756215
+        },
+        "init_04_creativity_and_expressiveness": {
+          "correct": 754,
+          "covered": 1107,
+          "total": 1247,
+          "covered_acc": 0.6811201445347786,
+          "strict": 0.6046511627906976
+        },
+        "init_05_clarity_and_coherence": {
+          "correct": 767,
+          "covered": 1212,
+          "total": 1247,
+          "covered_acc": 0.6328382838283828,
+          "strict": 0.6150761828388132
+        }
+      },
+      "majority": {
+        "correct": 808,
+        "covered": 1218,
+        "total": 1247,
+        "covered_acc": 0.6633825944170771,
+        "strict": 0.6479550922213312
+      },
+      "arbiter": {
+        "correct": 858,
+        "covered": 1236,
+        "total": 1247,
+        "covered_acc": 0.6941747572815534,
+        "strict": 0.6880513231756215
+      },
+      "arbiter_corrected": 79,
+      "arbiter_harmed": 29
+    },
+    "final": {
+      "roots": {
+        "init_01_completeness_and_coverage": {
+          "correct": 742,
+          "covered": 1155,
+          "total": 1247,
+          "covered_acc": 0.6424242424242425,
+          "strict": 0.595028067361668
+        },
+        "init_02_visual_grounding_and_details": {
+          "correct": 830,
+          "covered": 1198,
+          "total": 1247,
+          "covered_acc": 0.6928213689482471,
+          "strict": 0.6655974338412189
+        },
+        "init_03_factuality_no_hallucination": {
+          "correct": 784,
+          "covered": 1121,
+          "total": 1247,
+          "covered_acc": 0.6993755575379126,
+          "strict": 0.6287089013632718
+        },
+        "init_04_creativity_and_expressiveness": {
+          "correct": 721,
+          "covered": 1138,
+          "total": 1247,
+          "covered_acc": 0.6335676625659051,
+          "strict": 0.5781876503608661
+        },
+        "init_05_clarity_and_coherence": {
+          "correct": 767,
+          "covered": 1212,
+          "total": 1247,
+          "covered_acc": 0.6328382838283828,
+          "strict": 0.6150761828388132
+        }
+      },
+      "majority": {
+        "correct": 803,
+        "covered": 1218,
+        "total": 1247,
+        "covered_acc": 0.6592775041050903,
+        "strict": 0.6439454691259021
+      },
+      "arbiter": {
+        "correct": 851,
+        "covered": 1227,
+        "total": 1247,
+        "covered_acc": 0.6935615321923391,
+        "strict": 0.6824378508420208
+      },
+      "arbiter_corrected": 82,
+      "arbiter_harmed": 34
+    }
+  }
+}

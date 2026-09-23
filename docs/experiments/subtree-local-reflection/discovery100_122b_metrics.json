@@ -1,0 +1,272 @@
+{
+  "discovery": {
+    "initial": {
+      "roots": {
+        "init_01_completeness_and_coverage": [
+          58,
+          86,
+          67.44
+        ],
+        "init_02_visual_grounding_and_details": [
+          57,
+          93,
+          61.29
+        ],
+        "init_03_factuality_no_hallucination": [
+          56,
+          90,
+          62.22
+        ],
+        "init_04_creativity_and_expressiveness": [
+          58,
+          96,
+          60.42
+        ],
+        "init_05_clarity_and_coherence": [
+          62,
+          94,
+          65.96
+        ]
+      },
+      "majority": [
+        63,
+        97,
+        64.95
+      ],
+      "arbiter": [
+        61,
+        98,
+        62.24
+      ],
+      "corrected": 5,
+      "harmed": 7
+    },
+    "final": {
+      "roots": {
+        "init_01_completeness_and_coverage": [
+          62,
+          90,
+          68.89
+        ],
+        "init_02_visual_grounding_and_details": [
+          57,
+          83,
+          68.67
+        ],
+        "init_03_factuality_no_hallucination": [
+          46,
+          63,
+          73.02
+        ],
+        "init_04_creativity_and_expressiveness": [
+          63,
+          92,
+          68.48
+        ],
+        "init_05_clarity_and_coherence": [
+          58,
+          81,
+          71.6
+        ]
+      },
+      "majority": [
+        65,
+        92,
+        70.65
+      ],
+      "arbiter": [
+        65,
+        92,
+        70.65
+      ],
+      "corrected": 8,
+      "harmed": 8
+    },
+    "transitions": {
+      "correct_to_none": 4,
+      "wrong_to_none": 2,
+      "none_to_correct": 0,
+      "none_to_wrong": 0
+    }
+  },
+  "dev": {
+    "initial": {
+      "roots": {
+        "init_01_completeness_and_coverage": [
+          109,
+          144,
+          75.69
+        ],
+        "init_02_visual_grounding_and_details": [
+          95,
+          129,
+          73.64
+        ],
+        "init_03_factuality_no_hallucination": [
+          92,
+          141,
+          65.25
+        ],
+        "init_04_creativity_and_expressiveness": [
+          98,
+          140,
+          70.0
+        ],
+        "init_05_clarity_and_coherence": [
+          108,
+          143,
+          75.52
+        ]
+      },
+      "majority": [
+        112,
+        145,
+        77.24
+      ],
+      "arbiter": [
+        109,
+        148,
+        73.65
+      ],
+      "corrected": 3,
+      "harmed": 6
+    },
+    "final": {
+      "roots": {
+        "init_01_completeness_and_coverage": [
+          102,
+          143,
+          71.33
+        ],
+        "init_02_visual_grounding_and_details": [
+          96,
+          135,
+          71.11
+        ],
+        "init_03_factuality_no_hallucination": [
+          69,
+          91,
+          75.82
+        ],
+        "init_04_creativity_and_expressiveness": [
+          104,
+          143,
+          72.73
+        ],
+        "init_05_clarity_and_coherence": [
+          92,
+          117,
+          78.63
+        ]
+      },
+      "majority": [
+        105,
+        140,
+        75.0
+      ],
+      "arbiter": [
+        98,
+        134,
+        73.13
+      ],
+      "corrected": 10,
+      "harmed": 17
+    },
+    "transitions": {
+      "correct_to_none": 11,
+      "wrong_to_none": 3,
+      "none_to_correct": 0,
+      "none_to_wrong": 0
+    }
+  },
+  "vlrb": {
+    "initial": {
+      "roots": {
+        "init_01_completeness_and_coverage": [
+          748,
+          1198,
+          62.44
+        ],
+        "init_02_visual_grounding_and_details": [
+          771,
+          1165,
+          66.18
+        ],
+        "init_03_factuality_no_hallucination": [
+          853,
+          1193,
+          71.5
+        ],
+        "init_04_creativity_and_expressiveness": [
+          828,
+          1203,
+          68.83
+        ],
+        "init_05_clarity_and_coherence": [
+          771,
+          1191,
+          64.74
+        ]
+      },
+      "majority": [
+        816,
+        1224,
+        66.67
+      ],
+      "arbiter": [
+        868,
+        1236,
+        70.23
+      ],
+      "corrected": 77,
+      "harmed": 25
+    },
+    "final": {
+      "roots": {
+        "init_01_completeness_and_coverage": [
+          756,
+          1196,
+          63.21
+        ],
+        "init_02_visual_grounding_and_details": [
+          763,
+          1183,
+          64.5
+        ],
+        "init_03_factuality_no_hallucination": [
+          688,
+          962,
+          71.52
+        ],
+        "init_04_creativity_and_expressiveness": [
+          830,
+          1208,
+          68.71
+        ],
+        "init_05_clarity_and_coherence": [
+          728,
+          1107,
+          65.76
+        ]
+      },
+      "majority": [
+        798,
+        1199,
+        66.56
+      ],
+      "arbiter": [
+        831,
+        1184,
+        70.19
+      ],
+      "corrected": 77,
+      "harmed": 44
+    },
+    "transitions": {
+      "correct_to_none": 29,
+      "wrong_to_none": 24,
+      "none_to_correct": 1,
+      "none_to_wrong": 0
+    }
+  }
+}

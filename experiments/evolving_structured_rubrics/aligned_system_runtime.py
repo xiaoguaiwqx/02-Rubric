@@ -531,15 +531,19 @@ def evaluate_root(
     split_name: str, rows: Sequence[Mapping[str, Any]], rubric: StructuredRubric,
     root_id: str, scope_sample_ids: Sequence[str], settings: RuntimeSettings,
     total_attempt_limit: int | None = None,
+    endpoint_ids: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     """Evaluate exactly one Unified-Subtree; no Global-Arbiter call is made."""
     if root_id not in rubric.root_ids:
         raise ValueError("root-only evaluation target must be a rubric root")
     pool = BackendPoolSpec.from_dict(config["backend_pool"])
+    selected_ids = ENDPOINT_IDS if endpoint_ids is None else tuple(endpoint_ids)
     endpoints = tuple(item for item in pool.endpoints
-                      if item.endpoint_id in ENDPOINT_IDS)
-    if tuple(item.endpoint_id for item in endpoints) != ENDPOINT_IDS:
-        raise RuntimeError("root-only runtime requires vllm-8000 and vllm-8001")
+                      if item.endpoint_id in selected_ids)
+    if not selected_ids or tuple(item.endpoint_id for item in endpoints) != selected_ids:
+        raise RuntimeError(f"root runtime endpoint order must match {selected_ids}")
+    if endpoint_ids is not None and sum(e.max_concurrency for e in endpoints) > pool.global_request_concurrency:
+        raise ValueError("selected endpoint slots exceed global request concurrency")
     attempts = total_attempt_limit or 1 + settings.max_parse_retries
     pending: queue.Queue[Mapping[str, Any]] = queue.Queue()
     for row in rows:

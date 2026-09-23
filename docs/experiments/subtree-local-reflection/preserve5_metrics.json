@@ -1,0 +1,664 @@
+{
+  "root_metrics": {
+    "init": {
+      "discovery": {
+        "roots": {
+          "init_01_completeness_and_coverage": {
+            "correct": 62,
+            "covered": 91,
+            "total": 100
+          },
+          "init_02_visual_grounding_and_details": {
+            "correct": 59,
+            "covered": 90,
+            "total": 100
+          },
+          "init_03_factuality_no_hallucination": {
+            "correct": 55,
+            "covered": 92,
+            "total": 100
+          },
+          "init_04_creativity_and_expressiveness": {
+            "correct": 63,
+            "covered": 94,
+            "total": 100
+          },
+          "init_05_clarity_and_coherence": {
+            "correct": 61,
+            "covered": 95,
+            "total": 100
+          }
+        },
+        "majority": {
+          "correct": 62,
+          "covered": 96,
+          "total": 100
+        }
+      },
+      "dev": {
+        "roots": {
+          "init_01_completeness_and_coverage": {
+            "correct": 106,
+            "covered": 139,
+            "total": 150
+          },
+          "init_02_visual_grounding_and_details": {
+            "correct": 101,
+            "covered": 133,
+            "total": 150
+          },
+          "init_03_factuality_no_hallucination": {
+            "correct": 90,
+            "covered": 128,
+            "total": 150
+          },
+          "init_04_creativity_and_expressiveness": {
+            "correct": 91,
+            "covered": 136,
+            "total": 150
+          },
+          "init_05_clarity_and_coherence": {
+            "correct": 107,
+            "covered": 145,
+            "total": 150
+          }
+        },
+        "majority": {
+          "correct": 110,
+          "covered": 146,
+          "total": 150
+        }
+      },
+      "vlrb": {
+        "roots": {
+          "init_01_completeness_and_coverage": {
+            "correct": 712,
+            "covered": 1182,
+            "total": 1247
+          },
+          "init_02_visual_grounding_and_details": {
+            "correct": 784,
+            "covered": 1189,
+            "total": 1247
+          },
+          "init_03_factuality_no_hallucination": {
+            "correct": 844,
+            "covered": 1199,
+            "total": 1247
+          },
+          "init_04_creativity_and_expressiveness": {
+            "correct": 839,
+            "covered": 1177,
+            "total": 1247
+          },
+          "init_05_clarity_and_coherence": {
+            "correct": 759,
+            "covered": 1211,
+            "total": 1247
+          }
+        },
+        "majority": {
+          "correct": 828,
+          "covered": 1231,
+          "total": 1247
+        }
+      }
+    },
+    "strict": {
+      "discovery": {
+        "roots": {
+          "init_01_completeness_and_coverage": {
+            "correct": 62,
+            "covered": 91,
+            "total": 100
+          },
+          "init_02_visual_grounding_and_details": {
+            "correct": 59,
+            "covered": 90,
+            "total": 100
+          },
+          "init_03_factuality_no_hallucination": {
+            "correct": 62,
+            "covered": 86,
+            "total": 100
+          },
+          "init_04_creativity_and_expressiveness": {
+            "correct": 68,
+            "covered": 95,
+            "total": 100
+          },
+          "init_05_clarity_and_coherence": {
+            "correct": 66,
+            "covered": 96,
+            "total": 100
+          }
+        },
+        "majority": {
+          "correct": 65,
+          "covered": 93,
+          "total": 100
+        }
+      },
+      "dev": {
+        "roots": {
+          "init_01_completeness_and_coverage": {
+            "correct": 106,
+            "covered": 139,
+            "total": 150
+          },
+          "init_02_visual_grounding_and_details": {
+            "correct": 101,
+            "covered": 133,
+            "total": 150
+          },
+          "init_03_factuality_no_hallucination": {
+            "correct": 97,
+            "covered": 135,
+            "total": 150
+          },
+          "init_04_creativity_and_expressiveness": {
+            "correct": 104,
+            "covered": 144,
+            "total": 150
+          },
+          "init_05_clarity_and_coherence": {
+            "correct": 105,
+            "covered": 144,
+            "total": 150
+          }
+        },
+        "majority": {
+          "correct": 114,
+          "covered": 143,
+          "total": 150
+        }
+      },
+      "vlrb": {
+        "roots": {
+          "init_01_completeness_and_coverage": {
+            "correct": 712,
+            "covered": 1182,
+            "total": 1247
+          },
+          "init_02_visual_grounding_and_details": {
+            "correct": 784,
+            "covered": 1189,
+            "total": 1247
+          },
+          "init_03_factuality_no_hallucination": {
+            "correct": 842,
+            "covered": 1189,
+            "total": 1247
+          },
+          "init_04_creativity_and_expressiveness": {
+            "correct": 752,
+            "covered": 1213,
+            "total": 1247
+          },
+          "init_05_clarity_and_coherence": {
+            "correct": 722,
+            "covered": 1215,
+            "total": 1247
+          }
+        },
+        "majority": {
+          "correct": 789,
+          "covered": 1224,
+          "total": 1247
+        }
+      }
+    },
+    "preserve5": {
+      "discovery": {
+        "roots": {
+          "init_01_completeness_and_coverage": {
+            "correct": 64,
+            "covered": 90,
+            "total": 100
+          },
+          "init_02_visual_grounding_and_details": {
+            "correct": 60,
+            "covered": 91,
+            "total": 100
+          },
+          "init_03_factuality_no_hallucination": {
+            "correct": 63,
+            "covered": 90,
+            "total": 100
+          },
+          "init_04_creativity_and_expressiveness": {
+            "correct": 68,
+            "covered": 98,
+            "total": 100
+          },
+          "init_05_clarity_and_coherence": {
+            "correct": 68,
+            "covered": 96,
+            "total": 100
+          }
+        },
+        "majority": {
+          "correct": 67,
+          "covered": 94,
+          "total": 100
+        }
+      },
+      "dev": {
+        "roots": {
+          "init_01_completeness_and_coverage": {
+            "correct": 99,
+            "covered": 131,
+            "total": 150
+          },
+          "init_02_visual_grounding_and_details": {
+            "correct": 93,
+            "covered": 134,
+            "total": 150
+          },
+          "init_03_factuality_no_hallucination": {
+            "correct": 95,
+            "covered": 134,
+            "total": 150
+          },
+          "init_04_creativity_and_expressiveness": {
+            "correct": 98,
+            "covered": 148,
+            "total": 150
+          },
+          "init_05_clarity_and_coherence": {
+            "correct": 104,
+            "covered": 143,
+            "total": 150
+          }
+        },
+        "majority": {
+          "correct": 109,
+          "covered": 145,
+          "total": 150
+        }
+      },
+      "vlrb": {
+        "roots": {
+          "init_01_completeness_and_coverage": {
+            "correct": 548,
+            "covered": 1062,
+            "total": 1247
+          },
+          "init_02_visual_grounding_and_details": {
+            "correct": 791,
+            "covered": 1185,
+            "total": 1247
+          },
+          "init_03_factuality_no_hallucination": {
+            "correct": 842,
+            "covered": 1198,
+            "total": 1247
+          },
+          "init_04_creativity_and_expressiveness": {
+            "correct": 856,
+            "covered": 1216,
+            "total": 1247
+          },
+          "init_05_clarity_and_coherence": {
+            "correct": 731,
+            "covered": 1212,
+            "total": 1247
+          }
+        },
+        "majority": {
+          "correct": 816,
+          "covered": 1215,
+          "total": 1247
+        }
+      }
+    }
+  },
+  "preservation": [
+    {
+      "epoch": "e01",
+      "root": "r01",
+      "accepted": false,
+      "kept": 5,
+      "total": 5,
+      "harmed": 13,
+      "corrected": 7,
+      "before": 62,
+      "after": 56,
+      "images": 5
+    },
+    {
+      "epoch": "e01",
+      "root": "r02",
+      "accepted": false,
+      "kept": 5,
+      "total": 5,
+      "harmed": 7,
+      "corrected": 4,
+      "before": 59,
+      "after": 56,
+      "images": 5
+    },
+    {
+      "epoch": "e01",
+      "root": "r03",
+      "accepted": true,
+      "kept": 5,
+      "total": 5,
+      "harmed": 6,
+      "corrected": 14,
+      "before": 55,
+      "after": 63,
+      "images": 5
+    },
+    {
+      "epoch": "e01",
+      "root": "r04",
+      "accepted": true,
+      "kept": 5,
+      "total": 5,
+      "harmed": 12,
+      "corrected": 13,
+      "before": 63,
+      "after": 64,
+      "images": 5
+    },
+    {
+      "epoch": "e01",
+      "root": "r05",
+      "accepted": true,
+      "kept": 5,
+      "total": 5,
+      "harmed": 10,
+      "corrected": 14,
+      "before": 61,
+      "after": 65,
+      "images": 5
+    },
+    {
+      "epoch": "e02",
+      "root": "r01",
+      "accepted": false,
+      "kept": 4,
+      "total": 5,
+      "harmed": 12,
+      "corrected": 11,
+      "before": 62,
+      "after": 61,
+      "images": 5
+    },
+    {
+      "epoch": "e02",
+      "root": "r02",
+      "accepted": false,
+      "kept": 5,
+      "total": 5,
+      "harmed": 9,
+      "corrected": 4,
+      "before": 59,
+      "after": 54,
+      "images": 5
+    },
+    {
+      "epoch": "e02",
+      "root": "r03",
+      "accepted": false,
+      "kept": 4,
+      "total": 5,
+      "harmed": 13,
+      "corrected": 8,
+      "before": 63,
+      "after": 58,
+      "images": 5
+    },
+    {
+      "epoch": "e02",
+      "root": "r04",
+      "accepted": true,
+      "kept": 4,
+      "total": 5,
+      "harmed": 7,
+      "corrected": 8,
+      "before": 64,
+      "after": 65,
+      "images": 5
+    },
+    {
+      "epoch": "e02",
+      "root": "r05",
+      "accepted": false,
+      "kept": 3,
+      "total": 5,
+      "harmed": 10,
+      "corrected": 7,
+      "before": 65,
+      "after": 62,
+      "images": 5
+    },
+    {
+      "epoch": "e03",
+      "root": "r01",
+      "accepted": false,
+      "kept": 5,
+      "total": 5,
+      "harmed": 10,
+      "corrected": 7,
+      "before": 62,
+      "after": 59,
+      "images": 5
+    },
+    {
+      "epoch": "e03",
+      "root": "r02",
+      "accepted": true,
+      "kept": 4,
+      "total": 5,
+      "harmed": 6,
+      "corrected": 7,
+      "before": 59,
+      "after": 60,
+      "images": 5
+    },
+    {
+      "epoch": "e03",
+      "root": "r03",
+      "accepted": false,
+      "kept": 4,
+      "total": 5,
+      "harmed": 12,
+      "corrected": 4,
+      "before": 63,
+      "after": 55,
+      "images": 5
+    },
+    {
+      "epoch": "e03",
+      "root": "r04",
+      "accepted": false,
+      "kept": 4,
+      "total": 5,
+      "harmed": 12,
+      "corrected": 7,
+      "before": 65,
+      "after": 60,
+      "images": 5
+    },
+    {
+      "epoch": "e03",
+      "root": "r05",
+      "accepted": false,
+      "kept": 4,
+      "total": 5,
+      "harmed": 8,
+      "corrected": 7,
+      "before": 65,
+      "after": 64,
+      "images": 5
+    },
+    {
+      "epoch": "e04",
+      "root": "r01",
+      "accepted": false,
+      "kept": 2,
+      "total": 5,
+      "harmed": 13,
+      "corrected": 7,
+      "before": 62,
+      "after": 56,
+      "images": 5
+    },
+    {
+      "epoch": "e04",
+      "root": "r02",
+      "accepted": false,
+      "kept": 4,
+      "total": 5,
+      "harmed": 11,
+      "corrected": 7,
+      "before": 60,
+      "after": 56,
+      "images": 5
+    },
+    {
+      "epoch": "e04",
+      "root": "r03",
+      "accepted": false,
+      "kept": 2,
+      "total": 5,
+      "harmed": 5,
+      "corrected": 5,
+      "before": 63,
+      "after": 63,
+      "images": 5
+    },
+    {
+      "epoch": "e04",
+      "root": "r04",
+      "accepted": true,
+      "kept": 3,
+      "total": 5,
+      "harmed": 7,
+      "corrected": 10,
+      "before": 65,
+      "after": 68,
+      "images": 5
+    },
+    {
+      "epoch": "e04",
+      "root": "r05",
+      "accepted": true,
+      "kept": 5,
+      "total": 5,
+      "harmed": 7,
+      "corrected": 10,
+      "before": 65,
+      "after": 68,
+      "images": 5
+    },
+    {
+      "epoch": "e05",
+      "root": "r01",
+      "accepted": true,
+      "kept": 4,
+      "total": 5,
+      "harmed": 6,
+      "corrected": 8,
+      "before": 62,
+      "after": 64,
+      "images": 5
+    },
+    {
+      "epoch": "e05",
+      "root": "r02",
+      "accepted": false,
+      "kept": 3,
+      "total": 5,
+      "harmed": 8,
+      "corrected": 7,
+      "before": 60,
+      "after": 59,
+      "images": 5
+    },
+    {
+      "epoch": "e05",
+      "root": "r03",
+      "accepted": false,
+      "kept": 4,
+      "total": 5,
+      "harmed": 14,
+      "corrected": 4,
+      "before": 63,
+      "after": 53,
+      "images": 5
+    },
+    {
+      "epoch": "e05",
+      "root": "r04",
+      "accepted": false,
+      "kept": 5,
+      "total": 5,
+      "harmed": 13,
+      "corrected": 6,
+      "before": 68,
+      "after": 61,
+      "images": 5
+    },
+    {
+      "epoch": "e05",
+      "root": "r05",
+      "accepted": false,
+      "kept": 4,
+      "total": 5,
+      "harmed": 7,
+      "corrected": 4,
+      "before": 68,
+      "after": 65,
+      "images": 5
+    }
+  ],
+  "tokens": {
+    "strict": {
+      "reflection": {
+        "attempts": 981,
+        "usage_count": 941,
+        "input_min": 4460,
+        "input_mean": 6070.620616365569,
+        "input_max": 20614,
+        "output_mean": 376.22741764080763,
+        "input_sum": 5712454,
+        "output_sum": 354030
+      },
+      "split": {
+        "attempts": 29,
+        "usage_count": 25,
+        "input_min": 9883,
+        "input_mean": 10651.48,
+        "input_max": 11522,
+        "output_mean": 711.48,
+        "input_sum": 266287,
+        "output_sum": 17787
+      }
+    },
+    "preserve5": {
+      "reflection": {
+        "attempts": 1014,
+        "usage_count": 937,
+        "input_min": 4460,
+        "input_mean": 5980.819637139808,
+        "input_max": 21231,
+        "output_mean": 379.8858057630736,
+        "input_sum": 5604028,
+        "output_sum": 355953
+      },
+      "split": {
+        "attempts": 34,
+        "usage_count": 25,
+        "input_min": 14515,
+        "input_mean": 20358.48,
+        "input_max": 35625,
+        "output_mean": 714.24,
+        "input_sum": 508962,
+        "output_sum": 17856
+      }
+    }
+  }
+}

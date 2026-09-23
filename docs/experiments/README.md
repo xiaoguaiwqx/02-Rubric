@@ -4,6 +4,7 @@
 
 | 实验 | 已确认状态 | 设计与结果 |
 | --- | --- | --- |
+| 子树逐例反思与局部竞争 | 实现计划已整理，尚未实现或运行 | [实现计划](subtree-local-reflection/plan.md) · [可编辑框架图](subtree-local-reflection/framework.pptx)；初始化保留签名聚类，后续逐例反思与整组 split，以覆盖内 ACC 逐根接受 |
 | Framework v6：五根 Split 初始化与分层反思演化 | 2026-09-17 实现及离线验证完成，未真实运行；122B thinking Manager，Worker 全局并发50 | [计划与完整运行命令](joint-split-27b/plan.md)、[框架PPT](joint-split-27b/framework-editable-v6.pptx)；S0之后最多五轮，严格优于当前版本才整批接受 |
 | Phase17：27B Manager 替换 | 最小参数化实现完成；未正式运行 | [实验设置与运行命令](phase17-manager-qwen35-27b/plan.md)；只更换Manager、Worker端点与并发 |
 | Phase19 系统级接受 | 已完成；尚无稳定泛化优势 | [主计划18.2节](../Evolving%20Structured%20Rubrics%20Implementation%20Plan.md#phase19) |

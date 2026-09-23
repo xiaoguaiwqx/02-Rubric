@@ -1,0 +1,66 @@
+{
+  "initial": {
+    "majority": {
+      "correct": 828,
+      "covered": 1231,
+      "n": 1247,
+      "strict": 0.6639935846030474,
+      "overall": 0.6726238830219334,
+      "coverage": 0.9871692060946271
+    },
+    "arbiter": {
+      "correct": 875,
+      "covered": 1237,
+      "n": 1247,
+      "strict": 0.7016840417000801,
+      "overall": 0.7073565076798707,
+      "coverage": 0.991980753809142
+    },
+    "corrected": 73,
+    "harmed": 26,
+    "replicate_overrides": {
+      "total": 362,
+      "harmed": 106,
+      "corrected": 236,
+      "neutral": 20
+    },
+    "report_fields": {
+      "subtree_calls": 18705,
+      "arbiter_calls": 3741
+    }
+  },
+  "final": {
+    "majority": {
+      "correct": 797,
+      "covered": 1213,
+      "n": 1247,
+      "strict": 0.6391339214113874,
+      "overall": 0.6570486397361912,
+      "coverage": 0.9727345629510826
+    },
+    "arbiter": {
+      "correct": 861,
+      "covered": 1241,
+      "n": 1247,
+      "strict": 0.6904570970328789,
+      "overall": 0.693795326349718,
+      "coverage": 0.9951884522854851
+    },
+    "corrected": 91,
+    "harmed": 27,
+    "replicate_overrides": {
+      "total": 394,
+      "corrected": 274,
+      "neutral": 41,
+      "harmed": 79
+    },
+    "report_fields": {
+      "subtree_calls": 18705,
+      "arbiter_calls": 3741
+    }
+  },
+  "prompt_verbatim_in_chapter17": {
+    "UNIFIED_SUBTREE_SYSTEM_PROMPT": true,
+    "GLOBAL_ARBITER_AB_ONLY_SYSTEM_PROMPT": true
+  }
+}

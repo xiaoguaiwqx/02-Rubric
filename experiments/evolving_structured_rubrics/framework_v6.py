@@ -194,7 +194,8 @@ def signatures(manager, directory, root, rubric, rows, current, goal="", previou
         result = manager.call("signature", directory / f"{row['_signature_id']}.json",
                               payload, [row])
         return dict(signature_id=row["_signature_id"], sample_id=sid, **result)
-    return parallel(rows, one, manager.config["concurrency"])
+    return parallel(rows, one, manager.config.get("stage_concurrency", {}).get(
+        "signature", manager.config["concurrency"]))
 
 
 def generate_group(manager, directory, root, rubric, library, reflection, *, initial):
@@ -324,7 +325,7 @@ def run(config, target, attempts=4, manager=None):
     rows = load_rows(config, "discovery")
     for i, row in enumerate(rows, 1):
         row["_signature_id"] = f"S{i:03d}"
-    manager = manager or Manager(config["manager"], attempts)
+    manager = manager or Manager(dict(config["manager"], env_file=config.get("env_file", ".env")), attempts)
     if not (target / "state.json").exists():
         initialize(config, target, rows, manager, attempts)
     state = load_json(target / "state.json")
@@ -514,12 +515,14 @@ def report(config, target):
                           completed=state["completed"], manager_cost=cost), ensure_ascii=False), flush=True)
 
 
-def freeze_config(config, target):
+def freeze_config(config, target, *, allow_stage_concurrency_change=False):
     """Keep the initial snapshot; allow only Manager timeout to change on resume."""
     frozen = target / "run_config.json"
     if frozen.exists():
         previous = load_json(frozen)
         previous["manager"]["timeout"] = config["manager"]["timeout"]
+        if allow_stage_concurrency_change:
+            previous["manager"]["stage_concurrency"] = config["manager"].get("stage_concurrency", {})
         if previous != config:
             raise ValueError("run configuration changed; use a new output directory")
     else:
@@ -527,15 +530,16 @@ def freeze_config(config, target):
     print(f"Manager request timeout={config['manager']['timeout']}s", flush=True)
 
 
-def check(config, target):
+def check(config, target, *, require_manager_thinking=True, allow_stage_concurrency_change=False,
+          discovery_count=100):
     if config["protocol"] != PROTOCOL or not 1 <= config["max_epochs"] <= 5:
         raise ValueError("wrong protocol or max_epochs outside 1-5")
-    if config["manager"]["request_kwargs"].get("extra_body", {}).get("enable_thinking") is not True:
+    if require_manager_thinking and config["manager"]["request_kwargs"].get("extra_body", {}).get("enable_thinking") is not True:
         raise ValueError("This experiment requires Manager thinking enabled")
     pool = config["worker"]["backend_pool"]
     if pool["global_request_concurrency"] != 50 or sum(e["max_concurrency"] for e in pool["endpoints"]) != 50:
         raise ValueError("Worker shared concurrency must be 50")
-    for split, count in (("discovery", 100), ("dev", 150)):
+    for split, count in (("discovery", discovery_count), ("dev", 150)):
         rows = load_rows(config, split)
         if len(rows) != count:
             raise ValueError(f"{split}: expected {count} frozen samples")
@@ -549,8 +553,8 @@ def check(config, target):
         write(manifest, rows)
     if not (Path(config["data_root"]) / config["datasets"]["vlrb"]).is_file():
         raise FileNotFoundError("configured VLRB parquet is missing")
-    freeze_config(config, target)
-    print("check passed: Discovery100, Dev150, VLRB path; no API calls", flush=True)
+    freeze_config(config, target, allow_stage_concurrency_change=allow_stage_concurrency_change)
+    print(f"check passed: Discovery{discovery_count}, Dev150, VLRB path; no API calls", flush=True)
 
 
 def smoke(config, target, attempts):
@@ -558,7 +562,7 @@ def smoke(config, target, attempts):
     for i, row in enumerate(rows, 1):
         row["_signature_id"] = f"S{i:03d}"
     rubric = build_multicrit_open_ended_init_rubric()
-    manager = Manager(config["manager"], attempts)
+    manager = Manager(dict(config["manager"], env_file=config.get("env_file", ".env")), attempts)
     # Model identity is checked on the actual server; no legacy /version pin.
     from urllib.request import urlopen
     endpoint = config["worker"]["backend_pool"]["endpoints"][0]

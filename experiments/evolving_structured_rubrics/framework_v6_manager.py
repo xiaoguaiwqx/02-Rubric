@@ -7,10 +7,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 import threading
 import time
 
+from dotenv.parser import parse_stream
 from openai import OpenAI
 from critiq.utils import parse_json
 from . import _global_arbiter_ab_only_support as support
@@ -162,18 +164,67 @@ def validate(stage, result, payload):
 
 
 class Manager:
-    def __init__(self, config, attempts=4, client=None):
+    def __init__(self, config, attempts=4, client=None, *, prompts=None, validator=None):
         self.config = config
+        self.prompts = PROMPTS if prompts is None else prompts
+        self.validate = validate if validator is None else validator
         self.attempts = attempts
         self.slots = threading.BoundedSemaphore(config["concurrency"])
+        self.stage_slots = {stage: threading.BoundedSemaphore(count)
+                            for stage, count in config.get("stage_concurrency", {}).items()}
         self._cooldown_lock = threading.Lock()
         self._cooldown_until = 0.0
-        key = os.environ.get(config["api_key_env"])
+        self._key_lock = threading.Lock()
+        self._key_index = 0
+        self._injected_client = client is not None
+        keys = self._read_keys() if client is None else []
+        key = keys[0] if keys else None
         if client is None and not key:
             raise RuntimeError(f"Set {config['api_key_env']} in the configured .env or environment")
         self.client = client or OpenAI(
             api_key=key, base_url=config["base_url"],
             timeout=config["timeout"], max_retries=0)
+
+    def _read_keys(self):
+        """Read fresh credentials without changing process-wide environment."""
+        name = self.config["api_key_env"]
+        path = Path(self.config.get("env_file", ".env"))
+        values = []
+        if path.is_file():
+            with path.open(encoding="utf-8-sig") as stream:
+                values = [item.value for item in parse_stream(stream)
+                          if item.key == name and item.value is not None]
+        if not values:
+            values = [os.environ.get(name, "")]
+        keys = []
+        for value in values:
+            value = value.strip()
+            if value.startswith("["):
+                try:
+                    parts = json.loads(value)
+                except ValueError:
+                    raise ValueError("API key list must be valid JSON") from None
+                if not isinstance(parts, list) or not all(isinstance(k, str) for k in parts):
+                    raise ValueError("API key list must contain strings")
+            else:
+                parts = re.split(r"[,;\s]+", value)
+            for key in parts:
+                key = key.strip()
+                if key and key not in keys:
+                    keys.append(key)
+        return keys
+
+    def _request_client(self):
+        if self._injected_client:
+            return self.client
+        with self._key_lock:
+            keys = self._read_keys()
+            if not keys:
+                raise RuntimeError("No Manager API keys configured")
+            key = keys[self._key_index % len(keys)]
+            self._key_index += 1
+        # A request-local copy avoids changing credentials on a shared client.
+        return self.client.with_options(api_key=key)
 
     def _wait_for_capacity(self, label):
         """Share provider cooldown across root and signature requests."""
@@ -199,7 +250,7 @@ class Manager:
     def call(self, stage, path, payload, rows=()):
         path = Path(path)
         request = dict(stage=stage, model=self.config["model"],
-                       base_url=self.config["base_url"], prompt=PROMPTS[stage],
+                       base_url=self.config["base_url"], prompt=self.prompts[stage],
                        request_kwargs=self.config["request_kwargs"], payload=payload,
                        images=[dict(sample_id=r["sample_id"], image_path=r["image_path"])
                                for r in rows])
@@ -208,7 +259,7 @@ class Manager:
             raise ValueError(f"Manager input changed at {path}; use a new run directory")
         if "parsed" in record:
             print(f"manager cache hit: {path}", flush=True)
-            return validate(stage, record["parsed"], payload)
+            return self.validate(stage, record["parsed"], payload)
         content = [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}]
         for row in rows:
             content.extend(support.content(row, f"Image for sample_id={row['sample_id']}"))
@@ -221,14 +272,14 @@ class Manager:
             message = list(content)
             if last_error and record["attempts"][-1].get("raw_response") is not None:
                 message.append({"type": "text", "text": "Previous output validation failed: " + last_error})
-            with self.slots:
+            with self.stage_slots.get(stage, self.slots):
                 self._wait_for_capacity(label)
                 started = time.perf_counter()
                 print(f"manager {stage} {label}: attempt={attempt}/{self.attempts} started", flush=True)
                 try:
-                    response = self.client.chat.completions.create(
+                    response = self._request_client().chat.completions.create(
                         model=self.config["model"], stream=False,
-                        messages=[{"role": "system", "content": PROMPTS[stage]},
+                        messages=[{"role": "system", "content": self.prompts[stage]},
                                   {"role": "user", "content": message}],
                         **self.config["request_kwargs"])
                     choice = response.choices[0]
@@ -238,7 +289,7 @@ class Manager:
                                   usage=response.usage.model_dump() if response.usage else None)
                     if choice.finish_reason == "length":
                         raise ValueError("response truncated (finish_reason=length)")
-                    parsed = validate(stage, parse_json(choice.message.content,
+                    parsed = self.validate(stage, parse_json(choice.message.content,
                                                        allow_invalid_escapes=True), payload)
                     record["parsed"] = parsed
                 except Exception as exc:
