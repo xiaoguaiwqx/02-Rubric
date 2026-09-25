@@ -214,8 +214,8 @@ def generate_group(manager, directory, root, rubric, library, reflection, *, ini
     return proposal
 
 
-def initialize(config, target, rows, manager, attempts):
-    r0 = build_multicrit_open_ended_init_rubric()
+def initialize(config, target, rows, manager, attempts, r0=None):
+    r0 = build_multicrit_open_ended_init_rubric() if r0 is None else r0
     write(target / "r0/rubric.json", r0.to_dict())
     baseline = evaluate(config, target, "r0/system", rows, r0, attempts=attempts)
     records = system_records(baseline)

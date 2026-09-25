@@ -1,5 +1,7 @@
 """Case-isolated feedback and one whole-child-group revision per root."""
-from .framework_v6_manager import COMMON, PROMPTS, Manager, validate
+from .framework_v6_manager import (
+    COMMON, PROMPTS, Manager, render_root_count_prompt, validate,
+)
 
 
 LOCAL_PROMPTS = dict(PROMPTS, case_reflection=COMMON + """
@@ -41,6 +43,12 @@ def validate_local(stage, result, payload):
     return validate("children" if stage == "subtree_split" else stage, result, payload)
 
 
-def make_manager(config, attempts, client=None):
-    return Manager(config, attempts, client, prompts=LOCAL_PROMPTS,
+def local_prompts_for_root_count(n_roots):
+    return {stage: render_root_count_prompt(prompt, n_roots)
+            for stage, prompt in LOCAL_PROMPTS.items()}
+
+
+def make_manager(config, attempts, client=None, *, n_roots=5):
+    return Manager(config, attempts, client,
+                   prompts=local_prompts_for_root_count(n_roots),
                    validator=validate_local)

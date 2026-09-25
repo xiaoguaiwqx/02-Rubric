@@ -25,6 +25,7 @@ from . import _global_arbiter_ab_only_support as support
 from . import global_arbiter_ab_only as arbiter
 from . import internal_global_arbiter_k1 as unified
 from .experiment_utils import atomic_write_json
+from .framework_v6_manager import root_count_word
 
 
 SCHEMA_VERSION = "1.0.0"
@@ -114,8 +115,18 @@ def _call_arbiter(
     config: Mapping[str, Any], endpoint: BackendEndpointSpec, cache_dir: Path,
     split_name: str, row: Mapping[str, Any], reports: Sequence[Mapping[str, Any]],
     replicate: int, order: int, attempts: int, settings: RuntimeSettings,
+    root_count: int,
 ) -> dict[str, Any]:
     bundle_sha256 = canonical_sha256(reports)
+    system_prompt = arbiter.GLOBAL_ARBITER_AB_ONLY_SYSTEM_PROMPT
+    prompt_version = unified.ARBITER_PROMPT_VERSION
+    if root_count != 5:
+        if system_prompt.count("and five subtree assessments produced") != 1:
+            raise ValueError("Arbiter root-count phrase changed")
+        system_prompt = system_prompt.replace(
+            "and five subtree assessments produced",
+            f"and {root_count_word(root_count)} subtree assessments produced")
+        prompt_version += f"-n{root_count}"
     return support.call_one(
         config, endpoint, cache_dir / "arbiter",
         user_text=support.global_arbiter_user_prompt(row, reports), row=row,
@@ -130,8 +141,8 @@ def _call_arbiter(
         total_attempt_limit=attempts,
         protocol_version=(PROTOCOL_VERSION + "-full-reason"
                           if settings.retain_arbiter_reason else PROTOCOL_VERSION),
-        prompt_version=unified.ARBITER_PROMPT_VERSION,
-        system_prompt=arbiter.GLOBAL_ARBITER_AB_ONLY_SYSTEM_PROMPT,
+        prompt_version=prompt_version,
+        system_prompt=system_prompt,
         response_parser=(arbiter.parse_global_arbiter_with_reason
                          if settings.retain_arbiter_reason
                          else arbiter.parse_global_arbiter_ab_only_response),
@@ -215,7 +226,8 @@ def _one_sample(
         final = (_blocked(endpoint) if len(reports) != len(rubric.root_ids)
                  else support.compact_call(_call_arbiter(
                      config, endpoint, cache_dir, split_name, displayed, reports,
-                     replicate, int(order), attempts, settings)))
+                     replicate, int(order), attempts, settings,
+                     len(rubric.root_ids))))
         sample["replicates"][str(replicate)] = {
             "order": int(order),
             "subtrees": calls,

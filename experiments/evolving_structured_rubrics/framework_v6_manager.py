@@ -81,6 +81,34 @@ Return {"children": [{"name": "short_snake_case_name", "description": "..."}],
 }
 
 
+def root_count_word(n_roots):
+    """Spell the root count without changing the frozen five-root wording."""
+    if not isinstance(n_roots, int) or isinstance(n_roots, bool) or n_roots < 1:
+        raise ValueError("n_roots must be a positive integer")
+    return {
+        1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
+        6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
+    }.get(n_roots, str(n_roots))
+
+
+def render_root_count_prompt(prompt, n_roots):
+    """Replace only the two frozen references to the number of roots."""
+    count = root_count_word(n_roots)
+    if n_roots == 5:
+        return prompt
+    if prompt.count("The five\nroot responsibilities") != 1:
+        raise ValueError("Manager root-count phrase changed")
+    return (prompt.replace("The five\nroot responsibilities",
+                           f"The {count}\nroot responsibilities")
+                  .replace("-> five local reports ->",
+                           f"-> {count} local reports ->"))
+
+
+def prompts_for_root_count(n_roots):
+    return {stage: render_root_count_prompt(prompt, n_roots)
+            for stage, prompt in PROMPTS.items()}
+
+
 def nonempty(value, label):
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{label} must be nonempty text")

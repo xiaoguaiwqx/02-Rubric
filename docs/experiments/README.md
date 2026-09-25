@@ -4,7 +4,8 @@
 
 | 实验 | 已确认状态 | 设计与结果 |
 | --- | --- | --- |
-| Hallucination100 本地 Split 初始化 | seed11 已准备独立配置与输出目录 | [设计与运行命令](vlrb-hallucination100-fresh-init/plan.md)；五个固定 root 在目标100条上初始化，再五轮局部演化；评估新 Init 与 Final，复用旧对照 |
+| Hallucination100 五样本预热生成 root | seed11 运行中：已完成冻结数据准备，正在等待首条预热请求 | [实验计划与运行入口](vlrb-hallucination100-generated-roots/plan.md)；沿用目标100条初始 Split＋五轮反思，以固定五 root／生成五 root／自选 root 数量作同协议对照 |
+| Hallucination100 本地 Split 初始化 | seed11 已完成五轮及 VLRB K=3 评测 | [设计与运行命令](vlrb-hallucination100-fresh-init/plan.md)；五个固定 root 在目标100条上初始化，再五轮局部演化；新 Final 为全量 920/1247、未见幻觉 534/648 |
 | 子树逐例反思与局部竞争 | 已完成多组演化与外部评测 | [实现计划](subtree-local-reflection/plan.md) · [结果](subtree-local-reflection/results.md) · [可编辑框架图](subtree-local-reflection/framework.pptx)；含局部 Strict ACC 与 5 条随机正确案例对照 |
 | VLRB Hallucination100 同组演化迁移 | seed11 完成：未见 Hallucination 留出集相对共同 Init 为 514→514/648；seed29/47 待运行 | [实验计划与 seed11 结果](vlrb-hallucination100-transfer/plan.md) · [运行指南](vlrb-hallucination100-transfer/running.md)；仅三个新 Final 各做一次完整 VLRB K=3 推理，旧两份对照复用历史预测 |
 | Framework v6：五根 Split 初始化与分层反思演化 | 2026-09-17 实现及离线验证完成，未真实运行；122B thinking Manager，Worker 全局并发50 | [计划与完整运行命令](joint-split-27b/plan.md)、[框架PPT](joint-split-27b/framework-editable-v6.pptx)；S0之后最多五轮，严格优于当前版本才整批接受 |
