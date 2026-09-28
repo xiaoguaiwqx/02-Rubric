@@ -4,6 +4,9 @@
 
 | 实验 | 已确认状态 | 设计与结果 |
 | --- | --- | --- |
+| VLRB General／Reasoning 分层十样例预热 | seed11 主实验与阶段对比已完成；类别路由 723/998，单用复用 Hallucination Rubric 734/998 | [冻结方案与结果](vlrb-general-reasoning-warmup10/plan.md)；新演化 General、Reasoning，复用 Hallucination 十样例 Final，报告留出集 3×3、路由及 General e03／Reasoning R0 补充比较 |
+| Hallucination 分层十样例预热 | seed11 已完成：Hallucination 留出 492/599（82.14%），VLRB 全量 925/1247（74.18%） | [实验协议与结果](vlrb-hallucination-warmup-631/plan.md)；沿用 Hallucination150 演化集，按 POVID／RLAIF-V／RLHF-V 的 6／3／1 配额预热 Manager，归纳 4 root；比同演化集随机五样例提升，仍低于历史 Hallucination100 生成五根 |
+| VLRB 三类别专属 Rubric 演化 | seed11 已完成：留出 998 条已知类别路由 714/998（71.54%） | [实验协议与 seed11 结果](vlrb-category-specialized-rubrics/plan.md)；General/Hallucination/Reasoning 各自生成 root、演化五轮并在全量 1247 上测试；留出集路由仅比最佳单套 Rubric 多 2 个正确样本，旧预测只读复用 |
 | Hallucination100 五样本预热生成 root | seed11 运行中：已完成冻结数据准备，正在等待首条预热请求 | [实验计划与运行入口](vlrb-hallucination100-generated-roots/plan.md)；沿用目标100条初始 Split＋五轮反思，以固定五 root／生成五 root／自选 root 数量作同协议对照 |
 | Hallucination100 本地 Split 初始化 | seed11 已完成五轮及 VLRB K=3 评测 | [设计与运行命令](vlrb-hallucination100-fresh-init/plan.md)；五个固定 root 在目标100条上初始化，再五轮局部演化；新 Final 为全量 920/1247、未见幻觉 534/648 |
 | 子树逐例反思与局部竞争 | 已完成多组演化与外部评测 | [实现计划](subtree-local-reflection/plan.md) · [结果](subtree-local-reflection/results.md) · [可编辑框架图](subtree-local-reflection/framework.pptx)；含局部 Strict ACC 与 5 条随机正确案例对照 |

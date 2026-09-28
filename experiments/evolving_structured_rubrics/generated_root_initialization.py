@@ -41,7 +41,7 @@ Human preference: {answer}
 Why might a human prefer that response for this image and question?
 Explain the evidence you can verify; say when the preference is uncertain."""
 
-GENERATION_PROMPT = """From the five comparisons above, propose high-level root responsibilities for
+GENERATION_PROMPT = """From the {warmup_count} comparisons above, propose high-level root responsibilities for
 judging new image/question/response pairs. A root must be reusable, distinct
 from the others, and broad enough to support more specific child criteria later.
 Describe what it checks and how it informs a relative A/B/None judgment.
@@ -52,8 +52,14 @@ Return JSON only: {"count_reason": "...", "roots":
 
 COUNT_INSTRUCTIONS = {
     "g5": "Return exactly five roots.",
-    "gn": "Choose the number of roots from two through seven according to the distinct recurring responsibilities in these examples; five is allowed.",
+    "gn": "Choose the number of roots from two through seven according to the distinct recurring responsibilities in these examples.",
 }
+
+# Preserve the prompt used by the already-running Hallucination100 comparison.
+LEGACY_COUNT_INSTRUCTIONS = dict(
+    COUNT_INSTRUCTIONS,
+    gn="Choose the number of roots from two through seven according to the distinct recurring responsibilities in these examples; five is allowed.",
+)
 
 
 def _digest(value: object) -> str:
@@ -69,14 +75,28 @@ def _file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _warmup_rows(rows: Sequence[Mapping[str, Any]], seed: int) -> list[dict[str, Any]]:
+def _warmup_rows(rows: Sequence[Mapping[str, Any]], seed: int,
+                 expected_count: int = 100,
+                 warmup_examples: Sequence[Mapping[str, Any]] | None = None,
+                 ) -> list[dict[str, Any]]:
     """Preserve CritiQ's random_reverse result without changing global RNG state."""
-    if len(rows) != 100:
-        raise ValueError(f"expected frozen Hallucination100 training rows, got {len(rows)}")
+    if len(rows) != expected_count:
+        raise ValueError(f"expected {expected_count} frozen training rows, got {len(rows)}")
     ids = [str(row["sample_id"]) for row in rows]
     if len(set(ids)) != len(ids):
         raise ValueError("training sample IDs are not unique")
-    chosen = random.Random(seed).sample(list(rows), WARMUP_COUNT)
+    if warmup_examples is None:
+        if expected_count < WARMUP_COUNT:
+            raise ValueError(f"expected at least {WARMUP_COUNT} training rows")
+        chosen = random.Random(seed).sample(list(rows), WARMUP_COUNT)
+    else:
+        selected_ids = [str(row["sample_id"]) for row in warmup_examples]
+        if not selected_ids or len(set(selected_ids)) != len(selected_ids):
+            raise ValueError("warmup sample IDs must be nonempty and unique")
+        by_id = {str(row["sample_id"]): row for row in rows}
+        if any(sample_id not in by_id for sample_id in selected_ids):
+            raise ValueError("warmup samples must belong to the frozen training rows")
+        chosen = [by_id[sample_id] for sample_id in selected_ids]
     state = random.getstate()
     try:
         shuffled = random_reverse(chosen, seed=REVERSE_SEED)
@@ -111,12 +131,13 @@ def _warmup_prompt(row: Mapping[str, Any]) -> str:
 
 
 def _warmup_request(rows: Sequence[Mapping[str, Any]], seed: int,
-                    manager_config: Mapping[str, Any]) -> dict[str, Any]:
+                    manager_config: Mapping[str, Any],
+                    protocol: str = PROTOCOL) -> dict[str, Any]:
     return {
-        "protocol": PROTOCOL,
+        "protocol": protocol,
         "seed": seed,
         "reverse_seed": REVERSE_SEED,
-        "sample_count": WARMUP_COUNT,
+        "sample_count": len(rows),
         "model": manager_config["model"],
         "base_url": manager_config["base_url"],
         "request_kwargs": manager_config["request_kwargs"],
@@ -188,13 +209,14 @@ def _warmup_history(agent: Agent, rows: Sequence[Mapping[str, Any]],
 
 def _run_warmup(rows: Sequence[Mapping[str, Any]], seed: int,
                 manager_config: Mapping[str, Any], keys: Sequence[str],
-                output_dir: Path, attempt_limit: int) -> tuple[Agent, dict[str, Any]]:
+                output_dir: Path, attempt_limit: int,
+                protocol: str = PROTOCOL) -> tuple[Agent, dict[str, Any]]:
     path = output_dir / "warmup/transcript.json"
-    request = _warmup_request(rows, seed, manager_config)
+    request = _warmup_request(rows, seed, manager_config, protocol)
     record = load_json(path) if path.exists() else {"request": request, "turns": []}
     if record.get("request") != request:
         raise ValueError(f"warmup input changed at {path}; use a new run directory")
-    if len(record["turns"]) > WARMUP_COUNT:
+    if len(record["turns"]) > len(rows):
         raise ValueError(f"too many warmup turns in {path}")
     incomplete_seen = False
     for turn in record["turns"]:
@@ -275,14 +297,16 @@ def _parse_roots(raw: str, variant: str) -> dict[str, Any]:
 
 
 def _generation_request(variant: str, manager_config: Mapping[str, Any],
-                        warmup: Mapping[str, Any]) -> dict[str, Any]:
+                        warmup: Mapping[str, Any],
+                        count_instructions: Mapping[str, str],
+                        protocol: str = PROTOCOL) -> dict[str, Any]:
     history = [
         {"sample_id": turn["sample_id"], "prompt": turn["prompt"],
          "response": turn["response"]}
         for turn in warmup["turns"]
     ]
     return {
-        "protocol": PROTOCOL,
+        "protocol": protocol,
         "variant": variant,
         "warmup_request_sha256": _digest(warmup["request"]),
         "warmup_history_sha256": _digest(history),
@@ -292,12 +316,17 @@ def _generation_request(variant: str, manager_config: Mapping[str, Any],
         "agent_timeout_seconds": API_REQUEST_TIMEOUT_SECONDS,
         "agent_api_retry_attempts": 0,
         "sdk_max_retries": 0,
-        "prompt": GENERATION_PROMPT + COUNT_INSTRUCTIONS[variant],
+        "prompt": GENERATION_PROMPT.replace(
+            "{warmup_count}",
+            {5: "five", 10: "ten"}.get(warmup["request"]["sample_count"],
+                                      str(warmup["request"]["sample_count"])),
+        ) + count_instructions[variant],
     }
 
 
 def _rubric(parsed: Mapping[str, Any], variant: str,
-            warmup: Mapping[str, Any]) -> StructuredRubric:
+            warmup: Mapping[str, Any],
+            protocol: str = PROTOCOL) -> StructuredRubric:
     sample_ids = [sample["sample_id"] for sample in warmup["request"]["samples"]]
     nodes = {}
     root_ids = []
@@ -309,7 +338,7 @@ def _rubric(parsed: Mapping[str, Any], variant: str,
             criterion=RubricCriterionSnapshot(item["name"], item["description"]),
             examples=(),
             lineage={
-                "initialization": PROTOCOL,
+                "initialization": protocol,
                 "variant": variant,
                 "source_sample_ids": sample_ids,
                 "source_order": index,
@@ -325,9 +354,12 @@ def _rubric(parsed: Mapping[str, Any], variant: str,
 
 def _run_generation(base_agent: Agent, variant: str,
                     manager_config: Mapping[str, Any], warmup: Mapping[str, Any],
-                    output_dir: Path, attempt_limit: int) -> StructuredRubric:
+                    output_dir: Path, attempt_limit: int,
+                    count_instructions: Mapping[str, str],
+                    protocol: str = PROTOCOL) -> StructuredRubric:
     path = output_dir / variant / "r0/generation.json"
-    request = _generation_request(variant, manager_config, warmup)
+    request = _generation_request(variant, manager_config, warmup,
+                                  count_instructions, protocol)
     record = load_json(path) if path.exists() else {"request": request, "attempts": []}
     if record.get("request") != request:
         raise ValueError(f"root generation input changed at {path}; use a new run directory")
@@ -365,7 +397,7 @@ def _run_generation(base_agent: Agent, variant: str,
                 try:
                     parsed = _parse_roots(response, variant)
                     # Structural rubric validation is part of the format check.
-                    _rubric(parsed, variant, warmup)
+                    _rubric(parsed, variant, warmup, protocol)
                 except (ValueError, TypeError) as exc:
                     result["validation_error"] = f"{type(exc).__name__}: {exc}"
                 else:
@@ -376,7 +408,7 @@ def _run_generation(base_agent: Agent, variant: str,
                 break
     if "parsed" not in record:
         raise RuntimeError(f"{variant} root generation failed after {attempt_limit} attempts: {path}")
-    rubric = _rubric(record["parsed"], variant, warmup)
+    rubric = _rubric(record["parsed"], variant, warmup, protocol)
     rubric_path = output_dir / variant / "r0/rubric.json"
     if rubric_path.exists() and load_json(rubric_path) != rubric.to_dict():
         raise ValueError(f"generated R0 changed at {rubric_path}; use a new run directory")
@@ -386,27 +418,39 @@ def _run_generation(base_agent: Agent, variant: str,
 
 def generate_r0_pair(rows: Sequence[Mapping[str, Any]], *, seed: int,
                      manager_config: Mapping[str, Any], output_dir: Path,
-                     attempt_limit: int = 10) -> dict[str, StructuredRubric]:
-    """Generate G5 and GN R0 from one frozen five-example conversation.
+                     attempt_limit: int = 10,
+                     count_instructions: Mapping[str, str] | None = None,
+                     expected_count: int = 100,
+                     warmup_examples: Sequence[Mapping[str, Any]] | None = None,
+                     variants: Sequence[str] = ("g5", "gn"),
+                     protocol: str = PROTOCOL,
+                     ) -> dict[str, StructuredRubric]:
+    """Generate selected R0 variants from one frozen warmup conversation.
 
-    ``rows`` must be the original-order 100 discovery rows with absolute image
-    paths. Checkpointing resumes individual calls without re-running successful
-    responses, and fails closed if model inputs or image bytes have changed.
+    ``rows`` must be original-order discovery rows with absolute image paths.
+    Defaults retain the historical 100-row G5/GN experiment. Checkpointing
+    resumes individual calls without re-running successful responses.
     """
     if attempt_limit < 1:
         raise ValueError("attempt_limit must be positive")
+    if not variants or len(set(variants)) != len(variants) or set(variants) - set(COUNT_INSTRUCTIONS):
+        raise ValueError("variants must be unique selections from g5 and gn")
+    if count_instructions is None:
+        count_instructions = COUNT_INSTRUCTIONS
     output_dir = Path(output_dir)
-    prepared = _warmup_rows(rows, seed)
+    prepared = _warmup_rows(rows, seed, expected_count, warmup_examples)
     keys = Manager(dict(manager_config), attempts=attempt_limit)._read_keys()
     agent, warmup = _run_warmup(
-        prepared, seed, manager_config, keys, output_dir, attempt_limit
+        prepared, seed, manager_config, keys, output_dir, attempt_limit,
+        protocol
     )
     errors = {}
     rubrics = {}
-    for variant in ("g5", "gn"):
+    for variant in variants:
         try:
             rubrics[variant] = _run_generation(
-                agent, variant, manager_config, warmup, output_dir, attempt_limit
+                agent, variant, manager_config, warmup, output_dir,
+                attempt_limit, count_instructions, protocol
             )
         except Exception as exc:
             errors[variant] = exc

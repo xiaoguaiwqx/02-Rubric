@@ -94,7 +94,8 @@ def generate(source: Path, target: Path, manager_attempts: int) -> None:
         rows, seed=split["seed"],
         manager_config=dict(config["manager"],
                             env_file=config.get("env_file", ".env")),
-        output_dir=target, attempt_limit=manager_attempts)
+        output_dir=target, attempt_limit=manager_attempts,
+        count_instructions=generated.LEGACY_COUNT_INSTRUCTIONS)
 
 
 def _r0(target: Path, variant: str) -> StructuredRubric:
