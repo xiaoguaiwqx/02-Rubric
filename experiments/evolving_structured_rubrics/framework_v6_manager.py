@@ -14,7 +14,7 @@ import time
 
 from dotenv.parser import parse_stream
 from openai import OpenAI
-from critiq.utils import parse_json
+from structured_rubrics.utils import parse_json
 from . import model_call_support as support
 from .experiment_utils import atomic_write_json as write, load_json
 
@@ -192,7 +192,7 @@ def validate(stage, result, payload):
 
 
 class Manager:
-    def __init__(self, config, attempts=4, client=None, *, prompts=None, validator=None):
+    def __init__(self, config, attempts=10, client=None, *, prompts=None, validator=None):
         self.config = config
         self.prompts = PROMPTS if prompts is None else prompts
         self.validate = validate if validator is None else validator

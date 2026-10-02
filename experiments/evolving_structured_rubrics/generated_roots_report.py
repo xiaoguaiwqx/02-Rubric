@@ -8,7 +8,7 @@ from pathlib import Path
 import random
 from typing import Any, Mapping, Sequence
 
-from critiq.structured.schema import StructuredRubric
+from structured_rubrics.structured.schema import StructuredRubric
 
 from . import aligned_system_runtime as system
 from . import rubric_pipeline, vlrb_official

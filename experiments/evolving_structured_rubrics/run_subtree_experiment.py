@@ -8,7 +8,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from critiq.structured.schema import StructuredRubric
+from structured_rubrics.structured.schema import StructuredRubric
 
 from . import (generated_root_initialization, generated_roots_report, rubric_pipeline,
                subtree_local_reflection, vlrb_official)
@@ -137,7 +137,7 @@ def main() -> None:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--variant", choices=("f5", "g5", "gn"), default="g5")
     parser.add_argument("--seed", type=int, default=11)
-    parser.add_argument("--attempt-limit", type=int, default=4)
+    parser.add_argument("--attempt-limit", type=int, default=10)
     parser.add_argument("--root-attempt-limit", type=int, default=10)
     args = parser.parse_args()
     if args.attempt_limit < 1 or args.root_attempt_limit < 1:

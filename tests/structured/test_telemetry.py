@@ -2,8 +2,8 @@ import types
 import unittest
 from unittest.mock import patch
 
-from critiq import Agent
-from critiq.structured.telemetry import ModelCallMetrics, TokenPricing, combine_model_call_metrics
+from structured_rubrics import Agent
+from structured_rubrics.structured.telemetry import ModelCallMetrics, TokenPricing, combine_model_call_metrics
 
 
 class FakeCompletions:
@@ -27,7 +27,7 @@ class FakeOpenAI:
 class AgentTelemetryTest(unittest.TestCase):
     def test_agent_return_is_unchanged_and_usage_is_recorded(self):
         FakeOpenAI.usage = types.SimpleNamespace(prompt_tokens=10, completion_tokens=4, total_tokens=14)
-        with patch("critiq.agent.OpenAI", FakeOpenAI):
+        with patch("structured_rubrics.agent.OpenAI", FakeOpenAI):
             agent = Agent(model="fake")
             self.assertEqual("ok", agent("hello", stream=False))
         metrics = agent.last_call_metrics
@@ -42,7 +42,7 @@ class AgentTelemetryTest(unittest.TestCase):
 
     def test_missing_usage_is_not_estimated(self):
         FakeOpenAI.usage = None
-        with patch("critiq.agent.OpenAI", FakeOpenAI):
+        with patch("structured_rubrics.agent.OpenAI", FakeOpenAI):
             agent = Agent(model="fake")
             agent("hello", stream=False)
         self.assertFalse(agent.last_call_metrics.usage_complete)
@@ -75,7 +75,7 @@ class AgentTelemetryTest(unittest.TestCase):
                     completions=FlakyCompletions())
 
         FlakyCompletions.calls = 0
-        with patch("critiq.agent.OpenAI", FlakyOpenAI), patch("critiq.agent.sleep"):
+        with patch("structured_rubrics.agent.OpenAI", FlakyOpenAI), patch("structured_rubrics.agent.sleep"):
             agent = Agent(model="fake", api_retry_attempts=2)
             self.assertEqual("ok", agent("hello", stream=False))
         self.assertEqual(3, agent.last_call_metrics.api_attempts)

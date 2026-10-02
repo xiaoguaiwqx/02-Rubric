@@ -3,8 +3,8 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
-from critiq.structured.schema import StructuredRubric, RubricNode, RubricCriterionSnapshot, RubricEdge
-from critiq.structured.semantics import EdgeCondition
+from structured_rubrics.structured.schema import StructuredRubric, RubricNode, RubricCriterionSnapshot, RubricEdge
+from structured_rubrics.structured.semantics import EdgeCondition
 from . import aligned_system_runtime as system
 from .experiment_utils import atomic_write_json as write, load_json
 
@@ -139,7 +139,7 @@ def case_payload(row, record, previous=None, root=None, previous_before=None):
 
 
 def evaluate(config, target, name, rows, rubric, *, baseline=None, changed=None,
-             orders=None, attempts=4):
+             orders=None, attempts=10):
     path = target / f"{name}.json"
     if path.exists():
         value = system.load(path)

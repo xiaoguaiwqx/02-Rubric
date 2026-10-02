@@ -1,6 +1,8 @@
-# CritiQ：结构化 Rubric 的子树局部演化
+# 结构化 Rubric 的子树局部演化
 
 当前主线从多模态偏好样例生成或指定 root，利用错误签名和语义聚类构造初始 children；Worker 对每棵完整子树分别给出 A/B/None 与理由，Global Arbiter 综合完整报告。随后 Manager 按 `(root, sample)` 逐例反思，为每个 root 生成一整组候选 children；程序在冻结的当前 Rubric 上进行局部竞争，轮末提交获胜组。最终 Rubric 在独立数据上评测。
+
+`structured_rubrics` 是当前代码包的描述性名称，论文名称尚未确定。代码继承并改造了原 CritiQ-V 的部分 Agent 和偏好对工具；当前方法的结构化 Rubric、子树局部演化和多模态评测由本仓库独立维护。
 
 完整的早期 Gate/Cascade、joint、递归投票、模型与 prompt 对照留在 `codex/subtree-local-reflection` 分支和阶段标签。原 CritiQ-V 代码保存在 `CritiQ-V` 分支。
 
@@ -29,7 +31,7 @@ python -m experiments.evolving_structured_rubrics.run_subtree_experiment vlrb --
 python -m experiments.evolving_structured_rubrics.run_subtree_experiment report --config output/subtree_reflection/seed11/config.json --output-root output/subtree_reflection/seed11 --variant g5
 ```
 
-可将 `--variant` 改为 `gn`（同一预热历史、可变 root 数）或 `f5`（固定五根对照）。每个变体使用独立目录。R0 生成默认最多重试 10 次，演化中的 Manager 与 Worker 默认最多重试 4 次；可分别用 `--root-attempt-limit` 和 `--attempt-limit` 调整。旧 Discovery100 的 Covered、Strict 配置分别在 [`subtree_local_reflection.example.json`](experiments/evolving_structured_rubrics/configs/subtree_local_reflection.example.json) 和 [`subtree_local_reflection_strict.example.json`](experiments/evolving_structured_rubrics/configs/subtree_local_reflection_strict.example.json)；G5/GN 参考配置显式使用 Strict + Preserve5。换数据、接受指标、prompt 或模型时使用新运行目录。
+可将 `--variant` 改为 `gn`（同一预热历史、可变 root 数）或 `f5`（固定五根对照）。每个变体使用独立目录。R0 生成及演化中的 Manager 与 Worker 默认每个逻辑调用最多尝试 10 次；可分别用 `--root-attempt-limit` 和 `--attempt-limit` 调整。旧 Discovery100 的 Covered、Strict 配置分别在 [`subtree_local_reflection.example.json`](experiments/evolving_structured_rubrics/configs/subtree_local_reflection.example.json) 和 [`subtree_local_reflection_strict.example.json`](experiments/evolving_structured_rubrics/configs/subtree_local_reflection_strict.example.json)；G5/GN 参考配置显式使用 Strict + Preserve5。换数据、接受指标、prompt 或模型时使用新运行目录。
 
 `report` 从已保存的 K=3 预测离线统计 R0/S0/Final：完整 1247、训练 100、非训练 1147、去近重复 1146、未见幻觉 648，以及三个官方类别；同时汇总各 root、阶段配对变化、区间估计与生成/推理成本。单变体结果写入其 `report.json`；F5、G5、GN 都完成后，再生成 seed 目录的跨变体 `report.json`。统计不会重新调用模型；完整 1247 包含训练的 100 条，未见集结论应看 648 和 1146 切片。
 

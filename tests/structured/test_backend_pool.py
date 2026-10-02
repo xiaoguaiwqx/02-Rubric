@@ -5,8 +5,8 @@ import time
 import unittest
 from unittest.mock import patch
 
-from critiq.agent import AgentCallMetrics
-from critiq.structured.backend_pool import (
+from structured_rubrics.agent import AgentCallMetrics
+from structured_rubrics.structured.backend_pool import (
     AvailableSlotBackendPool,
     BackendEndpointSpec,
     BackendPoolSpec,
@@ -77,7 +77,7 @@ class BackendPoolTest(unittest.TestCase):
                 return "ok"
 
         pool = AvailableSlotBackendPool(self._spec())
-        with patch("critiq.structured.backend_pool.Agent", FakeAgent):
+        with patch("structured_rubrics.structured.backend_pool.Agent", FakeAgent):
             threads = [
                 threading.Thread(
                     target=pool.call,

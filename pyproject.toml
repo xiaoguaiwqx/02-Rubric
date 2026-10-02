@@ -4,19 +4,15 @@ build-backend = "setuptools.build_meta"
 
 
 [project]
-name = "critiq"
+name = "structured-rubrics"
 version = "0.1.0"
 dependencies = ["openai", "python-dotenv"]
 requires-python = ">= 3.10"
-authors = [
-  {name = "KYLN24", email = "1296845690@qq.com"},
-]
-
 [project.optional-dependencies]
 data = [
   "pandas",
   "pyarrow",
 ]
 
-[tool.setuptools.packages.find]
-include = ["critiq*"]
+[tool.setuptools]
+packages = ["structured_rubrics", "structured_rubrics.structured"]

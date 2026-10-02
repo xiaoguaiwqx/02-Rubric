@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from critiq.structured import (
+from structured_rubrics.structured import (
     EdgeCondition,
     RubricCriterionSnapshot,
     RubricEdge,
@@ -16,8 +16,8 @@ from critiq.structured import (
     RubricSchemaError,
     StructuredRubric,
 )
-from critiq.structured.version import STRUCTURED_RUBRIC_SCHEMA_VERSION
-from critiq.utils import Criterion
+from structured_rubrics.structured.version import STRUCTURED_RUBRIC_SCHEMA_VERSION
+from structured_rubrics.utils import Criterion
 
 
 def node(

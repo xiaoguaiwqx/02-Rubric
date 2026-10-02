@@ -2,12 +2,12 @@
 
 ## Project Structure & Module Organization
 
-`critiq/` contains the installable Python package, with Agent and parsing primitives at the package root and Rubric schemas, validation, backend specifications, and telemetry in `critiq/structured/`. The current method, CLI, and reusable research helpers live in `experiments/evolving_structured_rubrics/`; example configurations are in its `configs/` directory. Tests are in `tests/structured/`. Documentation and diagrams belong in `docs/`, `figures/`, and `assets/`; datasets live in `data/`. Treat `output/` and local configuration directories as generated or machine-specific unless a compact result is intentionally reviewed and committed. The complete historical experiment tree is preserved on `codex/subtree-local-reflection`.
+`structured_rubrics/` contains the installable Python package, with Agent and parsing primitives at the package root and Rubric schemas, validation, backend specifications, and telemetry in `structured_rubrics/structured/`. The current method, CLI, and reusable research helpers live in `experiments/evolving_structured_rubrics/`; example configurations are in its `configs/` directory. Tests are in `tests/structured/`. Documentation and diagrams belong in `docs/`, `figures/`, and `assets/`; datasets live in `data/`. Treat `output/` and local configuration directories as generated or machine-specific unless a compact result is intentionally reviewed and committed. The complete historical experiment tree is preserved on `codex/subtree-local-reflection`.
 
 ## Build, Test, and Development Commands
 
 - `conda activate critiq` activates the required project environment. Run every test, demo, and experiment in this environment.
-- `python -m pip install -e ".[data]"` installs CritiQ and parquet readers in editable mode (Python 3.10+).
+- `python -m pip install -e ".[data]"` installs the structured-rubric package and parquet readers in editable mode (Python 3.10+).
 - `python -m unittest discover -s tests -p "test_*.py"` runs the full test suite without requiring pytest.
 - `python -m unittest tests.structured.test_subtree_core tests.structured.test_subtree_local_reflection` runs current-method offline tests.
 - `python -m experiments.evolving_structured_rubrics.run_subtree_experiment --help` shows the current experiment stages; start from `configs/generated_roots.example.json`.

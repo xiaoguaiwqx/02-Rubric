@@ -6,8 +6,8 @@ import json
 import mimetypes
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
-from critiq.agent import Agent, AgentCallMetrics
-from critiq.structured.backend_pool import BackendEndpointSpec
+from structured_rubrics.agent import Agent, AgentCallMetrics
+from structured_rubrics.structured.backend_pool import BackendEndpointSpec
 from .experiment_utils import atomic_write_json, canonical_sha256, load_json
 
 

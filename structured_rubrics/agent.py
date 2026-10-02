@@ -1,9 +1,4 @@
-"""对 OpenAI 兼容聊天补全接口的一层轻量封装。
-
-项目中的所有 LLM 调用最终都会走到 :class:`Agent`。
-`Workflow` 会创建 manager agent 来生成或改写 criterion，
-`Evaluator` 会创建大量短生命周期的 worker agent 来对样本做判断。
-"""
+"""用于预热对话和 Worker 调用的 OpenAI 兼容聊天代理。"""
 
 import json
 import os

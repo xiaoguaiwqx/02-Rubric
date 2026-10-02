@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Mapping, Sequence
 
-from critiq.agent import Agent, AgentCallMetrics
+from structured_rubrics.agent import Agent, AgentCallMetrics
 
 
 def _canonical_sha256(value: object) -> str:

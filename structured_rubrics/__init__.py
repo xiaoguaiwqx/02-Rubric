@@ -1,4 +1,4 @@
-"""Core model and rubric primitives used by the current CritiQ method."""
+"""Model and rubric primitives for structured-rubric evolution."""
 
 from .agent import Agent, AgentCallMetrics
 from .utils import Criterion, parse_json, random_reverse

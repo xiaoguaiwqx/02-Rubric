@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from critiq.agent import AgentCallMetrics
+from structured_rubrics.agent import AgentCallMetrics
 from experiments.evolving_structured_rubrics import aligned_system_runtime as system
 from experiments.evolving_structured_rubrics import rubric_pipeline as method
 from experiments.evolving_structured_rubrics import aligned_prompts as prompts

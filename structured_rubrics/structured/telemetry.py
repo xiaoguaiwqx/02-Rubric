@@ -6,7 +6,7 @@ import math
 from dataclasses import dataclass
 from typing import Iterable
 
-from critiq.agent import AgentCallMetrics
+from structured_rubrics.agent import AgentCallMetrics
 
 
 def _require_non_negative_number(value: object, label: str) -> float:

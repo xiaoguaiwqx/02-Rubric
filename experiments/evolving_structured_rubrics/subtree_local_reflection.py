@@ -233,7 +233,7 @@ def evolve_epoch(config, target, epoch, rows, current, baseline, manager, attemp
     return updated, after, summary
 
 
-def run(config, target, attempts=4, manager=None, rows=None, r0=None):
+def run(config, target, attempts=10, manager=None, rows=None, r0=None):
     rows = base.load_rows(config, "discovery") if rows is None else rows
     for i, row in enumerate(rows, 1):
         row["_signature_id"] = f"S{i:03d}"
@@ -355,7 +355,7 @@ def main():
     parser.add_argument("--data-root", type=Path, default=ROOT)
     parser.add_argument("--env-file", type=Path)
     parser.add_argument("--worker-url", default="http://10.102.137.255:8000/v1")
-    parser.add_argument("--attempt-limit", type=int, default=4)
+    parser.add_argument("--attempt-limit", type=int, default=10)
     args = parser.parse_args()
     if args.attempt_limit < 1:
         parser.error("attempt-limit must be positive")

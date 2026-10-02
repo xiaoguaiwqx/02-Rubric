@@ -15,13 +15,13 @@ import re
 import unicodedata
 from typing import Any, Mapping, Sequence
 
-from critiq.agent import API_REQUEST_TIMEOUT_SECONDS, Agent
-from critiq.structured.schema import (
+from structured_rubrics.agent import API_REQUEST_TIMEOUT_SECONDS, Agent
+from structured_rubrics.structured.schema import (
     RubricCriterionSnapshot,
     RubricNode,
     StructuredRubric,
 )
-from critiq.utils import parse_json, random_reverse
+from structured_rubrics.utils import parse_json, random_reverse
 
 from . import model_call_support as image_support
 from .experiment_utils import atomic_write_json, load_json

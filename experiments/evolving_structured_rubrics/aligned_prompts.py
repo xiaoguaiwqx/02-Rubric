@@ -2,7 +2,7 @@
 from __future__ import annotations
 import json
 from typing import Any, Mapping, Sequence
-from critiq.utils import parse_json
+from structured_rubrics.utils import parse_json
 
 
 SUBTREE_PROMPT_VERSION = "implicit-unified-subtree-direct-judge-v1"

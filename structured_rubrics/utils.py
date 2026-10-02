@@ -9,7 +9,7 @@ from typing import Literal, Sequence, TypedDict
 
 @dataclass
 class Criterion:
-    """Workflow 跟踪的自然语言 criterion。"""
+    """自然语言评价准则。"""
 
     name: str
     description: str

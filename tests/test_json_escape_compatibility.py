@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from critiq.utils import parse_json
+from structured_rubrics.utils import parse_json
 
 
 class TestJsonEscapeCompatibility(unittest.TestCase):

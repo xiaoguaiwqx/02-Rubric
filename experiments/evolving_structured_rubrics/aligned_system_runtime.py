@@ -17,8 +17,8 @@ import threading
 import time
 from typing import Any, Mapping, Sequence
 
-from critiq.structured.backend_pool import BackendEndpointSpec, BackendPoolSpec
-from critiq.structured.schema import StructuredRubric
+from structured_rubrics.structured.backend_pool import BackendEndpointSpec, BackendPoolSpec
+from structured_rubrics.structured.schema import StructuredRubric
 
 from . import model_call_support as support
 from . import aligned_prompts as arbiter
