@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 
 from critiq import Agent
-from critiq.structured import ModelCallMetrics, TokenPricing, combine_model_call_metrics
+from critiq.structured.telemetry import ModelCallMetrics, TokenPricing, combine_model_call_metrics
 
 
 class FakeCompletions:

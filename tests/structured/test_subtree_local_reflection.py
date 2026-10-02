@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from experiments.evolving_structured_rubrics import subtree_local_reflection as local
 from experiments.evolving_structured_rubrics.subtree_local_reflection_manager import validate_local
-from tests.structured.test_framework_v6 import rows, report, artifact
+from tests.structured.core_fixtures import rows, report, artifact
 
 
 def root_value(data, root, answers):

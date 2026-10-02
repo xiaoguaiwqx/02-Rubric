@@ -4,7 +4,7 @@
   "env_file": ".env",
   "max_epochs": 5,
   "datasets": {
-    "discovery": "data/discovery_v2_demo_v3/discovery_100.jsonl",
+    "discovery": "output/current_method/seed11/discovery_100.jsonl",
     "dev": "data/discovery_v2_demo_v3/dev_150.jsonl",
     "vlrb": "data/VL_RewardBench/data/test-00000-of-00001.parquet"
   },
@@ -44,7 +44,7 @@
       }
     }
   },
-  "acceptance_metric": "covered_acc",
-  "preservation_case_count": 0,
+  "acceptance_metric": "strict_acc",
+  "preservation_case_count": 5,
   "preservation_seed": 42
 }

@@ -13,7 +13,7 @@ import time
 
 from dotenv import load_dotenv
 
-from . import framework_v6 as base
+from . import current_method as base
 from . import aligned_system_runtime as system
 from .experiment_utils import atomic_write_json as write, load_json
 from .subtree_local_reflection_manager import make_manager
@@ -333,7 +333,7 @@ def check(config, target):
         raise ValueError("acceptance_metric must be covered_acc or strict_acc")
     if config["protocol"] != PROTOCOL:
         raise ValueError("wrong local-reflection protocol")
-    # Reuse data/settings checks without modifying the old module's globals.
+    # Existing frozen runs store this internal check snapshot under the v6 identity.
     legacy = deepcopy(config)
     legacy["protocol"] = base.PROTOCOL
     base.check(legacy, target / "checks", require_manager_thinking=False,

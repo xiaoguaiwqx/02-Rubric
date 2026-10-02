@@ -1,89 +1,34 @@
-# Evolving Structured Rubrics from Multimodal Preferences
+# CritiQ：结构化 Rubric 的子树局部演化
 
-本项目研究如何从多模态偏好数据中，将扁平的自然语言评价准则逐步演化为可解释的结构化 Rubric Forest。给定图像、问题和两个候选回答，系统需要判断哪些准则与当前样本相关、应当沿哪条路径执行，以及如何聚合各节点的判断。
+当前主线从多模态偏好样例生成或指定 root，利用错误签名和语义聚类构造初始 children；Worker 对每棵完整子树分别给出 A/B/None 与理由，Global Arbiter 综合完整报告。随后 Manager 按 `(root, sample)` 逐例反思，为每个 root 生成一整组候选 children；程序在冻结的当前 Rubric 上进行局部竞争，轮末提交获胜组。最终 Rubric 在独立数据上评测。
 
-项目目前处于研究开发阶段。表示、执行、缓存校验和自动 Split/Refine 演化闭环已实现；Phase22 已完成评测，但尚未证明稳定的泛化收益。当前协议、状态和结果入口见[实验索引](docs/experiments/README.md)。
+完整的早期 Gate/Cascade、joint、递归投票、模型与 prompt 对照留在 `codex/subtree-local-reflection` 分支和阶段标签。原 CritiQ-V 代码保存在 `CritiQ-V` 分支。
 
-## 我们要解决的问题
-
-传统 Rubric 通常将所有准则视为相互独立的扁平列表，并对每个样本执行全部准则后进行多数投票。这种方式忽略了准则之间的前置依赖、粒度差异，以及不同样本可能需要不同评价路径的问题。
-
-我们的目标是让 Rubric 从少量自然语言准则出发，在多模态偏好反馈的驱动下逐步生长、分化和精简。最终的层级与级联关系应当成为演化过程的自然产物，而不是预先手工固定的最终结构。
-
-## 早期设计：级联执行
-
-以下为保留的历史执行方案。当前 Phase21/22 使用完整子树的 Unified-Subtree Worker 与系统 Global Arbiter；具体分层见[架构说明](docs/architecture.md)。
-
-Rubric 被表示为由多个根节点组成的 Forest，准则是其中的节点，条件依赖是节点之间的边。通用准则可以位于上层，细粒度准则只在父节点满足相应条件时继续执行。
-
-系统将偏好投票与路径控制拆成两个通道：Pairwise Worker 负责输出权威的 `A`、`B` 或弃权投票，Gate Worker 负责提供是否进入子节点所需的状态。这样既保留原有准则的判断语义，也支持结构化的 root-to-leaf cascade。
-
-## 历史级联架构
-
-```mermaid
-flowchart TD
-    X["多模态偏好样本<br/>图像、问题、回答 A、回答 B"] --> R["Root Router"]
-    R --> F["选中的 Rubric 子树"]
-    F --> P["Pairwise Vote Worker<br/>A / B / 弃权"]
-    F --> G["Gate State Worker<br/>子节点激活状态"]
-    P --> C["Root-to-leaf Cascade Executor"]
-    G --> C
-    C --> A["子树与根节点聚合"]
-    A --> Y["最终偏好<br/>A / B / Tie"]
-    C --> T["Trace、覆盖率、执行路径、<br/>纠错效果与推理成本"]
-    T -. 为后续演化提供反馈 .-> F
-```
-
-当前实现包含版本化的 Rubric Schema、确定性的遍历与聚合规则、离线重放、在线惰性执行、cache/trace 校验和多后端推理池。Shared-output 实验允许不同路由与聚合策略复用完全相同的模型判断，从而公平比较结构本身的作用。
-
-## 当前完成状态
-
-- [x] 结构化判断与聚合语义
-- [x] 不可变的 Rubric Tree/Forest 表示与校验
-- [x] Root Router 与 root-to-leaf Cascade Executor
-- [x] Pairwise/Gate 双通道执行
-- [x] Offline replay、cache、trace、telemetry 与 backend pool
-- [x] 静态 Rubric 的 shared-output 实验
-- [x] 自动 Rubric evolution loop（Split / Refine、重试、暂停恢复）
-- [x] 基于反馈的局部准则与结构优化实现
-- [ ] 在独立数据上证明稳定的系统收益
-
-早期静态 Forest 与 Router 的局限保留在历史实验总结中。后续自动演化已经执行，不能再把“尚未实现演化闭环”作为当前状态；实现可运行与方法有效是两个不同结论。
-
-## 当前实验入口
-
-演化实验与历史 shared-output 实验分别使用：
+## 安装与离线验证
 
 ```powershell
 conda activate critiq
-python -m experiments.evolving_structured_rubrics.run_rubric_evolution --help
-python -m experiments.evolving_structured_rubrics.run_shared_output_pool --help
+python -m pip install -e ".[data]"
+python -m unittest discover -s tests -p "test_*.py"
+python -m experiments.evolving_structured_rubrics.current_experiment --help
 ```
 
-本地运行可以参考配置模板 [`shared_output_pool.example.json`](experiments/evolving_structured_rubrics/configs/shared_output_pool.example.json)。本地 endpoint、checkpoint 路径、prediction、trace 和 cache 不提交到 Git。
+`[data]` 安装读取 VL-RewardBench parquet 所需的 pandas 和 pyarrow。模型调用另需配置 Worker 端点和 Manager 的 API key；配置示例不包含凭据。数据、模型响应和缓存写入本地 `output/`，不提交 Git。
 
-相关文档：
+## 当前入口
 
-- [实验索引（当前状态）](docs/experiments/README.md)
-- [代码架构与边界](docs/architecture.md)
-- [Idea 初稿](docs/Evolving%20Structured%20Rubrics%20from%20Multimodal%20Preferences.md)
-- [实现计划](docs/Evolving%20Structured%20Rubrics%20Implementation%20Plan.md)
-- [Shared-output 实验总结](docs/experiment-results/shared_output_pool_v1_summary.md)
+G5/GN 的冻结 Hallucination100 seed11 split ID 与来源哈希位于 [split manifest](docs/experiments/vlrb-hallucination100-generated-roots/seed11_split.json)。准备阶段从本地 VL-RewardBench parquet 还原图像和发现集，之后分别创建 root、演化、外评。下面的示例以 G5 为例：
 
-## 基于 CritiQ-V
-
-本项目建立在 CritiQ-V 之上。CritiQ-V 是我们对 [CritiQ](https://github.com/KYLN24/CritiQ) 的多模态扩展，负责将自然语言准则挖掘和 Pairwise Evaluation 适配到带图像的偏好数据；本项目在此基础上进一步研究 Rubric 的结构表示、条件路由、级联执行和后续结构演化。
-
-如果本项目对你的研究有所帮助，也请引用原始 CritiQ 工作：
-
-```bibtex
-@misc{guo2025critiqminingdataquality,
-  title        = {CritiQ: Mining Data Quality Criteria from Human Preferences},
-  author       = {Honglin Guo and Kai Lv and Qipeng Guo and Tianyi Liang and Zhiheng Xi and Demin Song and Qiuyinzhe Zhang and Yu Sun and Kai Chen and Xipeng Qiu and Tao Gui},
-  year         = {2025},
-  eprint       = {2502.19279},
-  archivePrefix= {arXiv},
-  primaryClass = {cs.CL},
-  url          = {https://arxiv.org/abs/2502.19279}
-}
+```powershell
+python -m experiments.evolving_structured_rubrics.current_experiment prepare --config experiments/evolving_structured_rubrics/configs/current_generated_roots.example.json --output-root output/current_method/seed11
+python -m experiments.evolving_structured_rubrics.current_experiment roots --config output/current_method/seed11/config.json --output-root output/current_method/seed11 --variant g5
+python -m experiments.evolving_structured_rubrics.current_experiment vlrb-r0 --config output/current_method/seed11/config.json --output-root output/current_method/seed11 --variant g5
+python -m experiments.evolving_structured_rubrics.current_experiment evolve --config output/current_method/seed11/config.json --output-root output/current_method/seed11 --variant g5
+python -m experiments.evolving_structured_rubrics.current_experiment dev --config output/current_method/seed11/config.json --output-root output/current_method/seed11 --variant g5
+python -m experiments.evolving_structured_rubrics.current_experiment vlrb --config output/current_method/seed11/config.json --output-root output/current_method/seed11 --variant g5
+python -m experiments.evolving_structured_rubrics.current_experiment report --config output/current_method/seed11/config.json --output-root output/current_method/seed11 --variant g5
 ```
+
+可将 `--variant` 改为 `gn`（同一预热历史、可变 root 数）或 `f5`（固定五根对照）。每个变体使用独立目录。旧 Discovery100 的 Covered、Strict 配置分别在 [`subtree_local_reflection.example.json`](experiments/evolving_structured_rubrics/configs/subtree_local_reflection.example.json) 和 [`current_strict.example.json`](experiments/evolving_structured_rubrics/configs/current_strict.example.json)；G5/GN 参考配置显式使用 Strict + Preserve5。换数据、接受指标、prompt 或模型时使用新运行目录。
+
+当前方法的 [架构](docs/architecture.md)、[实验索引](docs/experiments/README.md)、[冻结协议](docs/experiments/subtree-local-reflection/plan.md)、[已观察结果](docs/experiments/subtree-local-reflection/results.md) 和 [框架 PPT](docs/experiments/subtree-local-reflection/framework.pptx) 分开维护。已保存结果显示 Discovery 的提升没有自动转化为外部泛化收益；请按正式 VLRB K=3 计分口径比较。

@@ -216,3 +216,20 @@ Conclusion: this five-random-case prompt intervention did not improve external s
 ### Historical Discovery100 peak correction
 
 Expanded audit searched 772 small report/summary/trajectory/metric JSON artifacts across both CritiQ and CritiQ-framework-v6 output trees (excluding inference caches), plus the historical implementation document. Preserve5 e02=72/100 is NOT a historical record. Phase19 system-acceptance epoch trajectory is69,69,69,71,71,72; its formal Final is72. Phase20 mixed local acceptance trajectory is69,69,73,66,66,68; e02 reached73, but Phase21 protocol explicitly retains Phase20 only as a diagnostic reference because of protocol mixing. Phase20 frozen Discovery hash equals current dataset SHA25606551a775bdec55818df5fc2db3aaebdd418c7327248d66811266faa2f98a1c3. Phase21 trajectory is62 throughout; Phase22 is68,65,69,69,69,69. Phase21 K1 rejected-candidate audit peaks at71; K3 exhaustive coalition audit at70. These diagnostics must not be conflated with accepted evolution Final checkpoints. Earlier Phase17 explicit-recursive peak66/Final65 and Qwen2.5 Phase18 peak63/Final62 use different inference setups. Thus this run matches Phase19's72 but does not exceed Phase20's diagnostic73; its own Final remains68.
+
+## 主线精简前的冻结基线（2026-10-02）
+
+以下数值直接读取已保存的 `run_config.json`、`r0/system.json`、`init/system.json`、`report.json` 和 `vlrb/report.json`，用于验证代码拆分是否改变旧结果口径。三条 F5 轨迹的 Init rubric SHA256 均为 `9ec322bae3c43a528c3df7d8bfb8692c1e9060d03789353752b1b143667dc44f`。它们共享 Init，但后续候选重新生成，不是同一条轨迹的简单过滤。
+
+| 已保存轨迹 | 冻结接受配置 | R0 Discovery Strict | S0 Discovery Strict | Final Discovery Strict | VLRB official K3 Init→Final 正确数/1247 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `output/subtree_local_reflection/main` | `covered_acc`（缺省），preserve 0（缺省） | 65/100 | 62/100 | 67/100 | 875→861 |
+| `output/subtree_local_reflection/discovery100_27b_strict` | `strict_acc`，preserve 0（缺省） | 复用上述 R0 | 62/100 | 69/100 | 875→864 |
+| `output/subtree_local_reflection/discovery100_27b_strict_preserve5` | `strict_acc`，`preservation_case_count=5`，`preservation_seed=42` | 复用上述 R0 | 62/100 | 68/100 | 875→856 |
+| `CritiQ-framework-v6/output/vlrb_hallucination100_generated_roots/seed11/g5` | `strict_acc`，preserve 5，seed 42；独立的 Hallucination100 发现集 | 77/100 | 80/100 | 84/100 | 929→934 |
+
+G5 的 R0 rubric SHA256 为 `ea142b0c0dff347e441308bcbe91f25b724a8095c1f46fe276ff57652fc7f649`，S0 为 `c9ae892fdbc4916762e8f91a5744d63f567d943b360d5cc91391a802704c4d6b`，Final 为 `f0e4c0306f0a0076db989c88de91dc4a4f2b03b48dc15b8d245481515f833274`。VLRB 数字来自 `official` 块的三次至少两票一致口径；运行时相对多数口径会不同。G5 的正式 `overall_acc` 为 75.10%→75.63%；它和前三条 F5 的发现集不同，不应将 Final 分数直接当作纯 root 初始化消融。
+
+代码基线为提交 `546b77c`，使用 `critiq` conda 环境 Python 3.11.15。相关 91 个离线测试：90 通过、1 错误；全量 553 个测试：550 通过、1 失败、2 错误。共同错误是 `test_framework_v6.test_runtime_opts_in_to_reason_without_prompt_change` 仍用旧 `_call_arbiter` 签名，少传 `root_count`。全量另外两项均在历史 Phase17 checkpoint 测试：`test_activation_configures_generic_runner` 与 `test_config_matches_frozen_protocol` 的冻结设置不匹配。完整 stdout/stderr 保存于 `.local/repository-review/core-baseline-tests.log` 和 `full-baseline-tests.log`；这些是重构前已存在的问题。
+
+抽取后的离线核验：从原 parquet 与保存的逐 replicate 预测重算 VLRB official 字段，旧 Covered 的 Init/Final 分别为 875/861 正确、1237/1241 覆盖；G5 为 929/934 正确、1237/1235 覆盖，四份重算字典与原 `vlrb/report.json` 完全相同。旧 Covered `init/system` 的一个已缓存样本，Worker 子树和 Arbiter 两次新代码调用均直接命中原缓存且 `cache_key` 一致，没有模型调用。新 `prepare` 入口从 seed11 manifest 还原的 100 条发现集，与旧冻结发现集在 sample ID、图像 SHA256、问题、A/B、Gold、来源和领域字段全部一致。精简后 38 个保留的离线测试全部通过；本段是重构验证，不是新增实验结果。

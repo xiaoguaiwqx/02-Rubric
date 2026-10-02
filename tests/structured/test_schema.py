@@ -15,8 +15,8 @@ from critiq.structured import (
     RubricNode,
     RubricSchemaError,
     StructuredRubric,
-    STRUCTURED_RUBRIC_SCHEMA_VERSION,
 )
+from critiq.structured.version import STRUCTURED_RUBRIC_SCHEMA_VERSION
 from critiq.utils import Criterion
 
 

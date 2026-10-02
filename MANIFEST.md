@@ -1,14 +1,9 @@
 # 研究资料导航
 
-本文件只维护入口，不再按时间戳重复登记同一份计划或状态。
+- [当前方法与运行命令](README.md)
+- [代码边界](docs/architecture.md)
+- [实验索引](docs/experiments/README.md)
+- [当前方法结果与重构基线](docs/experiments/subtree-local-reflection/results.md)
+- [生成 root 实验与 seed11 split](docs/experiments/vlrb-hallucination100-generated-roots/plan.md)
 
-- [实验索引与当前状态](docs/experiments/README.md)
-- [Phase17 本地27B Manager替换实验](docs/experiments/phase17-manager-qwen35-27b/plan.md)
-- [系统结构与代码边界](docs/architecture.md)
-- [实现历史与正式结果](docs/Evolving%20Structured%20Rubrics%20Implementation%20Plan.md)
-- [Phase21 冻结协议](docs/experiments/phase21/protocol.md)
-- [Phase22 冻结协议](docs/experiments/phase22/protocol.md)
-- [Phase22 运行与恢复](docs/experiments/phase22/running.md)
-- [Phase22 研究约束](docs/experiments/phase22/research-contract.md)
-
-历史草稿和审查不表示当前运行状态。原始运行产物保存在本地 `output/`，不因实验结果为负而删除。
+早期完整实验树可在 `codex/subtree-local-reflection` 分支查看；原 CritiQ-V 代码可在 `CritiQ-V` 分支查看。

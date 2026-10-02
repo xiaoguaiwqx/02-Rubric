@@ -105,38 +105,3 @@ def validate_structured_rubric(rubric: StructuredRubric) -> None:
     unreachable = sorted(set(rubric.nodes) - set(owner_by_id))
     if unreachable:
         raise RubricValidationError(f"nodes are unreachable from roots: {unreachable}")
-
-
-def assert_prediction_compatible(
-    rubric: StructuredRubric,
-    prediction: object,
-) -> None:
-    """Require exact criterion coverage between a forest and Phase 1 output."""
-
-    from .worker_output import StructuredPredictionOutput
-
-    if not isinstance(rubric, StructuredRubric):
-        raise TypeError("rubric must be StructuredRubric")
-    if not isinstance(prediction, StructuredPredictionOutput):
-        raise TypeError("prediction must be StructuredPredictionOutput")
-
-    expected = {
-        node.criterion.name: node.criterion.description
-        for node in rubric.nodes.values()
-    }
-    actual = {
-        criterion.name: criterion.description for criterion in prediction.criteria
-    }
-    missing = sorted(set(expected) - set(actual))
-    extra = sorted(set(actual) - set(expected))
-    if missing or extra:
-        raise RubricValidationError(
-            "prediction criteria do not exactly cover rubric nodes: "
-            f"missing={missing}, extra={extra}"
-        )
-    mismatched = sorted(name for name in expected if expected[name] != actual[name])
-    if mismatched:
-        raise RubricValidationError(
-            "prediction criterion descriptions differ from rubric: "
-            f"{mismatched}"
-        )

@@ -1,22 +1,21 @@
-# 当前研究代码边界
+# 当前方法与代码边界
 
-当前部署推理路线是：每棵完整 root subtree 生成一份 Unified-Subtree 报告，再由 Global Arbiter 综合报告判断偏好。早期 Pairwise/Gate/Cascade 保留用于旧协议与对照，不等于当前实验全部采用该路线。
+```mermaid
+flowchart LR
+    W[五样本偏好预热] --> R[R0：生成 G5/GN 或固定 F5]
+    R --> S[S0：错误签名、聚类、整组 children]
+    S --> E[每棵完整子树一次 Worker 判断]
+    E --> A[Global Arbiter 系统偏好]
+    E --> F[逐 root、逐案例反思]
+    F --> C[生成候选 children 组]
+    C --> L[冻结 Current 上的局部竞争]
+    L --> U[轮末提交获胜组]
+    U --> E
+    U --> V[冻结 Final 与独立外评]
+```
 
-## 职责
+`critiq/` 保留 Agent、JSON 解析、Rubric schema、验证、后端规格和调用遥测。`experiments/evolving_structured_rubrics/` 中 `generated_root_initialization.py` 负责预热及 R0，`current_method.py` 负责 S0 与外评，`subtree_local_reflection.py` 负责逐例反思和局部接受，`aligned_system_runtime.py` 负责 Worker/Arbiter 判断与报告复用。`current_prompts.py` 固定 prompt 和解析器，`current_runtime_support.py` 固定请求身份与多模态内容，`current_vlrb.py` 固定正式 K=3 日程和指标。`current_experiment.py` 是这三个阶段的命令入口。
 
-| 层 | 内容 | 不能做什么 |
-| --- | --- | --- |
-| `critiq/structured/` | rubric schema、cache、backend、指标与演化数据结构 | 不导入实验 CLI，不决定某个 Phase 的数据目录 |
-| 实验公共运行时 | Unified推理、候选竞争、冻结与原子提交 | 不通过改写其他实验的模块全局变量切换协议 |
-| 实验协议/适配器 | 实验身份、接受范围、重试策略、阶段入口 | 不更改其他协议的常量、prompt或缓存身份 |
-| 数据集评测 | 固定rubric、数据、对照的最终评测 | 不将heldout/VLRB反馈给演化选择 |
+局部接受可配置为 Covered ACC 或 Strict ACC；Preserve5 是独立的正确案例提示干预。它们的冻结配置与已保存结果见[结果页](experiments/subtree-local-reflection/results.md)。正式 VLRB 采用至少两票一致的 K=3 多数口径；`aligned_system_runtime.metrics` 的相对多数仅用于运行时诊断。两者不能混作同一结果。
 
-重构优先使用显式协议参数，并保留旧 CLI 和冻结身份；不把多个科学协议合并成隐式布尔开关组合。仍在使用的旧模型端点约束和历史基线引用属于兼容边界，不在代码搬移时偷偷放宽。通用新模型评测应使用新的、独立冻结的运行配置。
-
-Phase21/22 已通过 `evolution_protocol.py` 中的不可变协议对象传递目录、配置键、接受规则和评测标签。共享实现仍放在历史 Phase21 模块中，以保留旧导入路径；后续可继续拆分 CLI 分派、候选生成、报告和数据源，不需要再次复制引擎。VLRB 的共享报告生成与 Phase22 最终成功状态分开，只有附加对照校验完成后才发布 `passed`。
-
-## 验证要求
-
-修改公共能力时，运行离线单测，覆盖协议交错调用、错误恢复、正收益门槛、技术失败暂停、报告复用和身份校验。不能为了复用缓存而绕过hash验证。运行中的实验目录与历史预测不重写；旧协议退役须先确认所有引用与复现入口已有替代。
-
-研究入口见[实验索引](experiments/README.md)。
+原 Gate/Cascade、joint、分层反思和历史 runner 的完整实现保存在 `codex/subtree-local-reflection` 分支及阶段标签。当前入口不会导入那些模块。

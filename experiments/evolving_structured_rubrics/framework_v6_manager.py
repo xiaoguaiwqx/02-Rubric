@@ -15,7 +15,7 @@ import time
 from dotenv.parser import parse_stream
 from openai import OpenAI
 from critiq.utils import parse_json
-from . import _global_arbiter_ab_only_support as support
+from . import current_runtime_support as support
 from .experiment_utils import atomic_write_json as write, load_json
 
 COMMON = """You are the Manager of a fixed multimodal preference judge. The five

@@ -44,7 +44,7 @@
       }
     }
   },
-  "acceptance_metric": "covered_acc",
+  "acceptance_metric": "strict_acc",
   "preservation_case_count": 0,
   "preservation_seed": 42
 }

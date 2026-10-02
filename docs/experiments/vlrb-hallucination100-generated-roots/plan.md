@@ -4,6 +4,8 @@
 
 本实验接续 [子树逐例反思框架](../subtree-local-reflection/framework.pptx) 第 6–8 页的 Hallucination100 实验。上一实验使用五个固定 root，在目标分布的 100 条样本上生成初始 children，完成最多五轮逐例子树反思，再测试 VLRB。本实验只研究**初始 root 从何而来，以及是否必须固定为五个**；初始 Split、演化、Worker 和测试日程沿用上一实验。
 
+当前主线的运行入口是仓库 README 中的 `current_experiment`；下文保留原实验冻结时的命令与目录，所涉及的完整历史 runner 可在 `codex/subtree-local-reflection` 分支查看。seed11 精确 split ID 和来源哈希已另存为本目录 `seed11_split.json`。
+
 ## 1. 研究问题与可支持的结论
 
 | 编号 | 问题 | 所需证据 |
@@ -35,7 +37,7 @@ G5 与 GN 在第五次预热回答后从**同一份对话历史**分叉，只更
 
 ## 4. CritiQ 式 root 生成协议
 
-原 [`Workflow.get_init_criteria`](../../../critiq/workflow.py) 的关键做法是：给同一个有状态 Manager 逐条展示带人类偏好的成对样本，在保留这些对话历史的情况下生成准则。原函数的 `n_criteria` 必须预设，输出是扁平 criterion；这里迁移预热机制，再将输出作为当前框架的 root，不直接调用原函数。此实验不接入知识库检索，以免又改变准则来源。
+原 CritiQ-V 分支中 `Workflow.get_init_criteria` 的关键做法是：给同一个有状态 Manager 逐条展示带人类偏好的成对样本，在保留这些对话历史的情况下生成准则。原函数的 `n_criteria` 必须预设，输出是扁平 criterion；这里迁移预热机制，再将输出作为当前框架的 root，不直接调用原函数。此实验不接入知识库检索，以免又改变准则来源。
 
 1. 按冻结的训练 ID 顺序，用 `random.Random(11).sample(rows, 5)` 等概率、无放回抽 5 条；不按最终结果改选。随后沿用 CritiQ 的 `random_reverse(seed=100745534)` 翻转并洗牌这五条 pair，保存最终预热顺序、来源、图像哈希、翻转后的回答和标签。五条的来源组成在报告中公开；纯随机五条不保证覆盖三个来源。
 2. 使用与当前演化相同的 Qwen3.5-27B Manager、`temperature=0.2` 和非思考设置。五次**顺序**调用同一个有状态对话，每次提供该条的原图、问题、回答 A/B、人类偏好，并要求说明这一偏好的可观察依据。不得让默认纯文本 prompt 漏掉图像或问题；不得在预热指令中暗示原来的五个 root 名称。生成阶段若复用 `Agent`，显式设置 `api_retry_attempts=0`、外层最多 10 次尝试，并记录其当前 900 秒单请求超时；不要继承 `Agent` 默认的 50 次内部重试而误报调用成本。

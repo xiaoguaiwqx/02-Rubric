@@ -2,16 +2,15 @@
 
 ## Project Structure & Module Organization
 
-`critiq/` contains the installable Python package. Core evaluation logic lives at the package root, while `critiq/structured/` implements schemas, routing, execution, telemetry, caching, and rubric evolution. Command-line training and annotation utilities are under `critiq/scripts/`. Put research runners and reusable experiment helpers in `experiments/evolving_structured_rubrics/`; keep example configurations in its `configs/` directory. Tests mirror the structured package in `tests/structured/`. Documentation and diagrams belong in `docs/`, `figures/`, and `assets/`; datasets live in `data/`. Treat `output/` and local configuration directories as generated or machine-specific unless a compact result is intentionally reviewed and committed.
+`critiq/` contains the installable Python package, with Agent and parsing primitives at the package root and Rubric schemas, validation, backend specifications, and telemetry in `critiq/structured/`. The current method, CLI, and reusable research helpers live in `experiments/evolving_structured_rubrics/`; example configurations are in its `configs/` directory. Tests are in `tests/structured/`. Documentation and diagrams belong in `docs/`, `figures/`, and `assets/`; datasets live in `data/`. Treat `output/` and local configuration directories as generated or machine-specific unless a compact result is intentionally reviewed and committed. The complete historical experiment tree is preserved on `codex/subtree-local-reflection`.
 
 ## Build, Test, and Development Commands
 
 - `conda activate critiq` activates the required project environment. Run every test, demo, and experiment in this environment.
-- `python -m pip install -e .` installs CritiQ in editable mode (Python 3.10+).
+- `python -m pip install -e ".[data]"` installs CritiQ and parquet readers in editable mode (Python 3.10+).
 - `python -m unittest discover -s tests -p "test_*.py"` runs the full test suite without requiring pytest.
-- `python -m unittest tests.structured.test_executor` runs one focused test module.
-- `python -m experiments.evolving_structured_rubrics.run_shared_output_pool --help` shows the main experiment interface; start from `configs/shared_output_pool.example.json`.
-- `python demo.py` runs the basic demonstration; model-backed workflows may require configured endpoints and credentials.
+- `python -m unittest tests.structured.test_current_core tests.structured.test_subtree_local_reflection` runs current-method offline tests.
+- `python -m experiments.evolving_structured_rubrics.current_experiment --help` shows the current experiment stages; start from `configs/current_generated_roots.example.json`.
 
 ## Coding Style & Naming Conventions
 
