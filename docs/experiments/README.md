@@ -4,4 +4,6 @@
 
 当前代码入口是 `experiments.evolving_structured_rubrics.run_subtree_experiment`：`prepare` 还原发现集，`roots` 创建 F5/G5/GN，`vlrb-r0` 测裸 root，`evolve` 运行 S0 与局部演化，`dev`/`vlrb` 做冻结后的独立评测，`report` 汇总结果。具体命令见仓库 [README](../../README.md)。VLRB 正式指标使用 K=3 至少两票一致；运行时相对多数值仅用于诊断。
 
+生成 root 实验的 `report` 对同一批完整 VLRB 预测离线计算训练 100、非训练 1147、去近重复 1146、未见幻觉 648 和官方类别切片，并保留 R0/S0/Final、各 root、配对变化及成本。三组变体均有完整报告时，seed 目录再输出 F5/G5/GN 配对汇总；全量 1247 指标包含训练样本。
+
 旧 Gate/Cascade、joint、Phase17–22、类别专属 Rubric、十样例预热和迁移审计的代码与实验文档保存在 `codex/subtree-local-reflection` 分支；原 CritiQ-V 保存在 `CritiQ-V`。这些探索中的负结果仍属于研究历史，不能当作当前方法的运行入口。历史本地原始产物继续保存在 `output/`，当前主线只提交必要的结果摘要、split 元数据和可编辑 PPT。

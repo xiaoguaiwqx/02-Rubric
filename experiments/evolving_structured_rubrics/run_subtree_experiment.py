@@ -10,7 +10,8 @@ from dotenv import load_dotenv
 
 from critiq.structured.schema import StructuredRubric
 
-from . import rubric_pipeline, vlrb_official, generated_root_initialization, subtree_local_reflection
+from . import (generated_root_initialization, generated_roots_report, rubric_pipeline,
+               subtree_local_reflection, vlrb_official)
 from .model_call_support import file_sha256
 from .experiment_utils import atomic_write_json, load_json
 from .subtree_local_reflection_manager import make_manager
@@ -125,6 +126,7 @@ def run_stage(args: argparse.Namespace) -> None:
         rubric_pipeline.external(config, target, args.stage, args.attempt_limit)
     elif args.stage == "report":
         subtree_local_reflection.report(config, target)
+        generated_roots_report.report(config, root, args.variant)
 
 
 def main() -> None:

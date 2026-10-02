@@ -31,4 +31,6 @@ python -m experiments.evolving_structured_rubrics.run_subtree_experiment report 
 
 可将 `--variant` 改为 `gn`（同一预热历史、可变 root 数）或 `f5`（固定五根对照）。每个变体使用独立目录。R0 生成默认最多重试 10 次，演化中的 Manager 与 Worker 默认最多重试 4 次；可分别用 `--root-attempt-limit` 和 `--attempt-limit` 调整。旧 Discovery100 的 Covered、Strict 配置分别在 [`subtree_local_reflection.example.json`](experiments/evolving_structured_rubrics/configs/subtree_local_reflection.example.json) 和 [`subtree_local_reflection_strict.example.json`](experiments/evolving_structured_rubrics/configs/subtree_local_reflection_strict.example.json)；G5/GN 参考配置显式使用 Strict + Preserve5。换数据、接受指标、prompt 或模型时使用新运行目录。
 
+`report` 从已保存的 K=3 预测离线统计 R0/S0/Final：完整 1247、训练 100、非训练 1147、去近重复 1146、未见幻觉 648，以及三个官方类别；同时汇总各 root、阶段配对变化、区间估计与生成/推理成本。单变体结果写入其 `report.json`；F5、G5、GN 都完成后，再生成 seed 目录的跨变体 `report.json`。统计不会重新调用模型；完整 1247 包含训练的 100 条，未见集结论应看 648 和 1146 切片。
+
 当前方法的 [架构](docs/architecture.md)、[实验索引](docs/experiments/README.md)、[冻结协议](docs/experiments/subtree-local-reflection/plan.md)、[已观察结果](docs/experiments/subtree-local-reflection/results.md) 和 [框架 PPT](docs/experiments/subtree-local-reflection/framework.pptx) 分开维护。已保存结果显示 Discovery 的提升没有自动转化为外部泛化收益；请按正式 VLRB K=3 计分口径比较。
