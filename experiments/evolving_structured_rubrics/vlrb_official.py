@@ -5,7 +5,7 @@ import math
 from collections import Counter
 from pathlib import Path
 from typing import Any, Mapping, Sequence
-from .current_runtime_support import file_sha256
+from .model_call_support import file_sha256
 
 K = 3
 SEED = 42

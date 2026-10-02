@@ -20,9 +20,9 @@ from typing import Any, Mapping, Sequence
 from critiq.structured.backend_pool import BackendEndpointSpec, BackendPoolSpec
 from critiq.structured.schema import StructuredRubric
 
-from . import current_runtime_support as support
-from . import current_prompts as arbiter
-from . import current_prompts as unified
+from . import model_call_support as support
+from . import aligned_prompts as arbiter
+from . import aligned_prompts as unified
 from .experiment_utils import atomic_write_json, canonical_sha256
 from .framework_v6_manager import root_count_word
 

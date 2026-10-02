@@ -23,7 +23,7 @@ from critiq.structured.schema import (
 )
 from critiq.utils import parse_json, random_reverse
 
-from . import current_runtime_support as image_support
+from . import model_call_support as image_support
 from .experiment_utils import atomic_write_json, load_json
 from .framework_v6_manager import Manager
 

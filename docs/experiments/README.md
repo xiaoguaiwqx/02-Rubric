@@ -2,6 +2,6 @@
 
 当前主线是[子树逐例反思与局部竞争](subtree-local-reflection/plan.md)。其[结果与重构基线](subtree-local-reflection/results.md)记录 Covered、Strict、Preserve5 的冻结配置和 Discovery/Dev/VLRB 指标；[最新框架 PPT](subtree-local-reflection/framework.pptx)说明方法与实验。Hallucination100 的生成 root 对照见[冻结方案及已观察结果](vlrb-hallucination100-generated-roots/plan.md)，可复现的 seed11 样本 ID 和来源哈希见 [split manifest](vlrb-hallucination100-generated-roots/seed11_split.json)。
 
-当前代码入口是 `experiments.evolving_structured_rubrics.current_experiment`：`prepare` 还原发现集，`roots` 创建 F5/G5/GN，`vlrb-r0` 测裸 root，`evolve` 运行 S0 与局部演化，`dev`/`vlrb` 做冻结后的独立评测，`report` 汇总结果。具体命令见仓库 [README](../../README.md)。VLRB 正式指标使用 K=3 至少两票一致；运行时相对多数值仅用于诊断。
+当前代码入口是 `experiments.evolving_structured_rubrics.run_subtree_experiment`：`prepare` 还原发现集，`roots` 创建 F5/G5/GN，`vlrb-r0` 测裸 root，`evolve` 运行 S0 与局部演化，`dev`/`vlrb` 做冻结后的独立评测，`report` 汇总结果。具体命令见仓库 [README](../../README.md)。VLRB 正式指标使用 K=3 至少两票一致；运行时相对多数值仅用于诊断。
 
 旧 Gate/Cascade、joint、Phase17–22、类别专属 Rubric、十样例预热和迁移审计的代码与实验文档保存在 `codex/subtree-local-reflection` 分支；原 CritiQ-V 保存在 `CritiQ-V`。这些探索中的负结果仍属于研究历史，不能当作当前方法的运行入口。历史本地原始产物继续保存在 `output/`，当前主线只提交必要的结果摘要、split 元数据和可编辑 PPT。

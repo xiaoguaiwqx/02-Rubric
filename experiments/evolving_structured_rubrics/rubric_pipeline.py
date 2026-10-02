@@ -237,7 +237,7 @@ def external(config, target, dataset, attempts):
         raise RuntimeError("Freeze Final before external evaluation")
     records = None
     if dataset == "vlrb":
-        from . import current_vlrb as vlrb
+        from . import vlrb_official as vlrb
         records = vlrb._read_records(target / "vlrb", parquet_path=Path(config["data_root"]) / config["datasets"]["vlrb"])
         rows = system.support.vlrb_rows(records)
         orders = vlrb._order_schedule(records)

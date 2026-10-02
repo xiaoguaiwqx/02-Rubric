@@ -1,4 +1,4 @@
-"""Run current R0 generation, local evolution, and frozen external evaluation."""
+"""Run R0 generation, subtree evolution, and frozen external evaluation."""
 
 from __future__ import annotations
 
@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 
 from critiq.structured.schema import StructuredRubric
 
-from . import current_method, current_vlrb, generated_root_initialization, subtree_local_reflection
-from .current_runtime_support import file_sha256
+from . import rubric_pipeline, vlrb_official, generated_root_initialization, subtree_local_reflection
+from .model_call_support import file_sha256
 from .experiment_utils import atomic_write_json, load_json
 from .subtree_local_reflection_manager import make_manager
 
@@ -28,7 +28,7 @@ def prepare(config: dict, root: Path, seed: int) -> None:
     parquet = Path(config["data_root"]) / config["datasets"]["vlrb"]
     if file_sha256(parquet) != split["parquet_sha256"]:
         raise ValueError("VL-RewardBench parquet differs from the frozen split")
-    records = current_vlrb._read_records(root / "dataset", parquet_path=parquet)
+    records = vlrb_official._read_records(root / "dataset", parquet_path=parquet)
     by_id = {item["sample_id"]: item for item in records}
     train_ids = split["train_ids"]
     heldout_ids = split["heldout_ids"]
@@ -36,7 +36,7 @@ def prepare(config: dict, root: Path, seed: int) -> None:
             or len(heldout_ids) != 648 or set(train_ids) & set(heldout_ids)
             or set(train_ids + heldout_ids) - set(by_id)):
         raise ValueError("frozen Hallucination100 ID split differs from benchmark")
-    schedule = current_vlrb._order_schedule(records)
+    schedule = vlrb_official._order_schedule(records)
     rows = []
     for sample_id in train_ids:
         item = by_id[sample_id]
@@ -48,7 +48,7 @@ def prepare(config: dict, root: Path, seed: int) -> None:
             image_sha256=item["image_sha256"], question=item["question"],
             A=item["responses"][order], B=item["responses"][1 - order],
             answer="A" if item["preferred_original_index"] == order else "B",
-            source=current_vlrb._official_dataset(item["benchmark_id"]),
+            source=vlrb_official._official_dataset(item["benchmark_id"]),
             domain="visual",
         ))
     discovery = root / "discovery_100.jsonl"
@@ -76,9 +76,9 @@ def run_stage(args: argparse.Namespace) -> None:
         return
 
     if args.stage == "roots":
-        rows = current_method.load_rows(config, "discovery")
+        rows = rubric_pipeline.load_rows(config, "discovery")
         if args.variant == "f5":
-            rubric = current_method.build_multicrit_open_ended_init_rubric()
+            rubric = rubric_pipeline.build_multicrit_open_ended_init_rubric()
             path = target / "r0/rubric.json"
             if path.exists() and StructuredRubric.load_json(path).rubric_sha256 != rubric.rubric_sha256:
                 raise ValueError(f"frozen R0 changed at {path}")
@@ -89,7 +89,7 @@ def run_stage(args: argparse.Namespace) -> None:
                 seed=args.seed,
                 manager_config=dict(config["manager"], env_file=config.get("env_file", ".env")),
                 output_dir=root,
-                attempt_limit=args.manager_attempt_limit,
+                attempt_limit=args.root_attempt_limit,
                 expected_count=config.get("discovery_sample_count", 100),
                 variants=(args.variant,),
                 count_instructions=generated_root_initialization.LEGACY_COUNT_INSTRUCTIONS,
@@ -101,7 +101,7 @@ def run_stage(args: argparse.Namespace) -> None:
         r0 = StructuredRubric.load_json(target / "r0/rubric.json")
         manager = make_manager(
             dict(config["manager"], env_file=config.get("env_file", ".env")),
-            args.manager_attempt_limit,
+            args.attempt_limit,
             n_roots=len(r0.root_ids),
         )
         subtree_local_reflection.run(
@@ -110,19 +110,19 @@ def run_stage(args: argparse.Namespace) -> None:
     elif args.stage == "vlrb-r0":
         rubric = StructuredRubric.load_json(target / "r0/rubric.json")
         parquet = Path(config["data_root"]) / config["datasets"]["vlrb"]
-        records = current_vlrb._read_records(target / "vlrb", parquet_path=parquet)
-        rows = current_method.system.support.vlrb_rows(records)
-        value = current_method.evaluate(
+        records = vlrb_official._read_records(target / "vlrb", parquet_path=parquet)
+        rows = rubric_pipeline.system.support.vlrb_rows(records)
+        value = rubric_pipeline.evaluate(
             config, target, "vlrb/r0", rows, rubric,
-            orders=current_vlrb._order_schedule(records), attempts=args.attempt_limit,
+            orders=vlrb_official._order_schedule(records), attempts=args.attempt_limit,
         )
         atomic_write_json(target / "vlrb/r0_report.json", dict(
             k=value["k"], rubric_sha256=rubric.rubric_sha256,
             runtime=value["metrics"],
-            official=current_vlrb.official_system_metrics(records, current_vlrb._votes(value)),
+            official=vlrb_official.official_system_metrics(records, vlrb_official._votes(value)),
         ))
     elif args.stage in {"dev", "vlrb"}:
-        current_method.external(config, target, args.stage, args.attempt_limit)
+        rubric_pipeline.external(config, target, args.stage, args.attempt_limit)
     elif args.stage == "report":
         subtree_local_reflection.report(config, target)
 
@@ -136,9 +136,9 @@ def main() -> None:
     parser.add_argument("--variant", choices=("f5", "g5", "gn"), default="g5")
     parser.add_argument("--seed", type=int, default=11)
     parser.add_argument("--attempt-limit", type=int, default=4)
-    parser.add_argument("--manager-attempt-limit", type=int, default=10)
+    parser.add_argument("--root-attempt-limit", type=int, default=10)
     args = parser.parse_args()
-    if args.attempt_limit < 1 or args.manager_attempt_limit < 1:
+    if args.attempt_limit < 1 or args.root_attempt_limit < 1:
         parser.error("attempt limits must be positive")
     run_stage(args)
 

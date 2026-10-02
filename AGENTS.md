@@ -9,8 +9,8 @@
 - `conda activate critiq` activates the required project environment. Run every test, demo, and experiment in this environment.
 - `python -m pip install -e ".[data]"` installs CritiQ and parquet readers in editable mode (Python 3.10+).
 - `python -m unittest discover -s tests -p "test_*.py"` runs the full test suite without requiring pytest.
-- `python -m unittest tests.structured.test_current_core tests.structured.test_subtree_local_reflection` runs current-method offline tests.
-- `python -m experiments.evolving_structured_rubrics.current_experiment --help` shows the current experiment stages; start from `configs/current_generated_roots.example.json`.
+- `python -m unittest tests.structured.test_subtree_core tests.structured.test_subtree_local_reflection` runs current-method offline tests.
+- `python -m experiments.evolving_structured_rubrics.run_subtree_experiment --help` shows the current experiment stages; start from `configs/generated_roots.example.json`.
 
 ## Coding Style & Naming Conventions
 

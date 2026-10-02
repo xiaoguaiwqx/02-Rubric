@@ -10,15 +10,46 @@ from unittest.mock import patch
 
 from critiq.agent import AgentCallMetrics
 from experiments.evolving_structured_rubrics import aligned_system_runtime as system
-from experiments.evolving_structured_rubrics import current_method as method
-from experiments.evolving_structured_rubrics import current_prompts as prompts
-from experiments.evolving_structured_rubrics import current_runtime_support as support
-from experiments.evolving_structured_rubrics import current_vlrb as vlrb
+from experiments.evolving_structured_rubrics import rubric_pipeline as method
+from experiments.evolving_structured_rubrics import aligned_prompts as prompts
+from experiments.evolving_structured_rubrics import model_call_support as support
+from experiments.evolving_structured_rubrics import vlrb_official as vlrb
 from experiments.evolving_structured_rubrics import generated_root_initialization as generated
+from experiments.evolving_structured_rubrics import run_subtree_experiment as entry
 from tests.structured.core_fixtures import artifact, rows
 
 
-class TestCurrentCore(unittest.TestCase):
+class TestSubtreeCore(unittest.TestCase):
+    def test_evolution_manager_uses_frozen_attempt_limit(self):
+        config = {"manager": {}, "env_file": ".env"}
+        r0 = SimpleNamespace(root_ids=("r1", "r2"))
+        args = SimpleNamespace(
+            config=Path("config.json"), output_root=Path("output"),
+            variant="g5", stage="evolve", attempt_limit=4,
+        )
+        with patch.object(entry, "load_json", return_value=config), \
+                patch.object(entry, "load_dotenv"), \
+                patch.object(entry.subtree_local_reflection, "check"), \
+                patch.object(entry.StructuredRubric, "load_json", return_value=r0), \
+                patch.object(entry, "make_manager") as manager, \
+                patch.object(entry.subtree_local_reflection, "run"):
+            entry.run_stage(args)
+        self.assertEqual(manager.call_args.args[1], 4)
+        self.assertEqual(manager.call_args.kwargs["n_roots"], 2)
+
+    def test_root_generation_uses_its_own_attempt_limit(self):
+        config = {"manager": {}, "env_file": ".env"}
+        args = SimpleNamespace(
+            config=Path("config.json"), output_root=Path("output"),
+            variant="g5", stage="roots", seed=11, root_attempt_limit=10,
+        )
+        with patch.object(entry, "load_json", return_value=config), \
+                patch.object(entry, "load_dotenv"), \
+                patch.object(entry.rubric_pipeline, "load_rows", return_value=[]), \
+                patch.object(entry.generated_root_initialization, "generate_r0_pair") as generate:
+            entry.run_stage(args)
+        self.assertEqual(generate.call_args.kwargs["attempt_limit"], 10)
+
     def test_frozen_prompts_and_reason_parser(self):
         self.assertEqual(hashlib.sha256(prompts.UNIFIED_SUBTREE_SYSTEM_PROMPT.encode()).hexdigest(),
                          "a5f07f753848287588479e276a824f3e585f4be90742a0dfbe46ad835c0dea1f")

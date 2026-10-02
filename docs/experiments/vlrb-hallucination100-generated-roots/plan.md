@@ -4,7 +4,7 @@
 
 本实验接续 [子树逐例反思框架](../subtree-local-reflection/framework.pptx) 第 6–8 页的 Hallucination100 实验。上一实验使用五个固定 root，在目标分布的 100 条样本上生成初始 children，完成最多五轮逐例子树反思，再测试 VLRB。本实验只研究**初始 root 从何而来，以及是否必须固定为五个**；初始 Split、演化、Worker 和测试日程沿用上一实验。
 
-当前主线的运行入口是仓库 README 中的 `current_experiment`；下文保留原实验冻结时的命令与目录，所涉及的完整历史 runner 可在 `codex/subtree-local-reflection` 分支查看。seed11 精确 split ID 和来源哈希已另存为本目录 `seed11_split.json`。
+当前主线的运行入口是仓库 README 中的 `run_subtree_experiment`；下文保留原实验冻结时的命令与目录，所涉及的完整历史 runner 可在 `codex/subtree-local-reflection` 分支查看。seed11 精确 split ID 和来源哈希已另存为本目录 `seed11_split.json`。
 
 ## 1. 研究问题与可支持的结论
 

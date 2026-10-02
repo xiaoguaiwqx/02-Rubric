@@ -13,7 +13,7 @@ import time
 
 from dotenv import load_dotenv
 
-from . import current_method as base
+from . import rubric_pipeline as base
 from . import aligned_system_runtime as system
 from .experiment_utils import atomic_write_json as write, load_json
 from .subtree_local_reflection_manager import make_manager
