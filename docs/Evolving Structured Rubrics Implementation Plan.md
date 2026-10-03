@@ -305,7 +305,7 @@ REVISE_CASCADE
 REVISE_ROOT_ROUTER
 ```
 
-旧 Structured Worker 曾使 B1 从 0.696 降至 0.606，这一失败结果只用于解释双通道架构的来源；详细实验身份、结果和 artifact hash 见 [Shared-output 实验总结](experiment-results/shared_output_pool_v1_summary.md)。
+旧 Structured Worker 曾使 B1 从 0.696 降至 0.606，这一失败结果只用于解释双通道架构的来源；详细实验身份、结果和 artifact hash 见 `codex/subtree-local-reflection` 分支中的 `docs/experiment-results/shared_output_pool_v1_summary.md`。
 
 ### 6.4 Phase 4 完成状态
 
