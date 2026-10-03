@@ -1,6 +1,6 @@
-"""Generate Hallucination100 R0 roots from five stateful CritiQ-style examples.
+"""Generate Hallucination100 R0 roots from stateful preference examples.
 
-The five warm-up replies are shared by G5 and GN. Only their final generation
+Warm-up replies are shared by G5 and GN (five examples by default). Their generation
 request differs. Checkpoints contain text and image hashes, never image bytes.
 """
 
@@ -78,6 +78,7 @@ def _file_sha256(path: Path) -> str:
 def _warmup_rows(rows: Sequence[Mapping[str, Any]], seed: int,
                  expected_count: int = 100,
                  warmup_examples: Sequence[Mapping[str, Any]] | None = None,
+                 *, warmup_count: int = WARMUP_COUNT,
                  ) -> list[dict[str, Any]]:
     """Preserve CritiQ's random_reverse result without changing global RNG state."""
     if len(rows) != expected_count:
@@ -86,9 +87,9 @@ def _warmup_rows(rows: Sequence[Mapping[str, Any]], seed: int,
     if len(set(ids)) != len(ids):
         raise ValueError("training sample IDs are not unique")
     if warmup_examples is None:
-        if expected_count < WARMUP_COUNT:
-            raise ValueError(f"expected at least {WARMUP_COUNT} training rows")
-        chosen = random.Random(seed).sample(list(rows), WARMUP_COUNT)
+        if not 1 <= warmup_count <= len(rows):
+            raise ValueError(f"warmup_count must be between 1 and {len(rows)}")
+        chosen = random.Random(seed).sample(list(rows), warmup_count)
     else:
         selected_ids = [str(row["sample_id"]) for row in warmup_examples]
         if not selected_ids or len(set(selected_ids)) != len(selected_ids):
@@ -433,6 +434,7 @@ def generate_r0_pair(rows: Sequence[Mapping[str, Any]], *, seed: int,
                      count_instructions: Mapping[str, str] | None = None,
                      expected_count: int = 100,
                      warmup_examples: Sequence[Mapping[str, Any]] | None = None,
+                     warmup_count: int = WARMUP_COUNT,
                      variants: Sequence[str] = ("g5", "gn"),
                      protocol: str = PROTOCOL,
                      ) -> dict[str, StructuredRubric]:
@@ -441,6 +443,7 @@ def generate_r0_pair(rows: Sequence[Mapping[str, Any]], *, seed: int,
     ``rows`` must be original-order discovery rows with absolute image paths.
     Defaults retain the historical 100-row G5/GN experiment. Checkpointing
     resumes individual calls without re-running successful responses.
+    ``warmup_count`` controls sampling; explicit ``warmup_examples`` override it.
     """
     if attempt_limit < 1:
         raise ValueError("attempt_limit must be positive")
@@ -449,7 +452,8 @@ def generate_r0_pair(rows: Sequence[Mapping[str, Any]], *, seed: int,
     if count_instructions is None:
         count_instructions = COUNT_INSTRUCTIONS
     output_dir = Path(output_dir)
-    prepared = _warmup_rows(rows, seed, expected_count, warmup_examples)
+    prepared = _warmup_rows(rows, seed, expected_count, warmup_examples,
+                            warmup_count=warmup_count)
     keys = Manager(dict(manager_config), attempts=attempt_limit)._read_keys()
     agent, warmup = _run_warmup(
         prepared, seed, manager_config, keys, output_dir, attempt_limit,

@@ -1,4 +1,4 @@
-"""Offline checks for five-example warmup, shared histories, and resume."""
+"""Offline checks for configurable warmup, shared histories, and resume."""
 
 from contextlib import redirect_stdout
 from copy import deepcopy
@@ -64,13 +64,13 @@ class TestGeneratedRootInitialization(unittest.TestCase):
                       request_kwargs=dict(temperature=0.2))
         return data, config
 
-    def run_pair(self, data, config, target, agent, attempts=10):
+    def run_pair(self, data, config, target, agent, attempts=10, **kwargs):
         with patch.object(generated, "Manager") as manager, \
                 patch.object(generated, "_agent", return_value=agent), redirect_stdout(StringIO()):
             manager.return_value._read_keys.return_value = ["offline-key"]
             return generated.generate_r0_pair(data, seed=11, manager_config=config,
                 output_dir=target, attempt_limit=attempts,
-                count_instructions=generated.LEGACY_COUNT_INSTRUCTIONS)
+                count_instructions=generated.LEGACY_COUNT_INSTRUCTIONS, **kwargs)
 
     def test_five_sample_selection_preserves_order_mapping_and_global_random_state(self):
         with TemporaryDirectory() as temporary:
@@ -78,6 +78,7 @@ class TestGeneratedRootInitialization(unittest.TestCase):
             frozen = deepcopy(data)
             state = random.getstate()
             selected = generated._warmup_rows(data, 11)
+            self.assertEqual(selected, generated._warmup_rows(data, 11, warmup_count=5))
             self.assertEqual(random.getstate(), state)
             self.assertEqual(data, frozen)
             self.assertEqual([(row["sample_id"], row["flipped"]) for row in selected], [
@@ -133,6 +134,47 @@ class TestGeneratedRootInitialization(unittest.TestCase):
             self.assertEqual(len(saved["turns"][3]["attempts"]), 2)
             self.assertEqual(set(rubrics), {"g5", "gn"})
             self.assertEqual(resumed.forks[0], resumed.forks[1])
+
+    def test_ten_sample_warmup_shares_history_and_resumes_without_model_calls(self):
+        with TemporaryDirectory() as temporary:
+            target = Path(temporary)
+            data, config = self.fixture(target)
+            first = OfflineAgent()
+            rubrics = self.run_pair(data, config, target, first, warmup_count=10)
+            self.assertEqual(first.calls, ["warmup"] * 10 + ["generation"] * 2)
+            self.assertEqual(len(rubrics["g5"].root_ids), 5)
+            self.assertEqual(first.forks[0], first.forks[1])
+            self.assertEqual(len(first.forks[0]), 20)
+            transcript = generated.load_json(target / "warmup/transcript.json")
+            self.assertEqual(transcript["request"]["sample_count"], 10)
+            self.assertEqual(len({turn["sample_id"] for turn in transcript["turns"]}), 10)
+            g5 = generated.load_json(target / "g5/r0/generation.json")["request"]
+            gn = generated.load_json(target / "gn/r0/generation.json")["request"]
+            self.assertIn("From the ten comparisons", g5["prompt"])
+            self.assertEqual(g5["warmup_history_sha256"], gn["warmup_history_sha256"])
+            resumed = OfflineAgent()
+            restored = self.run_pair(data, config, target, resumed, warmup_count=10)
+            self.assertEqual(resumed.calls, [])
+            self.assertEqual({key: value.to_dict() for key, value in restored.items()},
+                             {key: value.to_dict() for key, value in rubrics.items()})
+
+    def test_changed_warmup_count_rejects_existing_cache_without_model_calls(self):
+        with TemporaryDirectory() as temporary:
+            target = Path(temporary)
+            data, config = self.fixture(target)
+            self.run_pair(data, config, target, OfflineAgent())
+            files = {path: path.read_bytes() for path in target.rglob("*.json")}
+            changed = OfflineAgent()
+            with self.assertRaisesRegex(ValueError, "warmup input changed"):
+                self.run_pair(data, config, target, changed, warmup_count=10)
+            self.assertEqual(changed.calls, [])
+            self.assertEqual({path: path.read_bytes() for path in files}, files)
+
+    def test_warmup_count_must_fit_training_rows(self):
+        data = rows(100)
+        for count in (0, -1, 101):
+            with self.subTest(count=count), self.assertRaisesRegex(ValueError, "warmup_count"):
+                generated._warmup_rows(data, 11, warmup_count=count)
 
 
 if __name__ == "__main__":

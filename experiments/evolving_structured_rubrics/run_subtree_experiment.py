@@ -94,6 +94,7 @@ def run_stage(args: argparse.Namespace) -> None:
                 output_dir=root,
                 attempt_limit=args.root_attempt_limit,
                 expected_count=config.get("discovery_sample_count", 100),
+                warmup_count=args.warmup_count,
                 variants=(args.variant,),
                 count_instructions=generated_root_initialization.LEGACY_COUNT_INSTRUCTIONS,
             )
@@ -141,11 +142,16 @@ def main() -> None:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--variant", choices=("f5", "g5", "gn"), default="g5")
     parser.add_argument("--seed", type=int, default=11)
+    parser.add_argument("--warmup-count", type=int,
+                        default=generated_root_initialization.WARMUP_COUNT,
+                        help="number of warmup examples for G5/GN roots (default: 5)")
     parser.add_argument("--attempt-limit", type=int, default=10)
     parser.add_argument("--root-attempt-limit", type=int, default=10)
     args = parser.parse_args()
     if args.attempt_limit < 1 or args.root_attempt_limit < 1:
         parser.error("attempt limits must be positive")
+    if args.warmup_count < 1:
+        parser.error("warmup-count must be positive")
     run_stage(args)
 
 

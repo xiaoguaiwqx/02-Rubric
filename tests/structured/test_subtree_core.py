@@ -44,6 +44,7 @@ class TestSubtreeCore(unittest.TestCase):
         args = SimpleNamespace(
             config=Path("config.json"), output_root=Path("output"),
             variant="g5", stage="roots", seed=11, root_attempt_limit=10,
+            warmup_count=10,
         )
         with patch.object(entry, "load_json", return_value=config), \
                 patch.object(entry, "load_dotenv"), \
@@ -51,6 +52,16 @@ class TestSubtreeCore(unittest.TestCase):
                 patch.object(entry.generated_root_initialization, "generate_r0_pair") as generate:
             entry.run_stage(args)
         self.assertEqual(generate.call_args.kwargs["attempt_limit"], 10)
+        self.assertEqual(generate.call_args.kwargs["warmup_count"], 10)
+
+    def test_cli_warmup_count_defaults_to_five_and_accepts_ten(self):
+        argv = ["run_subtree_experiment", "roots", "--config", "config.json",
+                "--output-root", "output", "--variant", "g5"]
+        for options, expected in (([], 5), (["--warmup-count", "10"], 10)):
+            with self.subTest(expected=expected), patch("sys.argv", argv + options), \
+                    patch.object(entry, "run_stage") as run_stage:
+                entry.main()
+                self.assertEqual(run_stage.call_args.args[0].warmup_count, expected)
 
     def test_frozen_prompts_and_reason_parser(self):
         self.assertEqual(hashlib.sha256(prompts.UNIFIED_SUBTREE_SYSTEM_PROMPT.encode()).hexdigest(),

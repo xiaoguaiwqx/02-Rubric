@@ -9,7 +9,7 @@
 
 ## 方法流程
 
-1. **R0：创建根准则。** G5 (Generated Five) 从五个偏好预热样例归纳五根；GN (Generated N) 从同一份预热对话归纳 2–7 根。F5 (Fixed Five) 使用人工固定五根对照。
+1. **R0：创建根准则。** G5 (Generated Five) 默认从五个偏好预热样例归纳五根，可通过 `--warmup-count` 设置预热数量；GN (Generated N) 从同一份预热对话归纳 2–7 根。F5 (Fixed Five) 使用人工固定五根对照。
 2. **S0：初始化子准则。** 对各 root 判断错误的案例生成文本 signature，再通过语义聚类生成一整组 children。
 3. **局部演化。** Worker 对每棵完整子树给出 A/B/None 与理由。Manager 以完整 Rubric 为背景，按 `(root, sample)` 遍历演化集独立反思，汇总非空 critique 后生成候选 children。程序在同一演化集上比较候选与当前子树，按配置的局部准确率接受，轮末提交获胜组。
 4. **冻结与评测。** 冻结 Final 后在 VLRB 评测。
@@ -29,19 +29,6 @@ data/                                   本地数据与共享图像
 output/                                 本地实验产物与调用缓存
 ```
 
-## 安装与离线验证
-
-需要 Python 3.10+。在现有项目环境中安装并验证：
-
-```powershell
-conda activate critiq
-python -m pip install -e ".[data]"
-python -m unittest discover -s tests -p "test_*.py"
-python -m experiments.evolving_structured_rubrics.run_subtree_experiment --help
-```
-
-`critiq` 是现有 Conda 环境名。`[data]` 安装读取 VL-RewardBench parquet 所需的 pandas 和 pyarrow；离线测试使用模拟后端。
-
 ## 配置与数据
 
 三个配置示例对应不同的数据协议和局部接受设置：
@@ -52,14 +39,7 @@ python -m experiments.evolving_structured_rubrics.run_subtree_experiment --help
 | [subtree_local_reflection.example.json](experiments/evolving_structured_rubrics/configs/subtree_local_reflection.example.json) | 原 Discovery100 | Covered ACC | 0 条 |
 | [subtree_local_reflection_strict.example.json](experiments/evolving_structured_rubrics/configs/subtree_local_reflection_strict.example.json) | 原 Discovery100 | Strict ACC | 0 条 |
 
-**Strict ACC** 是正确数除以全部样例数，弃权计错；**Covered ACC** 是正确数除以输出 A/B 的样例数。候选必须严格提升配置指定的局部指标。**Preserve5** 从当前子树判断正确的演化集案例中选取最多五条，作为修订提示中的保留案例；它与接受指标分别配置，预热样例数量仍为五条。
-
-首次运行先复制示例，再编辑本地配置：
-
-```powershell
-New-Item -ItemType Directory -Force .local/configs | Out-Null
-Copy-Item experiments/evolving_structured_rubrics/configs/generated_roots.example.json .local/configs/generated_roots.json
-```
+**Strict ACC** 是正确数除以全部样例数，弃权计错；**Covered ACC** 是正确数除以输出 A/B 的样例数。候选必须严格提升配置指定的局部指标。**Preserve5** 在局部演化中使用，从当前子树判断正确的演化集案例中选取最多五条，作为修订提示中的保留案例；它与接受指标、root 生成预热数量分别设置。
 
 配置中的 `worker` 指定模型和 OpenAI 兼容端点池，`manager` 指定模型、端点、请求参数及 API key 环境变量名。将凭据放入本地 `.env`，并通过 `env_file` 指定位置。示例使用 Worker Qwen3-VL-8B、Manager Qwen3.5-27B；Manager thinking 关闭，signature 和 case reflection 并发为 6，其余 Manager 调用并发为 4。当前冻结协议要求 Worker 总并发为 50。
 
@@ -71,9 +51,9 @@ Copy-Item experiments/evolving_structured_rubrics/configs/generated_roots.exampl
 - Dev150：`data/discovery_v2_demo_v3/dev_150.jsonl` 及其引用的图像。
 - Hallucination100 的样本 ID 和来源哈希由 [seed11 split manifest](docs/experiments/vlrb-hallucination100-generated-roots/seed11_split.json) 固定；`prepare` 从 parquet 生成演化集。
 
-新运行共用 `data/VL_RewardBench/dataset_images/` 中的图像；已有运行继续使用原产物记录的图像路径。模型响应、预测、缓存与原始日志保存在本地 `output/`。更换数据、模型、prompt 或接受规则时，使用新运行目录。
+更换数据、模型、prompt 或接受规则时，使用新运行目录。
 
-## 运行 G5/GN/F5 实验
+## 运行实验
 
 统一入口为 `experiments.evolving_structured_rubrics.run_subtree_experiment`：
 
@@ -90,7 +70,7 @@ Copy-Item experiments/evolving_structured_rubrics/configs/generated_roots.exampl
 以 G5 为例，逐条执行以下命令。`prepare` 之后使用它保存的 `config.json`：
 
 ```powershell
-python -m experiments.evolving_structured_rubrics.run_subtree_experiment prepare --config .local/configs/generated_roots.json --output-root output/subtree_reflection/seed11
+python -m experiments.evolving_structured_rubrics.run_subtree_experiment prepare --config experiments\evolving_structured_rubrics\configs\generated_roots.example.json --output-root output/subtree_reflection/seed11
 python -m experiments.evolving_structured_rubrics.run_subtree_experiment roots --config output/subtree_reflection/seed11/config.json --output-root output/subtree_reflection/seed11 --variant g5
 python -m experiments.evolving_structured_rubrics.run_subtree_experiment vlrb-r0 --config output/subtree_reflection/seed11/config.json --output-root output/subtree_reflection/seed11 --variant g5
 python -m experiments.evolving_structured_rubrics.run_subtree_experiment evolve --config output/subtree_reflection/seed11/config.json --output-root output/subtree_reflection/seed11 --variant g5
@@ -99,7 +79,9 @@ python -m experiments.evolving_structured_rubrics.run_subtree_experiment vlrb --
 python -m experiments.evolving_structured_rubrics.run_subtree_experiment report --config output/subtree_reflection/seed11/config.json --output-root output/subtree_reflection/seed11 --variant g5
 ```
 
-将 `--variant` 改为 `gn` 或 `f5` 可运行另两个对照，各变体使用独立子目录。G5/GN 在同一个输出根目录下复用五样例预热对话，生成请求分别规定五根或允许 2–7 根；F5 使用固定五根。原 Discovery100 配置的冻结协议见[子树实验方案](docs/experiments/subtree-local-reflection/plan.md)。
+将 `--variant` 改为 `gn` 或 `f5` 可运行另两个对照，各变体使用独立子目录。G5/GN 在同一个输出根目录下复用预热对话，默认五个样例，生成请求分别规定五根或允许 2–7 根；F5 使用固定五根。原 Discovery100 配置的冻结协议见[子树实验方案](docs/experiments/subtree-local-reflection/plan.md)。
+
+在 `roots` 命令中加入 `--warmup-count 10` 可使用十个预热样例，数量须在 1 到演化集样例数之间。G5 仍生成五根，F5 不使用预热。同一输出根目录中的 G5/GN 须使用相同预热数量；改变数量时使用新输出目录。其他阶段无需传入该参数。
 
 ## 指标与结果产物
 
@@ -112,7 +94,6 @@ VLRB 正式 K=3 要求至少两票选择同一个原始回答，否则计为弃�
 | `full` | 1247 | 完整 VLRB，包含参与演化的 100 条 |
 | `train` | 100 | 参与演化的幻觉演化集，按正式 K=3 重新统计 |
 | `nontrain_1147` | 1147 | 排除参与演化的 100 条 |
-| `clean_1146` | 1146 | 非训练集进一步排除已识别的近重复样例 |
 | `heldout_hallucination` | 648 | 冻结的未见幻觉留出集 |
 | General / Hallucination / Reasoning | 181 / 749 / 317 | 三个官方类别 |
 
@@ -125,9 +106,8 @@ VLRB 正式 K=3 要求至少两票选择同一个原始回答，否则计为弃�
 - [代码架构与输入边界](docs/architecture.md)
 - [实验索引](docs/experiments/README.md)
 - [子树逐例反思：冻结协议](docs/experiments/subtree-local-reflection/plan.md)与[最终实验结果](docs/experiments/subtree-local-reflection/results.md)
-- [生成 root 对照：冻结方案、历史结果与本次重跑](docs/experiments/vlrb-hallucination100-generated-roots/plan.md)
+- [生成 root 对照：冻结方案、历史结果](docs/experiments/vlrb-hallucination100-generated-roots/plan.md)
 - [框架 PPT](docs/experiments/subtree-local-reflection/framework.pptx)
 
-已保存实验同时保留收益和负结果；局部训练改善与外部泛化分别分析。两次 G5 运行的预热回答、R0 和演化轨迹不同，结果差异不能直接解释为代码重构收益。
 
-本仓库借鉴并改造了 CritiQ-V 的部分 Agent 和偏好对工具。原 CritiQ-V 代码保存在 `CritiQ-V` 分支；早期 Gate/Cascade、joint、递归投票及其他实验的完整实现保存在 `codex/subtree-local-reflection` 分支和阶段标签。
+ CritiQ-V 代码保存在 `CritiQ-V` 分支；早期 Gate/Cascade、joint、递归投票及其他实验的完整实现保存在 `codex/subtree-local-reflection` 分支和阶段标签。
