@@ -33,3 +33,5 @@ flowchart LR
 `aligned_system_runtime.py` 保留三条核心路径：`evaluate` 为每棵完整子树生成报告后调用 Global Arbiter；增量评测复用冻结基线中未改动的子树报告，并在新报告组合上重新执行 Arbiter；`root_from_system` 和 `evaluate_root` 分别提取局部基线、仅调用 Worker 验证候选，局部接受仍由 `subtree_local_reflection.compare` 决定。报告中的 A/B 标签按每次调用的展示顺序还原。请求缓存键、prompt、解析器、最多 10 次尝试及正式计分规则沿用冻结实现。无调用的 `paired_root`、`paired_root_all_samples`、`attributed_error_ids` 已移出当前代码；历史实现仍可在实验分支查看。
 
 原 Gate/Cascade、joint、分层反思和历史 runner 的完整实现保存在 `codex/subtree-local-reflection` 分支及阶段标签。当前入口不会导入那些模块。
+
+整理验收在 `critiq` 环境中运行 `python -m unittest discover -s tests -p "test_*.py"`，60 项离线测试通过。README 的七条阶段命令与实际 CLI 参数一致，三个示例的接受指标、Preserve5、并发和轮数也已核对。用已完成的 G5 seed11 缓存复核五样例预热与 R0 生成请求，以及 S0 的 148 个 Manager 请求，生成的 Rubric 与已保存产物一致；正式 K=3 重算的 R0、S0、Final 正确数分别为 925、933、945（分母均为 1247）。核对不调用模型，不改写原始预测、缓存或图像。

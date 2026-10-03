@@ -95,7 +95,7 @@ VLRB 正式 K=3 要求至少两票选择同一个原始回答，否则计为弃�
 | `train` | 100 | 参与演化的幻觉演化集，按正式 K=3 重新统计 |
 | `nontrain_1147` | 1147 | 排除参与演化的 100 条 |
 | `heldout_hallucination` | 648 | 冻结的未见幻觉留出集 |
-| General / Hallucination / Reasoning | 181 / 749 / 317 | 三个官方类别 |
+| `General / Hallucination / Reasoning` | 181 / 749 / 317 | 三个官方类别 |
 
 泛化分析使用 648 和 1146 切片；训练中的 K=1 分数与正式 K=3 分数分别报告。VL-RewardBench 的官方 OverallAcc 排除弃权，MacroAcc 为三个类别 Covered ACC 的平均值，它们与 Strict ACC 分开记录。
 
