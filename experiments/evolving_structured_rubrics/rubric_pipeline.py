@@ -116,25 +116,17 @@ def system_records(value):
     return {s["sample_id"]: s["replicates"]["0"] for s in value["samples"]}
 
 
-def case_payload(row, record, previous=None, root=None, previous_before=None):
+def case_payload(row, record, root):
     if record["order"] != 0:
         raise ValueError("reflection expects the frozen Discovery K=1 original order")
     reports = {r: c["parsed"] for r, c in record["subtrees"].items()
-               if root is None or r == root}
+               if r == root}
     arbiter = record["arbiter"]["parsed"]
     if any(not isinstance(arbiter.get(k), str) or not arbiter[k].strip()
            for k in ("analysis_a", "analysis_b", "thought")):
         raise ValueError(f"{row['sample_id']}: missing full Arbiter reason")
     case = {k: row[k] for k in ("sample_id", "question", "A", "B")}
     case.update(gold=row["answer"], current=dict(reports=reports, arbiter=arbiter))
-    if previous is not None:
-        case["previous_candidate"] = dict(
-            reports={r: c["parsed"] for r, c in previous["subtrees"].items()
-                     if root is None or r == root}, arbiter=previous["arbiter"]["parsed"])
-    if previous_before is not None:
-        case["previous_baseline"] = dict(
-            reports={r: c["parsed"] for r, c in previous_before["subtrees"].items()
-                     if root is None or r == root}, arbiter=previous_before["arbiter"]["parsed"])
     return case
 
 
@@ -181,13 +173,12 @@ def parallel(items, fn, concurrency):
         return list(pool.map(fn, items))
 
 
-def signatures(manager, directory, root, rubric, rows, current, goal="", previous=None):
+def signatures(manager, directory, root, rubric, rows, current):
     records = system_records(current)
-    old = system_records(previous) if previous is not None else {}
     def one(row):
         sid = row["sample_id"]
-        payload = dict(root=project_rubric(rubric, [root])[0], revision_goal=goal,
-                       case=case_payload(row, records[sid], old.get(sid), root))
+        payload = dict(root=project_rubric(rubric, [root])[0], revision_goal="",
+                       case=case_payload(row, records[sid], root))
         result = manager.call("signature", directory / f"{row['_signature_id']}.json",
                               payload, [row])
         return dict(signature_id=row["_signature_id"], sample_id=sid, **result)
@@ -195,14 +186,14 @@ def signatures(manager, directory, root, rubric, rows, current, goal="", previou
         "signature", manager.config["concurrency"]))
 
 
-def generate_group(manager, directory, root, rubric, library, reflection, *, initial):
+def generate_group(manager, directory, root, rubric, library, reflection):
     selected = [s for s in library if s["applicable"]]
-    if len(selected) < (4 if initial else 2):
+    if len(selected) < 4:
         return None
-    payload = dict(root=project_rubric(rubric, [root])[0], initial=initial,
+    payload = dict(root=project_rubric(rubric, [root])[0], initial=True,
                    revision=reflection, signatures=selected)
     clusters = manager.call("cluster", directory / "clusters.json", payload)
-    if len(clusters["clusters"]) < (2 if initial else 1):
+    if len(clusters["clusters"]) < 2:
         return None
     proposal = manager.call("children", directory / "children.json",
                             dict(**payload, clusters=clusters))
@@ -223,13 +214,13 @@ def initialize(config, target, rows, manager, attempts, r0=None):
         library = signatures(manager, directory / "signatures", root, r0, primary, baseline)
         reflection = dict(action="revise", revision_goal="Initial split: improve reusable local judging instructions.")
         proposal = generate_group(manager, directory / "primary", root, r0, library,
-                                  reflection, initial=True)
+                                  reflection)
         if proposal is None:
             seen = {r["sample_id"] for r in primary}
             extra = [r for r in rows if r["sample_id"] not in seen]
             library += signatures(manager, directory / "signatures", root, r0, extra, baseline)
             proposal = generate_group(manager, directory / "expanded", root, r0, library,
-                                      reflection, initial=True)
+                                      reflection)
         write(directory / "library.json", library)
         if proposal is None:
             raise RuntimeError(f"{root}: insufficient supported patterns for two initial clusters; S0 not created")
