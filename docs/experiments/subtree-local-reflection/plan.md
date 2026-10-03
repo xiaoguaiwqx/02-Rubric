@@ -117,7 +117,7 @@ Manager 在一次调用内处理建议的重复、冲突和适用边界，保留
 | 新 `experiments/evolving_structured_rubrics/subtree_local_reflection.py` | 小型 runner：初始化接入、全量逐根选例、逐例调用、一次 Split、局部竞争、组装、外部评测与报告 |
 | 新 `subtree_local_reflection_manager.py` | 两个新阶段 `case_reflection`、`subtree_split` 的提示词/简洁校验；初始化沿用旧 signature/cluster/children |
 | `framework_v6.py` 的纯函数 | 复用 `project_rubric`、`replace_groups`、`load_rows`、初始化规则；不要直接调用旧 `reflect/run` |
-| `framework_v6_manager.py` | 复用请求、日志、usage、缓存、429 冷却；必要时仅增加可选 prompts/validator 注入，默认行为不变，禁止修改模块全局字典切换协议 |
+| `manager_runtime.py` | 复用请求、日志、usage、缓存、429 冷却；必要时仅增加可选 prompts/validator 注入，当前阶段行为不变，禁止修改模块全局字典切换协议 |
 | `aligned_system_runtime.py` | 先查现有子树调用和缓存能力；如无入口，仅抽出最小 `evaluate_subtrees` 能力供新 runner 使用，现有系统评测继续沿用原语义 |
 | 新配置示例与 tests | 数据/模型设置、最多五轮；离线测试指标、输入隔离、局部接受、恢复路径 |
 

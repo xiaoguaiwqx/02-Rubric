@@ -8,7 +8,7 @@ root is regenerated, and the arbiter is always rerun on the resulting bundle.
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 import json
 from pathlib import Path
@@ -24,7 +24,7 @@ from . import model_call_support as support
 from . import aligned_prompts as arbiter
 from . import aligned_prompts as unified
 from .experiment_utils import atomic_write_json, canonical_sha256
-from .framework_v6_manager import root_count_word
+from .manager_runtime import root_count_word
 
 
 SCHEMA_VERSION = "1.0.0"
@@ -358,147 +358,6 @@ def root_metrics(
     }
 
 
-def paired_root(
-    before: Mapping[str, Any], after: Mapping[str, Any],
-    rows: Sequence[Mapping[str, Any]],
-) -> dict[str, Any]:
-    """Paired comparison for two root artifacts sharing one frozen scope."""
-    old = before["metrics"]
-    new = after["metrics"]
-    scope = tuple(str(item) for item in old["root_scope_sample_ids"])
-    if scope != tuple(str(item) for item in new["root_scope_sample_ids"]):
-        raise ValueError("root candidate changed the frozen evaluation scope")
-    by_id = {str(row["sample_id"]): row for row in rows}
-    corrected = [
-        sample_id for sample_id, a, b in zip(
-            scope, old["scope_predictions"], new["scope_predictions"])
-        if a != str(by_id[sample_id]["answer"])
-        and b == str(by_id[sample_id]["answer"])
-    ]
-    harmed = [
-        sample_id for sample_id, a, b in zip(
-            scope, old["scope_predictions"], new["scope_predictions"])
-        if a == str(by_id[sample_id]["answer"])
-        and b != str(by_id[sample_id]["answer"])
-    ]
-    return {
-        "root_id": old["root_id"],
-        "root_scope_support": len(scope),
-        "root_scope_strict_accuracy_before": old["root_scope_strict_accuracy"],
-        "root_scope_strict_accuracy_after": new["root_scope_strict_accuracy"],
-        "root_scope_coverage_before": old["root_scope_coverage"],
-        "root_scope_coverage_after": new["root_scope_coverage"],
-        "root_scope_corrected_sample_ids": corrected,
-        "root_scope_harmed_sample_ids": harmed,
-        "root_scope_corrected": len(corrected),
-        "root_scope_harmed": len(harmed),
-        "root_scope_net_corrected": len(corrected) - len(harmed),
-        "root_scope_strict_accuracy_delta": (
-            new["root_scope_strict_accuracy"]
-            - old["root_scope_strict_accuracy"]),
-        "technical_failure_count": new["technical_failure_count"],
-    }
-
-
-def paired_root_all_samples(
-    before: Mapping[str, Any], after: Mapping[str, Any],
-    rows: Sequence[Mapping[str, Any]],
-) -> dict[str, Any]:
-    """Compare two root artifacts on every row using a +1/-1/0 ledger.
-
-    ``None`` is a scientific wrong prediction. A parse or transport failure is
-    represented as ``technical_failure`` and reported separately so callers can
-    pause instead of turning infrastructure failure into scientific evidence.
-    """
-    if str(before.get("root_id")) != str(after.get("root_id")):
-        raise ValueError("root candidate changed root identity")
-    row_ids = [str(row["sample_id"]) for row in rows]
-    if len(set(row_ids)) != len(row_ids):
-        raise ValueError("rows contain duplicate sample IDs")
-    by_id = {str(row["sample_id"]): row for row in rows}
-
-    def predictions(value: Mapping[str, Any]) -> dict[str, str]:
-        samples = {str(item["sample_id"]): item for item in value["samples"]}
-        if (len(samples) != len(value["samples"])
-                or set(samples) != set(by_id)):
-            raise ValueError("root artifact sample identity does not match rows")
-        return {
-            sample_id: _answer(
-                samples[sample_id]["call"], int(samples[sample_id]["order"]))
-            for sample_id in row_ids
-        }
-
-    old_predictions = predictions(before)
-    new_predictions = predictions(after)
-    ledger = []
-    corrected = []
-    harmed = []
-    unchanged = []
-    none_to_correct = []
-    correct_to_none = []
-    technical = []
-    for sample_id in row_ids:
-        gold = str(by_id[sample_id]["answer"])
-        old_prediction = old_predictions[sample_id]
-        new_prediction = new_predictions[sample_id]
-        old_correct = old_prediction == gold
-        new_correct = new_prediction == gold
-        gain = int(new_correct) - int(old_correct)
-        if gain > 0:
-            corrected.append(sample_id)
-        elif gain < 0:
-            harmed.append(sample_id)
-        else:
-            unchanged.append(sample_id)
-        if old_prediction == "None" and new_correct:
-            none_to_correct.append(sample_id)
-        if old_correct and new_prediction == "None":
-            correct_to_none.append(sample_id)
-        if "technical_failure" in {old_prediction, new_prediction}:
-            technical.append(sample_id)
-        ledger.append({
-            "sample_id": sample_id,
-            "gold": gold,
-            "before": old_prediction,
-            "after": new_prediction,
-            "before_correct": old_correct,
-            "after_correct": new_correct,
-            "gain": gain,
-        })
-
-    before_correct = sum(item["before_correct"] for item in ledger)
-    after_correct = sum(item["after_correct"] for item in ledger)
-    support = len(ledger)
-    return {
-        "root_id": str(before["root_id"]),
-        "all_sample_support": support,
-        "all_sample_ids": row_ids,
-        "all_sample_corrected_sample_ids": corrected,
-        "all_sample_harmed_sample_ids": harmed,
-        "all_sample_unchanged_sample_ids": unchanged,
-        "all_sample_corrected": len(corrected),
-        "all_sample_harmed": len(harmed),
-        "all_sample_unchanged": len(unchanged),
-        "all_sample_net_gain": len(corrected) - len(harmed),
-        "all_sample_strict_accuracy_before": (
-            before_correct / support if support else 0.0),
-        "all_sample_strict_accuracy_after": (
-            after_correct / support if support else 0.0),
-        "all_sample_strict_accuracy_delta": (
-            (after_correct - before_correct) / support if support else 0.0),
-        "none_to_correct_sample_ids": none_to_correct,
-        "correct_to_none_sample_ids": correct_to_none,
-        "technical_failure_sample_ids": technical,
-        "technical_failure_count": len(technical),
-        "technical_failure_count_before": sum(
-            value == "technical_failure" for value in old_predictions.values()),
-        "technical_failure_count_after": sum(
-            value == "technical_failure" for value in new_predictions.values()),
-        "gain_ledger": ledger,
-        "gain_ledger_sha256": canonical_sha256(ledger),
-    }
-
-
 def root_from_system(
     value: Mapping[str, Any], rows: Sequence[Mapping[str, Any]], root_id: str,
     scope_sample_ids: Sequence[str], *, output_path: Path | None = None,
@@ -609,25 +468,6 @@ def evaluate_root(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     atomic_write_json(output_path, result)
     return result
-
-
-def attributed_error_ids(
-    value: Mapping[str, Any], rows: Sequence[Mapping[str, Any]],
-) -> dict[str, tuple[str, ...]]:
-    gold = {str(row["sample_id"]): str(row["answer"]) for row in rows}
-    result: dict[str, list[str]] = {}
-    for sample in value["samples"]:
-        sample_id = str(sample["sample_id"])
-        item = sample["replicates"]["0"]
-        final = _answer(item["arbiter"], int(item["order"]))
-        if final == gold[sample_id]:
-            continue
-        for root_id, call in item["subtrees"].items():
-            answer = ((call.get("parsed") or {}).get("answer")
-                      if call.get("parse_ok") else None)
-            if answer != gold[sample_id]:
-                result.setdefault(root_id, []).append(sample_id)
-    return {root_id: tuple(values) for root_id, values in result.items()}
 
 
 def evaluate(

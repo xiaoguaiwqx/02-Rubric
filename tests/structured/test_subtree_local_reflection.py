@@ -29,7 +29,7 @@ class TestLocalReflection(unittest.TestCase):
         self.assertEqual(local.preservation_rows(data, reports, 1, "r", 0, 42), [])
 
     def test_live_api_key_rotation(self):
-        from experiments.evolving_structured_rubrics.framework_v6_manager import Manager
+        from experiments.evolving_structured_rubrics.manager_runtime import Manager
         import threading
         from concurrent.futures import ThreadPoolExecutor
         with TemporaryDirectory() as temp:

@@ -18,7 +18,7 @@ from experiments.evolving_structured_rubrics import model_call_support as suppor
 from experiments.evolving_structured_rubrics import vlrb_official as vlrb
 from experiments.evolving_structured_rubrics import generated_root_initialization as generated
 from experiments.evolving_structured_rubrics import run_subtree_experiment as entry
-from tests.structured.core_fixtures import artifact, rows
+from tests.structured.core_fixtures import artifact, report, rows
 
 
 class TestSubtreeCore(unittest.TestCase):
@@ -133,6 +133,75 @@ class TestSubtreeCore(unittest.TestCase):
             self.assertTrue(second["cache_hit"])
             self.assertEqual(first["request"]["image_sha256"], hashlib.sha256(path.read_bytes()).hexdigest())
             self.assertTrue(support.content(row, "text")[0]["image_url"]["url"].startswith("data:image/png;base64,"))
+
+    def test_incremental_runtime_reuses_reports_and_reruns_arbiter_with_same_ab_order(self):
+        data = rows(1)
+        rubric = method.build_multicrit_open_ended_init_rubric()
+        endpoint = SimpleNamespace(endpoint_id="offline")
+        settings = system.RuntimeSettings(0.5, 2048, 9)
+        orders = (0, 1, 0)
+        baseline = artifact(data, rubric, 1, k=3)["samples"][0]
+        for replicate, order in enumerate(orders):
+            baseline["replicates"][str(replicate)]["order"] = order
+        frozen = json.dumps(baseline, sort_keys=True)
+
+        def subtree(config, endpoint, cache, split, displayed, rubric, root,
+                    replicate, order, attempts, settings):
+            self.assertEqual((displayed["A"], displayed["B"]),
+                             (data[0]["B"], data[0]["A"]) if order else
+                             (data[0]["A"], data[0]["B"]))
+            self.assertEqual(displayed["sample_id"], f"sample-0::k{replicate + 1}")
+            self.assertEqual(attempts, 10)
+            return dict(parse_ok=True, parsed=report("B" if order else "A"))
+
+        def arbiter(config, endpoint, cache, split, displayed, reports,
+                    replicate, order, attempts, settings, root_count):
+            self.assertEqual(len(reports), root_count)
+            self.assertEqual([item["root_id"] for item in reports], list(rubric.root_ids))
+            self.assertTrue(all("analysis_a" in item["report"] for item in reports))
+            self.assertEqual(displayed["answer"], "B" if order else "A")
+            return dict(parse_ok=True, parsed=report("B" if order else "A"))
+
+        for changed in (frozenset({rubric.root_ids[0]}), frozenset()):
+            with self.subTest(changed=changed), \
+                    patch.object(system, "_call_subtree", side_effect=subtree) as worker, \
+                    patch.object(system, "_call_arbiter", side_effect=arbiter) as judge:
+                sample = system._one_sample({}, endpoint, Path("cache"), "vlrb", data[0],
+                                            orders, rubric, baseline, changed, 10, settings)
+                self.assertEqual(worker.call_count, len(changed) * 3)
+                self.assertEqual(judge.call_count, 3)
+                for replicate in sample["replicates"].values():
+                    self.assertEqual(replicate["regenerated_root_ids"], sorted(changed))
+                    for root, call in replicate["subtrees"].items():
+                        self.assertEqual(call["incremental_reuse"], root not in changed)
+                        if root not in changed:
+                            self.assertEqual(call["parsed"], report("B"))
+                value = dict(k=3, samples=[sample])
+                metric = system.metrics(value, data)
+                self.assertEqual(metric["predictions_by_replicate"], [["A"], ["A"], ["A"]])
+                self.assertEqual(metric["strict_accuracy"], 1.0)
+                self.assertEqual(json.dumps(baseline, sort_keys=True), frozen)
+
+    def test_runtime_distinguishes_unresolved_subtree_from_scientific_abstention(self):
+        data = rows(1)
+        rubric = method.build_multicrit_open_ended_init_rubric()
+        endpoint = SimpleNamespace(endpoint_id="offline")
+        settings = system.RuntimeSettings(0.5, 2048, 9)
+        for parse_ok in (False, True):
+            call = dict(parse_ok=parse_ok, parsed=report("None") if parse_ok else None)
+            with self.subTest(parse_ok=parse_ok), \
+                    patch.object(system, "_call_subtree", return_value=call), \
+                    patch.object(system, "_call_arbiter", return_value=call) as judge:
+                sample = system._one_sample({}, endpoint, Path("cache"), "dev", data[0],
+                                            (1,), rubric, None, None, 10, settings)
+                final = sample["replicates"]["0"]["arbiter"]
+                self.assertEqual(judge.call_count, int(parse_ok))
+                if not parse_ok:
+                    self.assertEqual(final["error"], "blocked_by_unresolved_subtree")
+                metric = system.metrics(dict(k=1, samples=[sample]), data)
+                self.assertEqual(metric["predictions"], ["None" if parse_ok else "technical_failure"])
+                self.assertEqual(metric["technical_failure_count"], 0 if parse_ok else 6)
+                self.assertEqual(metric["strict_accuracy"], 0.0)
 
     def test_external_uses_frozen_k3_schedule_and_changed_root_only(self):
         data = rows()

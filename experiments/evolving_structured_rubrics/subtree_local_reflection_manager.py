@@ -1,5 +1,5 @@
 """Case-isolated feedback and one whole-child-group revision per root."""
-from .framework_v6_manager import (
+from .manager_runtime import (
     COMMON, PROMPTS, Manager, render_root_count_prompt, validate,
 )
 
