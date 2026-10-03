@@ -1,6 +1,8 @@
 # 实验索引
 
-当前主线是[子树逐例反思与局部竞争](subtree-local-reflection/plan.md)。其[结果与重构基线](subtree-local-reflection/results.md)记录 Covered、Strict、Preserve5 的冻结配置和 Discovery/Dev/VLRB 指标；[最新框架 PPT](subtree-local-reflection/framework.pptx)说明方法与实验。Hallucination100 的生成 root 对照见[冻结方案及已观察结果](vlrb-hallucination100-generated-roots/plan.md)，可复现的 seed11 样本 ID 和来源哈希见 [split manifest](vlrb-hallucination100-generated-roots/seed11_split.json)。
+主要框架图为 [assets/framework.png](../../assets/framework.png)。方法概览、三个配置示例的区别与运行命令统一维护在仓库 [README](../../README.md)。当前 Hallucination100 参考配置使用 Strict + Preserve5；原 Discovery100 的 Covered/Strict 示例均使用 0 条保留案例。G5/GN 共用五样例预热历史，F5 为人工固定五根对照。
+
+当前主线是[子树逐例反思与局部竞争](subtree-local-reflection/plan.md)。[最终实验结果](subtree-local-reflection/results.md)集中展示八行主对比表、当前配置和主要结论；[最新框架 PPT](subtree-local-reflection/framework.pptx)说明方法与实验。Hallucination100 的详细实验记录见[冻结方案及已观察结果](vlrb-hallucination100-generated-roots/plan.md)，可复现的 seed11 样本 ID 和来源哈希见 [split manifest](vlrb-hallucination100-generated-roots/seed11_split.json)。
 
 G5 seed11 的 2026-10-03 重跑与历史运行对比已归档于生成 root 实验文档第 9 节，包含正式 R0/S0/Final、clean1146、配对统计、演化轨迹、耗时及负结果。PPT 第 11 页最后三行使用本次结果；文档第 8 节保留旧结果。两次初始化内容不同，不能把分数差直接解释为代码重构收益。
 
