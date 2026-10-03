@@ -4,6 +4,7 @@ import hashlib
 import math
 from collections import Counter
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any, Mapping, Sequence
 from .model_call_support import file_sha256
 
@@ -28,20 +29,33 @@ def _image_suffix(value: bytes) -> str:
     raise ValueError("VL-RewardBench image bytes have an unsupported format")
 
 
-def _materialize_image(target: Path, image_bytes: bytes) -> tuple[str, Path]:
+def _image_directory(target: Path, parquet_path: Path) -> Path:
+    """Reuse old run-local images; place new runs beside the VLRB data."""
+    legacy = target / "dataset_images"
+    if legacy.is_dir():
+        return legacy
+    dataset_root = (parquet_path.parent.parent if parquet_path.parent.name == "data"
+                    else parquet_path.parent)
+    return dataset_root / "dataset_images"
+
+
+def _materialize_image(image_dir: Path, image_bytes: bytes) -> tuple[str, Path]:
     digest = hashlib.sha256(image_bytes).hexdigest()
-    path = target / "dataset_images" / f"{digest}{_image_suffix(image_bytes)}"
+    path = image_dir / f"{digest}{_image_suffix(image_bytes)}"
     if path.exists():
         if file_sha256(path) != digest:
             raise RuntimeError(f"materialized image hash mismatch: {path}")
     else:
         path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name(f".{path.name}.tmp")
+        temporary = None
         try:
-            temporary.write_bytes(image_bytes)
+            with NamedTemporaryFile(dir=path.parent, prefix=f".{digest}.",
+                                    suffix=".tmp", delete=False) as handle:
+                temporary = Path(handle.name)
+                handle.write(image_bytes)
             temporary.replace(path)
         finally:
-            if temporary.exists():
+            if temporary is not None and temporary.exists():
                 temporary.unlink()
     return digest, path
 
@@ -53,13 +67,14 @@ def _read_records(target: Path, *, parquet_path: Path | None = None) -> tuple[di
         import pandas as pd
     except ImportError as exc:  # pragma: no cover - environment dependency
         raise RuntimeError("pandas with parquet support is required for VL-RewardBench") from exc
-    path = _parquet_path() if parquet_path is None else parquet_path
+    path = (_parquet_path() if parquet_path is None else parquet_path).resolve()
     if not path.is_file():
         raise RuntimeError(f"VL-RewardBench parquet is missing: {path}")
     frame = pd.read_parquet(path)
     required = {"id", "query", "response", "image", "human_ranking", "query_source"}
     if set(frame.columns) < required or len(frame) != EXPECTED_COUNT:
         raise RuntimeError("VL-RewardBench parquet schema or row count changed")
+    image_dir = _image_directory(target, path)
     raw_items = frame.to_dict(orient="records")
     raw_id_counts = Counter(str(item["id"]) for item in raw_items)
     records: list[dict[str, Any]] = []
@@ -77,7 +92,7 @@ def _read_records(target: Path, *, parquet_path: Path | None = None) -> tuple[di
         if (not benchmark_id or len(responses) != 2
                 or set(ranking) != {0, 1} or not isinstance(image_bytes, bytes)):
             raise RuntimeError(f"invalid VL-RewardBench record: {benchmark_id!r}")
-        digest, image_path = _materialize_image(target, image_bytes)
+        digest, image_path = _materialize_image(image_dir, image_bytes)
         records.append({
             "sample_id": sample_id,
             "benchmark_id": benchmark_id,

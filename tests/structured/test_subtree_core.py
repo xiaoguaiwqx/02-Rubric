@@ -1,6 +1,8 @@
 """Offline contracts for the current generated-root and subtree method."""
 
 import hashlib
+from contextlib import redirect_stdout
+from io import StringIO
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -161,7 +163,40 @@ class TestSubtreeCore(unittest.TestCase):
             self.assertEqual(calls[0][0], initial.rubric_sha256)
             self.assertEqual(calls[1][1]["changed"], [root])
             self.assertEqual(calls[0][1]["orders"], calls[1][1]["orders"])
+            self.assertIs(calls[0][1]["vlrb_records"], records)
+            self.assertIs(calls[1][1]["vlrb_records"], records)
             self.assertEqual(method.load_json(target / "vlrb/report.json")["k"], 3)
+
+    def test_vlrb_log_uses_formal_majority_for_fresh_and_cached_results(self):
+        data = rows(3)
+        rubric = method.build_multicrit_open_ended_init_rubric()
+        value = artifact(data, rubric, 3, k=3)
+        for replicate in ("1", "2"):
+            value["samples"][0]["replicates"][replicate]["arbiter"]["parsed"]["answer"] = "None"
+        value["metrics"] = system.metrics(value, data)
+        self.assertEqual(value["metrics"]["strict_accuracy"], 1.0)
+        records = [dict(sample_id=row["sample_id"], benchmark_id=f"{prefix}_{index}",
+                        group=group, preferred_original_index=0)
+                   for index, (row, prefix, group) in enumerate(zip(
+                       data, ("vlfeedback", "RLHF", "mathverse"),
+                       ("general", "hallucination", "reasoning")))]
+        config = dict(worker=dict(temperature=0.5, max_tokens=2048,
+                                 backend_pool=dict(endpoints=[dict(endpoint_id="e1")])))
+        for name in ("vlrb/r0", "vlrb/initial", "vlrb/final"):
+            for cached in (False, True):
+                with self.subTest(name=name, cached=cached), TemporaryDirectory() as temporary:
+                    target = Path(temporary)
+                    if cached:
+                        method.write(target / f"{name}.json", value)
+                    output = StringIO()
+                    with patch.object(system, "evaluate", return_value=value) as evaluate, \
+                            redirect_stdout(output):
+                        result = method.evaluate(config, target, name, data, rubric,
+                                                 vlrb_records=records)
+                    self.assertIn(f"{name}: Strict ACC=66.67% (official K=3)", output.getvalue())
+                    self.assertNotIn("100.00%", output.getvalue())
+                    self.assertEqual(result["metrics"], value["metrics"])
+                    self.assertEqual(evaluate.call_count, 0 if cached else 1)
 
     def test_formal_k3_majority_keeps_abstention(self):
         records = [dict(sample_id="a", benchmark_id="hallucination_a", group="hallucination",
@@ -175,6 +210,21 @@ class TestSubtreeCore(unittest.TestCase):
         self.assertEqual(result["correct_count"], 2)
         self.assertEqual(result["coverage_count"], 2)
         self.assertEqual(result["overall_acc"], 1.0)
+
+    def test_vlrb_images_use_shared_directory_for_new_runs(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            parquet = root / "data" / "VL_RewardBench" / "data" / "test.parquet"
+            target = root / "output" / "seed11" / "g5" / "vlrb"
+            shared = root / "data" / "VL_RewardBench" / "dataset_images"
+            self.assertEqual(vlrb._image_directory(target, parquet), shared)
+            digest, image = vlrb._materialize_image(
+                vlrb._image_directory(target, parquet), b"\x89PNG\r\n\x1a\nfixture")
+            self.assertEqual(image.parent, shared)
+            self.assertEqual(digest, hashlib.sha256(image.read_bytes()).hexdigest())
+            legacy = target / "dataset_images"
+            legacy.mkdir(parents=True)
+            self.assertEqual(vlrb._image_directory(target, parquet), legacy)
 
 
 if __name__ == "__main__":

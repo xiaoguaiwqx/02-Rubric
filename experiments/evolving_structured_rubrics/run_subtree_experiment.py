@@ -74,6 +74,7 @@ def run_stage(args: argparse.Namespace) -> None:
 
     if args.stage == "prepare":
         prepare(config, root, args.seed)
+        print(f"prepare complete: {root / 'config.json'}", flush=True)
         return
 
     if args.stage == "roots":
@@ -84,6 +85,7 @@ def run_stage(args: argparse.Namespace) -> None:
             if path.exists() and StructuredRubric.load_json(path).rubric_sha256 != rubric.rubric_sha256:
                 raise ValueError(f"frozen R0 changed at {path}")
             atomic_write_json(path, rubric.to_dict())
+            print(f"f5 root ready: {path}", flush=True)
         else:
             generated_root_initialization.generate_r0_pair(
                 rows,
@@ -95,6 +97,7 @@ def run_stage(args: argparse.Namespace) -> None:
                 variants=(args.variant,),
                 count_instructions=generated_root_initialization.LEGACY_COUNT_INSTRUCTIONS,
             )
+            print(f"{args.variant} root ready: {target / 'r0/rubric.json'}", flush=True)
         return
 
     subtree_local_reflection.check(config, target)
@@ -116,6 +119,7 @@ def run_stage(args: argparse.Namespace) -> None:
         value = rubric_pipeline.evaluate(
             config, target, "vlrb/r0", rows, rubric,
             orders=vlrb_official._order_schedule(records), attempts=args.attempt_limit,
+            vlrb_records=records,
         )
         atomic_write_json(target / "vlrb/r0_report.json", dict(
             k=value["k"], rubric_sha256=rubric.rubric_sha256,

@@ -233,12 +233,15 @@ def _run_warmup(rows: Sequence[Mapping[str, Any]], seed: int,
             if turn["sample_id"] != row["sample_id"] or turn["prompt"] != prompt:
                 raise ValueError(f"warmup turn changed at {path}: {index + 1}")
             if "response" in turn:
+                print(f"warmup {index + 1}/{len(rows)}: cached", flush=True)
                 continue
         else:
             turn = {"sample_id": row["sample_id"], "prompt": prompt, "attempts": []}
             record["turns"].append(turn)
             atomic_write_json(path, record)
         for attempt in range(len(turn["attempts"]) + 1, attempt_limit + 1):
+            print(f"warmup {index + 1}/{len(rows)}: "
+                  f"attempt {attempt}/{attempt_limit} started", flush=True)
             response = agent(image_support.content(row, prompt), stream=False)
             result = {"attempt": attempt, "metrics": asdict(agent.last_call_metrics)}
             if response is None:
@@ -251,6 +254,8 @@ def _run_warmup(rows: Sequence[Mapping[str, Any]], seed: int,
                 turn["response"] = response
             turn["attempts"].append(result)
             atomic_write_json(path, record)
+            print(f"warmup {index + 1}/{len(rows)}: attempt {attempt} "
+                  f"{'complete' if 'response' in turn else 'failed'}", flush=True)
             if "response" in turn:
                 break
         if "response" not in turn:
@@ -387,6 +392,8 @@ def _run_generation(base_agent: Agent, variant: str,
                 )
             else:
                 prompt = request["prompt"]
+            print(f"{variant} root generation: "
+                  f"attempt {attempt}/{attempt_limit} started", flush=True)
             response = agent(prompt, stream=False)
             result = {"attempt": attempt, "prompt": prompt,
                       "metrics": asdict(agent.last_call_metrics)}
@@ -404,6 +411,9 @@ def _run_generation(base_agent: Agent, variant: str,
                     record["parsed"] = parsed
             record["attempts"].append(result)
             atomic_write_json(path, record)
+            print(f"{variant} root generation: attempt {attempt} "
+                  f"{'complete' if 'parsed' in record else 'failed validation or request'}",
+                  flush=True)
             if "parsed" in record:
                 break
     if "parsed" not in record:
@@ -413,6 +423,7 @@ def _run_generation(base_agent: Agent, variant: str,
     if rubric_path.exists() and load_json(rubric_path) != rubric.to_dict():
         raise ValueError(f"generated R0 changed at {rubric_path}; use a new run directory")
     atomic_write_json(rubric_path, rubric.to_dict())
+    print(f"{variant} root generation ready: {rubric_path}", flush=True)
     return rubric
 
 

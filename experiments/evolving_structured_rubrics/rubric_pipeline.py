@@ -138,8 +138,18 @@ def case_payload(row, record, previous=None, root=None, previous_before=None):
     return case
 
 
+def _log_system_metrics(name, value, vlrb_records=None):
+    metrics = value["metrics"]
+    label = ""
+    if vlrb_records is not None:
+        from . import vlrb_official as vlrb
+        metrics = vlrb.official_system_metrics(vlrb_records, vlrb._votes(value))
+        label = " (official K=3)"
+    print(f"{name}: Strict ACC={metrics['strict_accuracy']:.2%}{label}", flush=True)
+
+
 def evaluate(config, target, name, rows, rubric, *, baseline=None, changed=None,
-             orders=None, attempts=10):
+             orders=None, attempts=10, vlrb_records=None):
     path = target / f"{name}.json"
     if path.exists():
         value = system.load(path)
@@ -148,6 +158,8 @@ def evaluate(config, target, name, rows, rubric, *, baseline=None, changed=None,
         if [s["sample_id"] for s in value["samples"]] != [r["sample_id"] for r in rows]:
             raise ValueError(f"{path}: sample order changed")
         if not value["metrics"]["technical_failure_count"]:
+            if vlrb_records is not None:
+                _log_system_metrics(name, value, vlrb_records)
             return value
     worker = config["worker"]
     value = system.evaluate(
@@ -160,7 +172,7 @@ def evaluate(config, target, name, rows, rubric, *, baseline=None, changed=None,
         total_attempt_limit=attempts)
     if value["metrics"]["technical_failure_count"]:
         raise RuntimeError(f"{path}: technical failures; inspect cache and resume with a larger --attempt-limit")
-    print(f"{name}: Strict ACC={value['metrics']['strict_accuracy']:.2%}", flush=True)
+    _log_system_metrics(name, value, vlrb_records)
     return value
 
 
@@ -245,14 +257,17 @@ def external(config, target, dataset, attempts):
         rows, orders = load_rows(config, dataset), None
     initial = StructuredRubric.load_json(target / "init/rubric.json")
     final = StructuredRubric.from_dict(state["rubric"])
-    before = evaluate(config, target, f"{dataset}/initial", rows, initial, orders=orders, attempts=attempts)
+    before = evaluate(config, target, f"{dataset}/initial", rows, initial,
+                      orders=orders, attempts=attempts, vlrb_records=records)
     changed = [r for r in final.root_ids
                if system._root_subtree_sha256(initial, r) != system._root_subtree_sha256(final, r)]
     after = before if not changed else evaluate(
         config, target, f"{dataset}/final", rows, final, orders=orders, attempts=attempts,
-        baseline=before, changed=changed)
+        baseline=before, changed=changed, vlrb_records=records)
     if not changed:
         write(target / f"{dataset}/final.json", after)
+        if records is not None:
+            _log_system_metrics(f"{dataset}/final", after, records)
     report = dict(initial=before["metrics"], final=after["metrics"],
                   paired=system.paired(before["metrics"], after["metrics"], rows),
                   k=before["k"], identical_rubric_reuse=not changed)

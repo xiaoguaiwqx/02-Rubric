@@ -15,7 +15,7 @@ python -m unittest discover -s tests -p "test_*.py"
 python -m experiments.evolving_structured_rubrics.run_subtree_experiment --help
 ```
 
-`[data]` 安装读取 VL-RewardBench parquet 所需的 pandas 和 pyarrow。模型调用另需配置 Worker 端点和 Manager 的 API key；配置示例不包含凭据。数据、模型响应和缓存写入本地 `output/`，不提交 Git。
+`[data]` 安装读取 VL-RewardBench parquet 所需的 pandas 和 pyarrow。模型调用另需配置 Worker 端点和 Manager 的 API key；配置示例不包含凭据。VL-RewardBench 图像统一解包到 `data/VL_RewardBench/dataset_images/`，新实验共用；已开始的运行继续引用原运行目录中的图像。模型响应与缓存写入本地 `output/`，这些本地数据均不提交 Git。
 
 ## 当前入口
 
