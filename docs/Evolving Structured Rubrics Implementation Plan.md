@@ -812,7 +812,7 @@ Invoke-EvolutionStage "split-evolution-final-report"
 
 需要严格区分：discovery 的全局 ACC 未提升，说明当前证据支持 Split 改善 heldout 泛化与覆盖，但尚不足以证明多轮局部优化稳定提升 discovery 全局 M1。
 
-实验产物：[最终报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_v2/final_report.md)、[discovery 报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_v2/final/discovery_report.json)、[heldout 报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_v2/heldout500/report.json)。
+实验产物：[最终报告](../output/archive/early_rubrics/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_v2/final_report.md)、[discovery 报告](../output/archive/early_rubrics/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_v2/final/discovery_report.json)、[heldout 报告](../output/archive/early_rubrics/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_v2/heldout500/report.json)。
 
 
 
@@ -891,7 +891,7 @@ Treatment 相对初始五-root 在 heldout-500 上提升 5.0 pp，增加 25 个�
 
 **Split v1 冻结结论**：当前触发条件、ErrorSignature/聚类/children 生成流程、固定 parent scope 上的 Specialized Accuracy 竞争、整组接受与 parent 回退、失败归因历史以及 `global_rubric_v1` memory contract 共同构成冻结的 Split v1。后续算子直接复用该协议；若需要修改上述语义，必须提升协议版本并使用新的实验目录，不得覆盖本节结果。
 
-实验产物：[最终报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_global_memory_v1/final_report.md)、[discovery 报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_global_memory_v1/final/discovery_report.json)、[heldout 报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_global_memory_v1/heldout500/report.json)。
+实验产物：[最终报告](../output/archive/early_rubrics/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_global_memory_v1/final_report.md)、[discovery 报告](../output/archive/early_rubrics/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_global_memory_v1/final/discovery_report.json)、[heldout 报告](../output/archive/early_rubrics/evolving_structured_rubrics/rubric_evolution_phase5/phase6_split_only_evolution_global_memory_v1/heldout500/report.json)。
 
 
 ---
@@ -2920,7 +2920,7 @@ VLRB 相对 Initial 的类别净变化为 General +1、Hallucination −5、Reas
 
 **结论：Phase22 的接受规则挡住了大量负收益候选，但只产生两次微小局部改进，没有检测到相对初始树的外部收益，且明显落后于 Phase17 E4。优先改进候选与反思质量、验证小收益稳定性，而不是仅增加演化轮数。**
 
-结果来源：[演化与 heldout 报告](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase22_all_sample_subtree_adaptive_recluster_evolution_v1/final_report.json)、[Dev150 轨迹](../output/evolving_structured_rubrics/rubric_evolution_phase5/phase22_all_sample_subtree_adaptive_recluster_evolution_v1/dev150_trajectory.json)、[VLRB 报告](../output/evolving_structured_rubrics/vl_rewardbench_all_sample_adaptive_recluster_evolution_v1/final_report.json)。
+结果来源：[演化与 heldout 报告](../output/archive/early_rubrics/evolving_structured_rubrics/rubric_evolution_phase5/phase22_all_sample_subtree_adaptive_recluster_evolution_v1/final_report.json)、[Dev150 轨迹](../output/archive/early_rubrics/evolving_structured_rubrics/rubric_evolution_phase5/phase22_all_sample_subtree_adaptive_recluster_evolution_v1/dev150_trajectory.json)、[VLRB 报告](../output/archive/early_rubrics/evolving_structured_rubrics/vl_rewardbench_all_sample_adaptive_recluster_evolution_v1/final_report.json)。
 
 ---
 
@@ -2954,7 +2954,7 @@ VLRB 相对 Initial 的类别净变化为 General +1、Hallucination −5、Reas
 
 Overall ACC 排除最终平局/弃权，Strict ACC 以全部样本为分母。完整候选相对 **Phase17 E5** 提升1.48个百分点 Overall ACC、2.03个百分点 Macro ACC，多正确17条；相对初始五个 roots 和原始模型分别提升13.27、16.87个百分点 Overall ACC。原始模型使用 Native 通用评判 Prompt，其他方案使用结构化 Prompt v2；
 
-历史基线来源：[Phase17 E5 报告](../output/evolving_structured_rubrics/vl_rewardbench_phase17_discovery_v2_prompt_v2_v1/final_report.json)（含初始五个 roots）、[Native 最终重试报告](../output/evolving_structured_rubrics/vl_rewardbench_phase10_transfer_v2_max2048/native_retry_max10/report.json)。此处 Phase17 指原397B Manager的正式E5结果，不是探索性选择的E4。
+历史基线来源：[Phase17 E5 报告](../output/archive/early_rubrics/evolving_structured_rubrics/vl_rewardbench_phase17_discovery_v2_prompt_v2_v1/final_report.json)（含初始五个 roots）、[Native 最终重试报告](../output/archive/early_rubrics/evolving_structured_rubrics/vl_rewardbench_phase10_transfer_v2_max2048/native_retry_max10/report.json)。此处 Phase17 指原397B Manager的正式E5结果，不是探索性选择的E4。
 
 ### 19.3 子树贡献：父节点与完整子树对比
 
@@ -3002,7 +3002,7 @@ Completeness 子树单独的 Strict ACC 为73.70%，高于五棵树等权聚合�
 
 **结论：这次瓶颈不只是准则生成能力，还包括能否识别并保留已经生成的有效准则。**
 
-结果来源：[27B演化与heldout](../output/evolving_structured_rubrics/phase17_manager_qwen35_27b_no_thinking_compact_ids/rubric_evolution_phase5/phase17_discovery_v2_prompt_v2_split_refine_v1/final_report.json)、[正常竞争版VLRB](../output/evolving_structured_rubrics/vl_rewardbench_phase17_manager_qwen35_27b_no_thinking_v1/final_report.json)、[完整候选VLRB](../output/evolving_structured_rubrics/vlrb_27b_full/final_report.json)、[完整候选最终预测](../output/evolving_structured_rubrics/vlrb_27b_full/retry/combined/logical_votes.json)。本地原始产物保留用于复核，不随文档提交。
+结果来源：[27B演化与heldout](../output/archive/early_rubrics/evolving_structured_rubrics/phase17_manager_qwen35_27b_no_thinking_compact_ids/rubric_evolution_phase5/phase17_discovery_v2_prompt_v2_split_refine_v1/final_report.json)、[正常竞争版VLRB](../output/archive/early_rubrics/evolving_structured_rubrics/vl_rewardbench_phase17_manager_qwen35_27b_no_thinking_v1/final_report.json)、[完整候选VLRB](../output/archive/early_rubrics/evolving_structured_rubrics/vlrb_27b_full/final_report.json)、[完整候选最终预测](../output/archive/early_rubrics/evolving_structured_rubrics/vlrb_27b_full/retry/combined/logical_votes.json)。本地原始产物保留用于复核，不随文档提交。
 
 ---
 
@@ -3083,7 +3083,7 @@ Overall ACC 排除最终平票/弃权；Strict ACC 以全部1,247条为分母。
 
 **结论与限制：** 当前支持“完整Rubric + Clean S5-v2在27B上获得明显更高的系统性能，并在其原生基线上增加81条正确判断”；
 
-结果来源：[8B最终报告](../output/evolving_structured_rubrics/vlrb_27b_full_s5/final_report.json)、[27B最终报告](../output/evolving_structured_rubrics/vlrb_27b_full_s5_qwen35/final_report.json)、[27B最终预测](../output/evolving_structured_rubrics/vlrb_27b_full_s5_qwen35/predictions/full.json)、[最后JSON恢复记录](../output/evolving_structured_rubrics/vlrb_27b_full_s5_qwen35/rescue_4096/final_json_recovery.json)。
+结果来源：[8B最终报告](../output/archive/early_rubrics/evolving_structured_rubrics/vlrb_27b_full_s5/final_report.json)、[27B最终报告](../output/archive/early_rubrics/evolving_structured_rubrics/vlrb_27b_full_s5_qwen35/final_report.json)、[27B最终预测](../output/archive/early_rubrics/evolving_structured_rubrics/vlrb_27b_full_s5_qwen35/predictions/full.json)、[最后JSON恢复记录](../output/archive/early_rubrics/evolving_structured_rubrics/vlrb_27b_full_s5_qwen35/rescue_4096/final_json_recovery.json)。
 
 ---
 
@@ -3157,7 +3157,7 @@ Overall ACC 排除最终平票/弃权；Strict ACC 以全部1,247条为分母。
 
 **结论：完整Rubric有用，但在当前27B实验中，递归投票使用约2.21倍tokens，仍比Clean S5-v2少正确43条。** 可能原因包括准则错误相关、多数投票丢失判断理由，以及强父判断被孩子多数覆盖；这些是待验证解释。8B中S5未明显优于递归、27B中却明显领先，也提示推理方式与模型能力可能存在交互，而非某种聚合规则普遍更好。
 
-复现与证据：[运行计划](experiments/phase17-manager-qwen35-27b/plan.md)、[最终报告](../output/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35/final_report.json)、[配对及成本](../output/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35/comparison_clean_s5.json)、[节点及子树聚合结果](../output/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35/retry/combined/logical_votes.json)、[历史输出恢复记录](../output/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35/history_recovery.json)。离线诊断复用这些结果与19.7节链接的S5最终预测；原始产物不随文档提交。
+复现与证据：[运行计划](experiments/phase17-manager-qwen35-27b/plan.md)、[最终报告](../output/archive/early_rubrics/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35/final_report.json)、[配对及成本](../output/archive/early_rubrics/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35/comparison_clean_s5.json)、[节点及子树聚合结果](../output/archive/early_rubrics/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35/retry/combined/logical_votes.json)、[历史输出恢复记录](../output/archive/early_rubrics/evolving_structured_rubrics/vlrb_27b_full_recursive_qwen35/history_recovery.json)。离线诊断复用这些结果与19.7节链接的S5最终预测；原始产物不随文档提交。
 
 ---
 

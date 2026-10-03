@@ -4,10 +4,9 @@ __pycache__
 *.egg-info/
 build/
 
-# Runtime artifacts are local by default, including new experiments.
-# Already tracked historical reports remain tracked and are not deleted.
-# Publish reviewed, compact evidence under docs/experiment-results/ instead
-# of extending per-experiment allowlists for predictions and local manifests.
+# All runtime artifacts, including historical outputs, remain local.
+# Commit reviewed, compact research evidence under docs/experiments/.
+# Keep predictions, caches, images and logs out of Git.
 /output/
 
 # Secrets and machine-specific configuration

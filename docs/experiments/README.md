@@ -10,4 +10,6 @@ G5 seed11 的 2026-10-03 重跑与历史运行对比已归档于生成 root 实�
 
 生成 root 实验的 `report` 对同一批完整 VLRB 预测离线计算训练 100、非训练 1147、去近重复 1146、未见幻觉 648 和官方类别切片，并保留 R0/S0/Final、各 root、配对变化及成本。三组变体均有完整报告时，seed 目录再输出 F5/G5/GN 配对汇总；全量 1247 指标包含训练样本。
 
-旧 Gate/Cascade、joint、Phase17–22、类别专属 Rubric、十样例预热和迁移审计的代码与实验文档保存在 `codex/subtree-local-reflection` 分支；原 CritiQ-V 保存在 `CritiQ-V`。这些探索中的负结果仍属于研究历史，不能当作当前方法的运行入口。历史本地原始产物继续保存在 `output/`，当前主线只提交必要的结果摘要、split 元数据和可编辑 PPT。
+旧 Gate/Cascade、joint、Phase17–22、类别专属 Rubric、十样例预热和迁移审计的代码与实验文档保存在 `codex/subtree-local-reflection` 分支；原 CritiQ-V 保存在 `CritiQ-V`。这些探索中的负结果仍属于研究历史，不能当作当前方法的运行入口。历史本地原始产物归档于 `output/archive/`，两个核心实验目录保留原位。整个 `output/` 仅本地保存，不再由 Git 跟踪；研究证据只提交必要的结果摘要、split 元数据和可编辑 PPT。
+
+本地输出目录已按[目录归档清单](output-archive.md)整理：最新完整运行和核心对照保留原路径，历史探索按系列整目录迁移；原来跟踪的 268 个历史文件已取消 Git 跟踪，本地文件内容不改写。
