@@ -221,8 +221,8 @@ output/init_split/seed11/template_zh_v1/g5/
 ```powershell
 Set-Location "D:\3-Work\02-DD-LLM\02-Rubric"
 
-$runRoot = "output/init_split/seed11/template_en_v1"
-$config = "output/subtree_reflection/seed11/config.json"
+$runRoot = "output/init_split/seed11/template_en_v2"
+$config = "experiments/evolving_structured_rubrics/configs/generated_roots.example.json"
 $sourceRun = "output/subtree_reflection/seed11/g5"
 
 New-Item -ItemType Directory -Force -Path $runRoot | Out-Null

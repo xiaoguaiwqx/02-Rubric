@@ -16,23 +16,24 @@ from .model_call_support import file_sha256
 
 # SIGNATURE_SYSTEM_PROMPT = """你是负责初始化结构化 Rubric 的 Manager。
 
-# 本阶段的任务是：从一个具体案例中，为目标根准则提炼可复用的判断问题，
-# 作为后续归纳问题模式和生成子准则的依据。
+# 本阶段的任务是：分析一个具体案例中人类选择背后的比较依据，并提炼与目标根相关、可复用的偏好判断模式。
 
-# 全部根准则用于理解职责分工，本次只分析目标根。
-# 结合图像、问题、候选回答和目标 Worker 的报告，检查是否存在遗漏的检查、
-# 错误的判断依据，或需要更清晰指导的执行困难。
-# 将有证据支持的问题概括为可复用的模式，并指出需要补充的判断指导。
+# 全部根准则用于理解不同维度的职责，本次围绕目标根进行分析。
+# 结合图像、问题和两个候选回答，找出能够解释人类选择的关键差异，分析人类可能更看重哪些因素，以及如何权衡两个回答的优缺点。
 
-# 人类偏好是整体比较的参考。Worker 判断为 None 或与人类偏好不一致，
-# 本身不足以证明目标根的判断错误。局部判断可以与整体人类偏好不同。
-# 没有发现有依据、可改进的问题时，返回 applicable=false，并说明原因。
+# 参考目标 Worker 的报告，理解当前判断关注了哪些证据，是否遗漏了重要差异，或采用了不同的比较依据。
+# Worker 与人类偏好不一致，本身不足以说明目标根的判断错误；
+# 整体选择可能同时受到多个维度的影响。
+
+# basis 应说明两个回答的具体差异，以及这些证据如何支持对人类选择的解释。
+# signature 应概括模式出现的情形、影响偏好的关键因素及其比较关系。
+# 如果没有发现目标根下有证据支持、值得提炼的模式，返回 applicable=false，并说明原因。
 
 # 只返回一个 JSON 对象：
 # {
-#     "applicable": true,
-#     "signature": "可复用的问题模式及需要补充的判断指导",
-#     "basis": "支持该问题的具体案例证据"
+#     "applicable": false/true,
+#     "basis": "两个候选回答之间的具体差异，以及这些差异如何帮助解释人类的偏好选择",
+#     "signature": "可复用的偏好判断模式，包括其适用情境、关键偏好因素，以及在比较过程中如何权衡这些因素"
 # }
 # """
 
@@ -60,8 +61,13 @@ from .model_call_support import file_sha256
 
 # 该案例的图像随本消息附上。
 
+# ## 人类偏好
+# 该案例的整体人类偏好为：{gold}
+
+# 请结合图像、问题和回答内容，分析哪些关键差异能够解释这一选择。
+
 # ## 目标 Worker 的判断报告
-# 以下报告来自目标根对应的 Worker。
+# 以下报告来自目标根对应的 Worker，供你参考当前判断所使用的证据与比较依据。
 
 # 对回答 A 的分析：
 # {worker_analysis_a}
@@ -75,23 +81,20 @@ from .model_call_support import file_sha256
 # 局部判断结果：
 # {worker_answer}
 
-# ## 人类偏好
-# 该案例的整体人类偏好为：{gold}
-
-# 请依据案例原文和图像，分析目标根的判断过程，
-# 并提炼有证据支持的 signature。
+# 请围绕目标根的职责，提炼这个案例中可复用的偏好判断模式，并用具体证据说明其与人类选择的关系。
 # """
 
 
 # CLUSTER_SYSTEM_PROMPT = """你是负责初始化结构化 Rubric 的 Manager。
 
-# 本阶段的任务是：将多个案例提取出的 signature，
-# 归纳为目标根下共同的判断问题模式。
+# 本阶段的任务是：将多个案例提取出的 signature，归纳为目标根下共同的偏好判断模式。
 
-# 参考全部根准则的职责分工，按照问题的共同原因或所需判断指导进行分组，
-# 不要仅依据相似措辞分组。
-# 每个 cluster 的 pattern 应清楚表达组内 signature 的共性，
-# 为下一阶段生成子准则提供依据。
+# 参考全部根准则的职责分工，寻找不同案例中反复出现的比较依据：
+# 在什么情形下，哪些回答特征影响人类选择，以及人类如何权衡这些特征。
+
+# 按照共同的判断情形和比较依据进行分组，不要仅依据相似措辞分组。
+# 每个 cluster 的 pattern 应清楚表达组内 signature 的共性，为下一阶段生成子准则提供依据。
+# 无法形成一致模式的 signature 可以不分配。
 
 # 目标是形成 2–5 个有证据支持的 cluster。
 # 每个 cluster 至少包含两个不同的 signature ID，
@@ -102,7 +105,7 @@ from .model_call_support import file_sha256
 # {
 #     "clusters": [
 #         {
-#             "pattern": "共同的判断问题模式及所需指导",
+#             "pattern": "共同的适用情形、偏好因素及比较依据",
 #             "signature_ids": ["S001", "S002"]
 #         }
 #     ],
@@ -121,28 +124,27 @@ from .model_call_support import file_sha256
 # 职责：{target_root_description}
 
 # ## 待归纳的 signature
-# 以下 signature 来自前一阶段的案例分析。
-# 每条记录包含 signature ID、问题模式和案例依据：
+# 以下 signature 来自前一阶段对具体案例中人类偏好的分析。
+# 每条记录包含 signature ID、偏好判断模式和案例依据：
 # {signatures_context}
 
-# 请归纳这些 signature 背后的共同问题，
-# 给出各 cluster 的模式描述及其对应的 signature ID。
+# 请寻找这些案例中共同的偏好依据与取舍方式，给出各 cluster 的模式描述及其对应的 signature ID。
 # """
 
 
 # CHILDREN_SYSTEM_PROMPT = """你是负责初始化结构化 Rubric 的 Manager。
 
-# 本阶段的任务是：将归纳出的问题模式，
-# 转化为目标根的一组完整、可复用的子准则。
+# 本阶段的任务是：将归纳出的偏好模式，转化为目标根的一组完整、可复用的子准则，帮助 Worker 更好地复原人类比较回答时的判断依据。
 
-# 结合 signature 的案例依据和 cluster 的共性模式，
-# 生成 2–5 条简洁、不冗余的子准则。
-# 每条子准则应清楚说明：
-# 1. 何时适用；
-# 2. 需要检查什么；
-# 3. 检查结果如何影响局部比较。
+# 结合 signature 的案例证据和 cluster 的共同模式，生成 2–5 条简洁、不冗余的子准则。
+# 每条子准则围绕一个偏好判断要点，包含：
+# 1. 在什么情况下适用；
+# 2. 需要检查哪些证据；
+# 3. 如何据此判断哪个回答更好。
 
-# 可以合并重叠的指导，不要求 cluster 与子准则一一对应。
+# 名称应简洁地概括主要偏好判断要点。
+# 涉及多个优缺点时，应说明哪些因素影响比较，以及如何进行取舍。
+
 # 参考全部根准则的职责分工，保持子准则属于目标根。
 # 不要将具体样本答案、样本 ID 或固定 A/B 偏好写入准则。
 
@@ -154,13 +156,13 @@ from .model_call_support import file_sha256
 #             "description": "适用条件、检查内容及比较依据"
 #         }
 #     ],
-#     "change_summary": "如何将问题模式转化为子准则"
+#     "change_summary": "如何将共同偏好模式转化为子准则"
 # }
 # """
 
 
 # CHILDREN_USER_TEMPLATE = """## 全部根准则
-# 以下根准则用于理解职责分工：
+# 以下根准则用于理解各维度的职责：
 # {roots_context}
 
 # ## 本次生成子准则的目标根
@@ -169,36 +171,37 @@ from .model_call_support import file_sha256
 # 职责：{target_root_description}
 
 # ## 原始 signature 及案例依据
-# 以下材料用于理解具体问题及其证据：
+# 以下材料描述具体案例中的偏好判断模式及其证据：
 # {signatures_context}
 
 # ## 归纳出的 cluster
-# 以下材料描述共同问题模式，以及对应的 signature ID：
+# 以下材料描述共同的偏好依据与取舍方式，以及对应的 signature ID：
 # {clusters_context}
 
-# 请将这些模式转化为目标根的完整子准则组，
-# 并说明从问题模式到判断指导的主要变化。
+# 请将这些偏好模式转化为目标根的完整子准则组，同时说明这些子准则如何体现归纳出的共同偏好模式。
 # """
 
 
 SIGNATURE_SYSTEM_PROMPT = """You are the Manager responsible for initializing a structured Rubric.
 
-Your task at this stage is to extract a reusable judging issue from a specific case under the target root criterion. 
-This will serve as evidence for grouping issue patterns and generating child criteria in later stages.
+Your task at this stage is to analyze the grounds for the human choice in a specific case and extract reusable preference judgment patterns relevant to the target root.
 
-Use all root criteria to understand their respective responsibilities, but analyze only the target root. 
-Examine the image, question, candidate responses, and target Worker's report for missing checks, incorrect grounds for judgment, or execution difficulties that need clearer guidance.
-Summarize supported issues as reusable patterns and identify the judging guidance that should be added.
+Use all root criteria to understand the responsibilities of different dimensions, and focus this analysis on the target root.
+Using the image, question, and two candidate responses, identify the key differences that can explain the human choice. Analyze which factors humans may value more and how they weigh the strengths and weaknesses of the two responses.
 
-Human preference is a reference for the overall comparison. A Worker judgment of None or disagreement with human preference does not, by itself, establish that the target root's judgment is wrong. 
-A local judgment may differ from the overall human preference.
-If you find no supported issue that can be improved, return applicable=false and explain why.
+Refer to the target Worker's report to understand which evidence the current judgment considered, whether it missed important differences, or whether it used different grounds for comparison.
+Disagreement between the Worker and human preference does not, by itself, establish that the target root's judgment is wrong;
+the overall choice may be influenced by multiple dimensions.
 
-Return only one JSON object:
+basis should describe the specific differences between the two responses and how this evidence supports an explanation of the human choice.
+signature should summarize the circumstances in which the pattern arises, the key factors affecting preference, and how those factors relate in the comparison.
+If you find no evidence-supported pattern worth extracting under the target root, return applicable=false and explain why.
+
+Return only one JSON object. The applicable field must be true or false:
 {
-    "applicable": true,
-    "signature": "Reusable issue pattern and the judging guidance to add",
-    "basis": "Specific case evidence supporting the issue"
+    "applicable": false/true,
+    "basis": "Specific differences between the two candidate responses and how these differences help explain the human preference choice",
+    "signature": "Reusable preference judgment pattern, including its applicable context, key preference factors, and how to weigh these factors in the comparison"
 }
 """
 
@@ -226,8 +229,13 @@ Candidate response B:
 
 The image for this case is attached to this message.
 
+## Human preference
+The overall human preference for this case is: {gold}
+
+Using the image, question, and response content, analyze which key differences can explain this choice.
+
 ## Target Worker's judgment report
-The following report comes from the Worker assigned to the target root.
+The following report comes from the Worker assigned to the target root. Use it as a reference for the evidence and grounds for comparison used in the current judgment.
 
 Analysis of response A:
 {worker_analysis_a}
@@ -241,30 +249,31 @@ Reasoning for the comparison:
 Local judgment:
 {worker_answer}
 
-## Human preference
-The overall human preference for this case is: {gold}
-
-Using the original case text and image, examine the target root's judgment process and extract a signature supported by evidence.
+Within the target root's responsibilities, extract reusable preference judgment patterns from this case and use specific evidence to explain their relationship to the human choice.
 """
 
 
 CLUSTER_SYSTEM_PROMPT = """You are the Manager responsible for initializing a structured Rubric.
 
-Your task at this stage is to group signatures extracted from multiple cases into shared judging issue patterns under the target root.
+Your task at this stage is to group signatures extracted from multiple cases into shared preference judgment patterns under the target root.
 
-Refer to the responsibilities of all root criteria. Group issues by their common causes or the judging guidance they require, rather than by similar wording alone.
+Refer to the responsibilities of all root criteria and look for recurring grounds for comparison across cases:
+under what circumstances, which response features affect the human choice, and how humans weigh those features.
+
+Group signatures by shared judgment situations and grounds for comparison, rather than by similar wording alone.
 Each cluster's pattern should clearly express what its signatures have in common and provide a basis for generating child criteria in the next stage.
+Signatures that do not form a coherent pattern may remain unassigned.
 
 Aim to form 2–5 clusters supported by evidence.
-Each cluster must contain at least two distinct signature IDs, and no ID may appear in more than one cluster.
-Signatures that do not form a coherent pattern may remain unassigned.
-Do not split or invent patterns merely to meet a count.
+Each cluster must contain at least two distinct signature IDs,
+and no ID may appear in more than one cluster.
+Signatures that do not form a coherent pattern may remain unassigned. Do not split or invent patterns merely to meet a count.
 
 Return only one JSON object:
 {
     "clusters": [
         {
-            "pattern": "Shared judging issue pattern and the guidance needed",
+            "pattern": "Shared applicable situations, preference factors, and grounds for comparison",
             "signature_ids": ["S001", "S002"]
         }
     ],
@@ -283,25 +292,27 @@ Name: {target_root_name}
 Responsibility: {target_root_description}
 
 ## Signatures to group
-The following signatures come from case analyses in the previous stage.
-Each record contains a signature ID, an issue pattern, and case evidence:
+The following signatures come from analyses of human preference in specific cases in the previous stage.
+Each record contains a signature ID, a preference judgment pattern, and case evidence:
 {signatures_context}
 
-Identify the shared issues underlying these signatures and provide a pattern description and the corresponding signature IDs for each cluster.
+Look for shared preference considerations and trade-offs across these cases, and provide a pattern description and the corresponding signature IDs for each cluster.
 """
 
 
 CHILDREN_SYSTEM_PROMPT = """You are the Manager responsible for initializing a structured Rubric.
 
-Your task at this stage is to turn the grouped issue patterns into a complete set of reusable child criteria for the target root.
+Your task at this stage is to turn the grouped preference patterns into a complete set of reusable child criteria for the target root, helping the Worker better reconstruct the grounds humans use when comparing responses.
 
 Combine the case evidence in the signatures with the shared patterns in the clusters to generate 2–5 concise, nonredundant child criteria.
-Each child criterion should clearly explain:
+Each child criterion should focus on one key point in judging preference and include:
 1. When it applies;
-2. What to check;
-3. How the findings affect the local comparison.
+2. What evidence to examine;
+3. How to use that evidence to judge which response is better.
 
-You may combine overlapping guidance. Clusters and child criteria do not need to correspond one to one.
+The name should concisely summarize the main point in judging preference.
+When multiple strengths and weaknesses are involved, explain which factors affect the comparison and how to weigh them.
+
 Refer to the responsibilities of all root criteria and keep the child criteria within the target root's scope.
 Do not encode specific sample answers, sample IDs, or a fixed preference for A or B in the criteria.
 
@@ -313,13 +324,13 @@ Return only one JSON object:
             "description": "Applicability, checks, and grounds for comparison"
         }
     ],
-    "change_summary": "How the issue patterns were turned into child criteria"
+    "change_summary": "How shared preference patterns were turned into child criteria"
 }
 """
 
 
 CHILDREN_USER_TEMPLATE = """## All root criteria
-Use the following root criteria to understand their respective responsibilities:
+Use the following root criteria to understand the responsibilities of each dimension:
 {roots_context}
 
 ## Target root for child generation
@@ -328,15 +339,14 @@ Name: {target_root_name}
 Responsibility: {target_root_description}
 
 ## Original signatures and case evidence
-Use the following material to understand the specific issues and their evidence:
+The following material describes preference judgment patterns in specific cases and their supporting evidence:
 {signatures_context}
 
 ## Grouped clusters
-The following material describes shared issue patterns and their corresponding
-signature IDs:
+The following material describes shared preference considerations and trade-offs, along with the corresponding signature IDs:
 {clusters_context}
 
-Turn these patterns into a complete child criterion group for the target root and explain the main changes from issue patterns to judging guidance.
+Turn these preference patterns into a complete child criterion group for the target root, and explain how the child criteria reflect the shared preference patterns identified.
 """
 
 
@@ -344,7 +354,7 @@ PROMPTS = dict(signature=SIGNATURE_SYSTEM_PROMPT, cluster=CLUSTER_SYSTEM_PROMPT,
                children=CHILDREN_SYSTEM_PROMPT)
 USER_TEMPLATES = dict(signature=SIGNATURE_USER_TEMPLATE, cluster=CLUSTER_USER_TEMPLATE,
                       children=CHILDREN_USER_TEMPLATE)
-PROMPT_VERSION = "init-split-template-en-v1"
+PROMPT_VERSION = "init-split-template-en-v2"
 
 
 def render_user_prompt(stage, payload):
@@ -368,12 +378,12 @@ def render_user_prompt(stage, payload):
         )
     else:
         fields["signatures_context"] = "\n\n".join(
-            f"### {item['signature_id']}\nIssue pattern: {item['signature']}\nCase evidence: {item['basis']}"
+            f"### {item['signature_id']}\nPreference pattern: {item['signature']}\nCase evidence: {item['basis']}"
             for item in payload["signatures"])
         if stage == "children":
             clusters = payload["clusters"]
             fields["clusters_context"] = "\n\n".join(
-                f"### Cluster {index}\nShared issue: {item['pattern']}\n"
+                f"### Cluster {index}\nShared preference pattern: {item['pattern']}\n"
                 f"Signature IDs: {', '.join(item['signature_ids'])}"
                 for index, item in enumerate(clusters["clusters"], 1))
             fields["clusters_context"] += (

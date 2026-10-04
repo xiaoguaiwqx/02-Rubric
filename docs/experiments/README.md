@@ -1,6 +1,6 @@
 # 实验索引
 
-Init Split 提示词重构与独立验证见[计划](init-split-prompts/plan.md)和[执行进度](init-split-prompts/tracker.md)。该计划在 init-split-prompts 分支复用已保存的 G5 seed11 五根 R0，只生成新 S0 并做正式 VLRB K=3 配对对比；三个独立入口已实现，中文模板效果单独记录。
+Init Split 提示词重构与独立验证见[计划](init-split-prompts/plan.md)、[执行进度](init-split-prompts/tracker.md)和[实验结果](init-split-prompts/results.md)。在 init-split-prompts 分支复用已保存的 G5 seed11 五根 R0，只生成新 S0 并做正式 VLRB K=3 配对对比；英文模板 v1 和偏好导向 v2 均已完成。本次 v2 全量 Strict ACC 为 77.15%，未参与初始化 1147 条为 76.46%，幻觉留出集 648 条为 85.34%；结果文档保留各版本、切片与各根指标及主要负结果。
 
 主要框架图为 [assets/framework.png](../../assets/framework.png)。方法概览、三个配置示例的区别与运行命令统一维护在仓库 [README](../../README.md)。当前 Hallucination100 参考配置使用 Strict + Preserve5；原 Discovery100 的 Covered/Strict 示例均使用 0 条保留案例。G5/GN 共用预热历史，默认五样例，可通过 `roots --warmup-count` 设置；F5 为人工固定五根对照。
 
