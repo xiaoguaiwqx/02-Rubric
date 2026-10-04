@@ -1,4 +1,4 @@
-"""Run R0 generation, subtree evolution, and frozen external evaluation."""
+"""Run R0 generation, independent S0 initialization, evolution, and external evaluation."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from structured_rubrics.structured.schema import StructuredRubric
 
-from . import (generated_root_initialization, generated_roots_report, rubric_pipeline,
+from . import (generated_root_initialization, generated_roots_report, init_split, rubric_pipeline,
                subtree_local_reflection, vlrb_official)
 from .model_call_support import file_sha256
 from .experiment_utils import atomic_write_json, load_json
@@ -102,7 +102,27 @@ def run_stage(args: argparse.Namespace) -> None:
         return
 
     subtree_local_reflection.check(config, target)
-    if args.stage == "evolve":
+    if args.stage == "init":
+        source = args.source_run
+        r0 = (init_split.reuse_source(config, target, source) if source is not None
+              else StructuredRubric.load_json(target / "r0/rubric.json"))
+        rows = rubric_pipeline.load_rows(config, "discovery")
+        init_split.initialize(config, target, rows, attempts=args.attempt_limit, r0=r0)
+    elif args.stage == "vlrb-s0":
+        rubric = StructuredRubric.load_json(target / "init/rubric.json")
+        value, records, _ = rubric_pipeline.evaluate_external(
+            config, target, "vlrb", "initial", rubric, args.attempt_limit)
+        atomic_write_json(target / "vlrb/s0_report.json", dict(
+            k=value["k"], rubric_sha256=rubric.rubric_sha256,
+            runtime=value["metrics"],
+            official=vlrb_official.official_system_metrics(records, vlrb_official._votes(value)),
+        ))
+    elif args.stage == "report-init":
+        source = args.source_run
+        if source is None:
+            source = Path(load_json(target / "source.json")["source_run"])
+        generated_roots_report.init_report(config, target, source)
+    elif args.stage == "evolve":
         r0 = StructuredRubric.load_json(target / "r0/rubric.json")
         manager = make_manager(
             dict(config["manager"], env_file=config.get("env_file", ".env")),
@@ -136,11 +156,13 @@ def run_stage(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stage", choices=("prepare", "roots", "evolve", "vlrb-r0",
-                                          "dev", "vlrb", "report"))
+    parser.add_argument("stage", choices=("prepare", "roots", "init", "evolve", "vlrb-r0",
+                                          "vlrb-s0", "dev", "vlrb", "report", "report-init"))
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--variant", choices=("f5", "g5", "gn"), default="g5")
+    parser.add_argument("--source-run", type=Path,
+                        help="existing variant directory for R0/report reuse, e.g. output/.../g5")
     parser.add_argument("--seed", type=int, default=11)
     parser.add_argument("--warmup-count", type=int,
                         default=generated_root_initialization.WARMUP_COUNT,

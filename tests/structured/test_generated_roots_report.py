@@ -1,6 +1,7 @@
 """Offline checks for the frozen generated-root reporting slices."""
 
 import unittest
+from copy import deepcopy
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -8,9 +9,90 @@ from unittest.mock import patch
 from experiments.evolving_structured_rubrics.experiment_utils import atomic_write_json, load_json
 
 from experiments.evolving_structured_rubrics import generated_roots_report as report
+from experiments.evolving_structured_rubrics import rubric_pipeline as pipeline
+from tests.structured.core_fixtures import artifact, rows
 
 
 class TestGeneratedRootsReport(unittest.TestCase):
+    def test_initialization_report_compares_formal_votes_without_final(self):
+        data = rows(6)
+        prefixes = ("vlfeedback", "RLHF", "mathverse")
+        groups = ("general", "hallucination", "reasoning")
+        records = [dict(sample_id=row["sample_id"], benchmark_id=f"{prefixes[i % 3]}_{i}",
+                        group=groups[i % 3], question=row["question"], image_path=row["image_path"],
+                        responses=[row["A"], row["B"]], preferred_original_index=0)
+                   for i, row in enumerate(data)]
+        orders = report.vlrb_official._order_schedule(records)
+        r0 = pipeline.build_multicrit_open_ended_init_rubric()
+        old = pipeline.replace_groups(r0, {root: [
+            dict(name="one", description="first"), dict(name="two", description="second")]
+            for root in r0.root_ids})
+        new = pipeline.replace_groups(old, {old.root_ids[0]: [
+            dict(name="one", description="new first"), dict(name="two", description="new second")]})
+
+        def full(rubric, correct):
+            value = artifact(data, rubric, correct, k=3)
+            for sample in value["samples"]:
+                sample["orders"] = list(orders[sample["sample_id"]])
+                for index, order in enumerate(sample["orders"]):
+                    replicate = sample["replicates"][str(index)]
+                    replicate["order"] = order
+                    if order:
+                        for call in [*replicate["subtrees"].values(), replicate["arbiter"]]:
+                            answer = call["parsed"]["answer"]
+                            call["parsed"]["answer"] = "B" if answer == "A" else "A"
+            value["metrics"] = pipeline.system.metrics(value, data)
+            return value
+
+        values = dict(r0=full(r0, 3), old_s0=full(old, 4), new_s0=full(new, 5))
+        for rep in ("1", "2"):
+            values["new_s0"]["samples"][0]["replicates"][rep]["arbiter"]["parsed"]["answer"] = "None"
+        values["new_s0"]["metrics"] = pipeline.system.metrics(values["new_s0"], data)
+        ids = {row["sample_id"] for row in records}
+        train = {data[0]["sample_id"]}
+        slices = dict(full=ids, train=train, nontrain_1147=ids - train,
+                      clean_1146=ids - train, heldout_hallucination={data[1]["sample_id"],
+                                                                  data[4]["sample_id"]})
+        with TemporaryDirectory() as temp:
+            source, target = Path(temp) / "source", Path(temp) / "target"
+            for directory, rubric, label in ((source, old, "old_s0"), (target, new, "new_s0")):
+                atomic_write_json(directory / "r0/rubric.json", r0.to_dict())
+                atomic_write_json(directory / "init/rubric.json", rubric.to_dict())
+                atomic_write_json(directory / "init/system.json", artifact(data[:1], rubric, 1))
+                atomic_write_json(directory / "vlrb/initial.json", values[label])
+            atomic_write_json(source / "vlrb/r0.json", values["r0"])
+            atomic_write_json(target / "init/summary.json", dict(roots=[], wall_seconds=1))
+            with patch.object(report.vlrb_official, "_read_records", return_value=records), \
+                    patch.object(report, "subsets", return_value=slices), \
+                    patch.object(pipeline, "load_rows", return_value=data[:1]):
+                result = report.init_report(dict(data_root=".", datasets={"vlrb": "test.parquet"}),
+                                            target, source)
+            self.assertEqual(result["systems"]["new_s0"]["full"]["correct"], 4)
+            self.assertEqual(result["systems"]["old_s0"]["full"]["correct"], 4)
+            paired = result["paired"]["old_s0_to_new_s0"]["full"]
+            self.assertEqual((paired["corrected"], paired["harmed"], paired["net_corrected"]),
+                             (1, 1, 0))
+            self.assertEqual(result["official"]["new_s0"]["majority_tie_or_abstain_count"], 1)
+            self.assertIn("ci95", result["paired"]["old_s0_to_new_s0"]["clean_1146"]["bootstrap"])
+            self.assertTrue((target / "init_comparison.json").exists())
+            self.assertFalse((target / "final.json").exists())
+            self.assertFalse((target / "state.json").exists())
+
+    def test_artifact_cost_deduplicates_reused_calls(self):
+        data = rows(1)
+        rubric = pipeline.build_multicrit_open_ended_init_rubric()
+        value = artifact(data, rubric, 1)
+        replica = value["samples"][0]["replicates"]["0"]
+        for i, call in enumerate([*replica["subtrees"].values(), replica["arbiter"]]):
+            call.update(cache_key=f"key-{i}", model_generation_count=1,
+                        metrics=dict(api_attempts=2, input_tokens=3, output_tokens=4,
+                                     latency_seconds=5, usage_complete=True))
+        cost = report.artifact_worker_cost([value, deepcopy(value)])
+        self.assertEqual(cost["subtree"]["logical_calls"], 5)
+        self.assertEqual(cost["subtree"]["input_tokens"], 15)
+        self.assertEqual(cost["arbiter"]["api_attempts"], 2)
+        self.assertEqual(cost["arbiter"]["missing_usage_calls"], 0)
+
     @staticmethod
     def fixture():
         records = []

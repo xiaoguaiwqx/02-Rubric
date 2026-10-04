@@ -1,5 +1,7 @@
 # 实验索引
 
+Init Split 提示词重构与独立验证见[计划](init-split-prompts/plan.md)和[执行进度](init-split-prompts/tracker.md)。该计划在 init-split-prompts 分支复用已保存的 G5 seed11 五根 R0，只生成新 S0 并做正式 VLRB K=3 配对对比；三个独立入口已实现，中文模板效果单独记录。
+
 主要框架图为 [assets/framework.png](../../assets/framework.png)。方法概览、三个配置示例的区别与运行命令统一维护在仓库 [README](../../README.md)。当前 Hallucination100 参考配置使用 Strict + Preserve5；原 Discovery100 的 Covered/Strict 示例均使用 0 条保留案例。G5/GN 共用预热历史，默认五样例，可通过 `roots --warmup-count` 设置；F5 为人工固定五根对照。
 
 当前主线是[子树逐例反思与局部竞争](subtree-local-reflection/plan.md)。[最终实验结果](subtree-local-reflection/results.md)集中展示八行主对比表、当前配置和主要结论；[最新框架 PPT](subtree-local-reflection/framework.pptx)说明方法与实验。Hallucination100 的详细实验记录见[冻结方案及已观察结果](vlrb-hallucination100-generated-roots/plan.md)，可复现的 seed11 样本 ID 和来源哈希见 [split manifest](vlrb-hallucination100-generated-roots/seed11_split.json)。

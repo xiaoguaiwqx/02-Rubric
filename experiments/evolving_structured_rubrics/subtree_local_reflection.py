@@ -239,7 +239,8 @@ def run(config, target, attempts=10, manager=None, rows=None, r0=None):
         row["_signature_id"] = f"S{i:03d}"
     manager = manager or make_manager(dict(config["manager"], env_file=config.get("env_file", ".env")), attempts)
     if not (target / "state.json").exists():
-        base.initialize(config, target, rows, manager, attempts, r0=r0)
+        from . import init_split
+        init_split.initialize(config, target, rows, attempts=attempts, r0=r0)
     state = load_json(target / "state.json")
     if state["completed"]:
         write(target / "final.json", state["rubric"])

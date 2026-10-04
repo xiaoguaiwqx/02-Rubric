@@ -8,11 +8,12 @@ import unittest
 from unittest.mock import patch
 
 from experiments.evolving_structured_rubrics import rubric_pipeline as pipeline
+from experiments.evolving_structured_rubrics import init_split as initialization
 from tests.structured.core_fixtures import artifact, report, rows
 
 
 class TestRubricInitialization(unittest.TestCase):
-    def test_primary_errors_expand_without_changing_manager_payloads(self):
+    def test_primary_errors_expand_with_complete_roots_and_local_evidence(self):
         data = rows(6)
         r0 = pipeline.build_multicrit_open_ended_init_rubric()
         for primary_count in (3, 4):
@@ -27,9 +28,9 @@ class TestRubricInitialization(unittest.TestCase):
                 class Manager:
                     config = dict(concurrency=1)
 
-                    def call(self, stage, path, payload, images=()):
+                    def call(self, stage, path, payload, images=(), *, user_text=None):
                         calls.append((stage, path.relative_to(target), deepcopy(payload),
-                                      [item["sample_id"] for item in images]))
+                                      [item["sample_id"] for item in images], user_text))
                         if stage == "signature":
                             return dict(applicable=True, signature="Verify image evidence",
                                         basis="Supported by the case")
@@ -52,30 +53,30 @@ class TestRubricInitialization(unittest.TestCase):
                     return baseline if name == "r0/system" else artifact(items, rubric, 6)
 
                 with patch.object(pipeline, "evaluate", side_effect=evaluate):
-                    s0, _ = pipeline.initialize({}, target, data, Manager(), 10, r0=r0)
+                    s0, _ = initialization.initialize({}, target, data, Manager(), 10, r0=r0)
                 self.assertEqual(evaluations, ["r0/system", "init/system"])
                 self.assertEqual(s0.root_ids, r0.root_ids)
                 for root in s0.root_ids:
                     self.assertEqual(len(s0.children(root)), 2)
-                counts = Counter(stage for stage, _, _, _ in calls)
+                counts = Counter(stage for stage, _, _, _, _ in calls)
                 self.assertEqual(counts["signature"], 30)
                 self.assertEqual(counts["cluster"], 5 if primary_count == 3 else 10)
                 self.assertEqual(counts["children"], 5)
-                for stage, path, payload, images in calls:
+                for stage, path, payload, images, user_text in calls:
+                    self.assertEqual([r["root_id"] for r in payload["roots"]], list(r0.root_ids))
+                    self.assertTrue(all(r in user_text for r in r0.root_ids))
                     root = payload["root"]["root_id"]
                     if stage == "signature":
-                        self.assertEqual(set(payload), {"root", "revision_goal", "case"})
-                        self.assertEqual(payload["revision_goal"], "")
+                        self.assertEqual(set(payload), {"roots", "root", "case"})
                         case = payload["case"]
-                        self.assertEqual(set(case), {"sample_id", "question", "A", "B", "gold", "current"})
-                        self.assertEqual(case["current"], dict(reports={root: baseline["samples"][
-                            int(case["sample_id"].split("-")[-1])]["replicates"]["0"]["subtrees"][root]["parsed"]},
-                            arbiter=report("A")))
+                        self.assertEqual(set(case), {"sample_id", "question", "A", "B", "gold", "worker"})
+                        expected = baseline["samples"][int(case["sample_id"].split("-")[-1])]["replicates"]["0"]["subtrees"][root]["parsed"]
+                        self.assertEqual(case["worker"], expected)
+                        self.assertNotIn("arbiter", str(payload))
                         self.assertEqual(images, [case["sample_id"]])
                     else:
-                        self.assertIs(payload["initial"], True)
-                        self.assertEqual(payload["revision"], dict(action="revise", revision_goal=
-                            "Initial split: improve reusable local judging instructions."))
+                        self.assertNotIn("revision", payload)
+                        self.assertEqual(images, [])
                         self.assertEqual(len(payload["signatures"]), primary_count if "primary" in path.parts else 6)
                         if stage == "children":
                             self.assertIn("expanded", path.parts)
@@ -92,7 +93,7 @@ class TestRubricInitialization(unittest.TestCase):
         class Manager:
             config = dict(concurrency=1)
 
-            def call(self, stage, path, payload, images=()):
+            def call(self, stage, path, payload, images=(), *, user_text=None):
                 if stage != "signature":
                     raise AssertionError("Unsupported signatures must not trigger clustering")
                 return dict(applicable=False, basis="No supported local failure")
@@ -100,7 +101,7 @@ class TestRubricInitialization(unittest.TestCase):
         with TemporaryDirectory() as temporary, patch.object(pipeline, "evaluate", return_value=baseline):
             target = Path(temporary)
             with self.assertRaisesRegex(RuntimeError, "insufficient supported patterns"):
-                pipeline.initialize({}, target, data, Manager(), 10, r0=r0)
+                initialization.initialize({}, target, data, Manager(), 10, r0=r0)
             self.assertFalse((target / "init/rubric.json").exists())
             self.assertFalse((target / "state.json").exists())
 

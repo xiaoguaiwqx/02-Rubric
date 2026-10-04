@@ -62,10 +62,13 @@ output/                                 本地实验产物与调用缓存
 | `prepare` | 生成冻结演化集与运行配置 |
 | `roots` | 创建 R0；G5/GN 共用预热历史，F5 创建固定五根 |
 | `vlrb-r0` | 评测裸 root 的正式 VLRB K=3 基线 |
+| `init` | 独立生成 S0 后停止；可复用已有 R0 与发现集报告 |
+| `vlrb-s0` | 独立评测已冻结 S0 的完整 VLRB K=3，无需 Final |
 | `evolve` | 构造 S0，再执行局部演化并冻结 Final |
 | `dev` | 在 Dev150 上评测 S0/Final，K=1 |
 | `vlrb` | 在完整 VLRB 上评测 S0/Final，K=3 |
 | `report` | 离线汇总已保存结果、阶段配对变化与成本 |
+| `report-init` | 离线配对比较同一 R0、旧 S0 和新 S0 |
 
 以 G5 为例，逐条执行以下命令。`prepare` 之后使用它保存的 `config.json`：
 
@@ -82,6 +85,24 @@ python -m experiments.evolving_structured_rubrics.run_subtree_experiment report 
 将 `--variant` 改为 `gn` 或 `f5` 可运行另两个对照，各变体使用独立子目录。G5/GN 在同一个输出根目录下复用预热对话，默认五个样例，生成请求分别规定五根或允许 2–7 根；F5 使用固定五根。原 Discovery100 配置的冻结协议见[子树实验方案](docs/experiments/subtree-local-reflection/plan.md)。
 
 在 `roots` 命令中加入 `--warmup-count 10` 可使用十个预热样例，数量须在 1 到演化集样例数之间。G5 仍生成五根，F5 不使用预热。同一输出根目录中的 G5/GN 须使用相同预热数量；改变数量时使用新输出目录。其他阶段无需传入该参数。
+
+### 只验证 Init Split
+
+当前实验分支将初始化提示词与流程集中在 [init_split.py](experiments/evolving_structured_rubrics/init_split.py)：三套独立的中文系统提示词、带说明的用户模板及 signature → cluster → children 流程。三个阶段都提供全部根职责；signature 使用案例图像与目标 Worker 报告，不输入 Global Arbiter 报告。后续演化提示词保持原协议。详细设置见[初始化对比计划](docs/experiments/init-split-prompts/plan.md)。
+
+复用已保存的 G5 seed11 五根 R0，逐条执行：
+
+```powershell
+$run = "output/init_split/seed11/template_zh_v1"
+New-Item -ItemType Directory -Force "$run/g5" | Out-Null
+python -m experiments.evolving_structured_rubrics.run_subtree_experiment init --config output/subtree_reflection/seed11/config.json --output-root $run --variant g5 --source-run output/subtree_reflection/seed11/g5 2>&1 | Tee-Object -FilePath "$run/g5/init.log"
+python -m experiments.evolving_structured_rubrics.run_subtree_experiment vlrb-s0 --config output/subtree_reflection/seed11/config.json --output-root $run --variant g5 2>&1 | Tee-Object -FilePath "$run/g5/vlrb-s0.log"
+python -m experiments.evolving_structured_rubrics.run_subtree_experiment report-init --config output/subtree_reflection/seed11/config.json --output-root $run --variant g5 2>&1 | Tee-Object -FilePath "$run/g5/report-init.log"
+```
+
+`--source-run` 指向旧变体目录，例如上述 g5，而非其 r0 子目录。初始化核对模型、发现集及 A/B 映射后，复制 R0 与已有 K=1 报告；旧目录只读。新目录保存模板、来源、请求缓存、S0 与正式评测。图像仍共用 data/VL_RewardBench/dataset_images。
+
+init 完成后保存 epoch=0、completed=false 的演化状态；vlrb-s0 直接评测冻结 S0，不伪造 Final。以后可在同一目录运行 evolve 继续局部演化。report-init 从 source.json 恢复对照来源，写出 g5/init_comparison.json，包含正式切片、根诊断、配对变化、区间与成本。改变初始化模板必须使用新输出目录。
 
 ## 指标与结果产物
 
