@@ -1,6 +1,10 @@
 # 实验索引
 
-Init Split 提示词重构与独立验证见[计划](init-split-prompts/plan.md)、[执行进度](init-split-prompts/tracker.md)和[实验结果](init-split-prompts/results.md)。在 init-split-prompts 分支复用已保存的 G5 seed11 五根 R0，只生成新 S0 并做正式 VLRB K=3 配对对比；英文模板 v1 和偏好导向 v2 均已完成。本次 v2 全量 Strict ACC 为 77.15%，未参与初始化 1147 条为 76.46%，幻觉留出集 648 条为 85.34%；结果文档保留各版本、切片与各根指标及主要负结果。
+RLAIF-V 挖掘数据已于 2026-10-05 完整下载至 `data/RLAIF-V/`，来源为 [openbmb/RLAIF-V-Dataset](https://huggingface.co/datasets/openbmb/RLAIF-V-Dataset)，版本 `cdfc8c13778434e38afd538b0641ea942df4af78`。14 个 Parquet 分片共 83,132 条、12,708,910,785 字节，全部通过官方 SHA-256 核对；图片字节包含在分片中。来源和问题类型分布见本地 `selection_summary.json`，版本、行数和哈希见 `download_manifest.json`，筛选示例见 `LOCAL_USAGE.md`。本次只准备数据，尚未选定挖掘子集、检查与 VLRB 的重叠或启动新实验；后续固定挖掘划分时应记录与全量 VLRB 1,247 条的去重规则。
+
+Init Split 提示词重构与独立验证见[计划](init-split-prompts/plan.md)、[执行进度](init-split-prompts/tracker.md)和[实验结果](init-split-prompts/results.md)。在 init-split-prompts 分支复用已保存的 G5 seed11 五根 R0，比较初始化 S0 的正式 VLRB K=3 结果；英文模板 v1、偏好导向 v2 与顺序 children v3 均已完成。当前 v3 全量 Strict ACC 为 77.23%（963/1247），未参与初始化为 76.11%（873/1147），幻觉留出集为 86.73%（562/648）。相对 v2，全量净增加 1 个正确判断、未参与初始化净减少 4 个、幻觉留出集净增加 9 个；结果文档保留各版本、配对变化与主要负结果。
+
+顺序 children v3 通过 `init --reuse-init-patterns --source-run` 复用 v2 的 signature/cluster，仅重新生成 children；各根在 children 阶段参考本轮前面已生成的子准则，signature/cluster 不读取前序 children。共生成 20 条子准则，仅新增 5 个 Manager 请求；本次归档范围止于 S0。范围与完整命令见上述计划文末。
 
 主要框架图为 [assets/framework.png](../../assets/framework.png)。方法概览、三个配置示例的区别与运行命令统一维护在仓库 [README](../../README.md)。当前 Hallucination100 参考配置使用 Strict + Preserve5；原 Discovery100 的 Covered/Strict 示例均使用 0 条保留案例。G5/GN 共用预热历史，默认五样例，可通过 `roots --warmup-count` 设置；F5 为人工固定五根对照。
 

@@ -66,6 +66,13 @@ class TestRubricInitialization(unittest.TestCase):
                     self.assertEqual([r["root_id"] for r in payload["roots"]], list(r0.root_ids))
                     self.assertTrue(all(r in user_text for r in r0.root_ids))
                     root = payload["root"]["root_id"]
+                    if stage == "children":
+                        self.assertEqual([r["root_id"] for r in payload["previous_children"]],
+                                         list(r0.root_ids[:r0.root_ids.index(root)]))
+                        self.assertIn("## Previously generated child criteria", user_text)
+                    else:
+                        self.assertNotIn("previous_children", payload)
+                        self.assertNotIn("## Previously generated child criteria", user_text)
                     if stage == "signature":
                         self.assertEqual(set(payload), {"roots", "root", "case"})
                         case = payload["case"]

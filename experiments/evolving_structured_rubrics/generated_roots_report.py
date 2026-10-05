@@ -362,7 +362,11 @@ def init_report(config: dict, target: Path, source: Path) -> dict:
     slices = subsets(records, load_json(SPLIT_MANIFEST))
     orders = vlrb_official._order_schedule(records)
     systems, roots, official, predictions, values = {}, {}, {}, {}, {}
-    for label, path in (("r0", source / "vlrb/r0.json"),
+    r0_predictions = source / "vlrb/r0.json"
+    if not r0_predictions.is_file():
+        r0_source = Path(load_json(source / "source.json")["source_run"])
+        r0_predictions = r0_source / "vlrb/r0.json"
+    for label, path in (("r0", r0_predictions),
                         ("old_s0", source / "vlrb/initial.json"),
                         ("new_s0", target / "vlrb/initial.json")):
         value, votes = _validated_system(path, rubrics[label], records, orders)

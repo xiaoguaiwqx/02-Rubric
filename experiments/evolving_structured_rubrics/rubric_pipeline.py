@@ -249,14 +249,20 @@ def manager_cost(directories):
     return cost
 
 
-def freeze_config(config, target, *, allow_stage_concurrency_change=False):
-    """Keep the initial snapshot; allow only Manager timeout to change on resume."""
+def freeze_config(config, target, *, allow_stage_concurrency_change=False,
+                  allow_worker_backend_change=False):
+    """Keep the initial snapshot while allowing selected runtime settings to change."""
     frozen = target / "run_config.json"
     if frozen.exists():
         previous = load_json(frozen)
         previous["manager"]["timeout"] = config["manager"]["timeout"]
         if allow_stage_concurrency_change:
             previous["manager"]["stage_concurrency"] = config["manager"].get("stage_concurrency", {})
+        if allow_worker_backend_change:
+            previous_pool = previous["worker"]["backend_pool"]
+            current_pool = config["worker"]["backend_pool"]
+            for key in ("global_request_concurrency", "endpoints"):
+                previous_pool[key] = current_pool[key]
         if previous != config:
             raise ValueError("run configuration changed; use a new output directory")
     else:
@@ -265,14 +271,11 @@ def freeze_config(config, target, *, allow_stage_concurrency_change=False):
 
 
 def check(config, target, *, require_manager_thinking=True, allow_stage_concurrency_change=False,
-          discovery_count=100):
+          discovery_count=100, allow_worker_backend_change=False):
     if config["protocol"] != PROTOCOL or not 1 <= config["max_epochs"] <= 5:
         raise ValueError("wrong protocol or max_epochs outside 1-5")
     if require_manager_thinking and config["manager"]["request_kwargs"].get("extra_body", {}).get("enable_thinking") is not True:
         raise ValueError("This experiment requires Manager thinking enabled")
-    pool = config["worker"]["backend_pool"]
-    if pool["global_request_concurrency"] != 50 or sum(e["max_concurrency"] for e in pool["endpoints"]) != 50:
-        raise ValueError("Worker shared concurrency must be 50")
     for split, count in (("discovery", discovery_count), ("dev", 150)):
         rows = load_rows(config, split)
         if len(rows) != count:
@@ -287,5 +290,6 @@ def check(config, target, *, require_manager_thinking=True, allow_stage_concurre
         write(manifest, rows)
     if not (Path(config["data_root"]) / config["datasets"]["vlrb"]).is_file():
         raise FileNotFoundError("configured VLRB parquet is missing")
-    freeze_config(config, target, allow_stage_concurrency_change=allow_stage_concurrency_change)
+    freeze_config(config, target, allow_stage_concurrency_change=allow_stage_concurrency_change,
+                  allow_worker_backend_change=allow_worker_backend_change)
     print(f"check passed: Discovery{discovery_count}, Dev150, VLRB path; no API calls", flush=True)

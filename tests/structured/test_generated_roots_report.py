@@ -78,6 +78,68 @@ class TestGeneratedRootsReport(unittest.TestCase):
             self.assertFalse((target / "final.json").exists())
             self.assertFalse((target / "state.json").exists())
 
+    def test_initialization_report_inherits_r0_without_changing_s0_baseline(self):
+        data = rows(6)
+        prefixes = ("vlfeedback", "RLHF", "mathverse")
+        groups = ("general", "hallucination", "reasoning")
+        records = [dict(sample_id=row["sample_id"], benchmark_id=f"{prefixes[i % 3]}_{i}",
+                        group=groups[i % 3], question=row["question"], image_path=row["image_path"],
+                        responses=[row["A"], row["B"]], preferred_original_index=0)
+                   for i, row in enumerate(data)]
+        orders = report.vlrb_official._order_schedule(records)
+        r0 = pipeline.build_multicrit_open_ended_init_rubric()
+        old = pipeline.replace_groups(r0, {root: [
+            dict(name="one", description="first"), dict(name="two", description="second")]
+            for root in r0.root_ids})
+        new = pipeline.replace_groups(old, {old.root_ids[0]: [
+            dict(name="one", description="new first"), dict(name="two", description="new second")]})
+
+        def full(rubric, correct):
+            value = artifact(data, rubric, correct, k=3)
+            for sample in value["samples"]:
+                sample["orders"] = list(orders[sample["sample_id"]])
+                for index, order in enumerate(sample["orders"]):
+                    replicate = sample["replicates"][str(index)]
+                    replicate["order"] = order
+                    if order:
+                        for call in [*replicate["subtrees"].values(), replicate["arbiter"]]:
+                            answer = call["parsed"]["answer"]
+                            call["parsed"]["answer"] = "B" if answer == "A" else "A"
+            value["metrics"] = pipeline.system.metrics(value, data)
+            return value
+
+        ids = {row["sample_id"] for row in records}
+        train = {data[0]["sample_id"]}
+        slices = dict(full=ids, train=train, nontrain_1147=ids - train,
+                      clean_1146=ids - train, heldout_hallucination={data[1]["sample_id"],
+                                                                  data[4]["sample_id"]})
+        with TemporaryDirectory() as temp:
+            origin, source, target = (Path(temp) / name for name in ("origin", "source", "target"))
+            atomic_write_json(origin / "vlrb/r0.json", full(r0, 2))
+            atomic_write_json(source / "source.json", dict(source_run=str(origin)))
+            atomic_write_json(target / "source.json", dict(source_run=str(source), source_files={}))
+            for directory, rubric, correct in ((source, old, 4), (target, new, 5)):
+                atomic_write_json(directory / "r0/rubric.json", r0.to_dict())
+                atomic_write_json(directory / "init/rubric.json", rubric.to_dict())
+                atomic_write_json(directory / "init/system.json", artifact(data[:1], rubric, 1))
+                atomic_write_json(directory / "vlrb/initial.json", full(rubric, correct))
+            atomic_write_json(target / "init/summary.json", dict(roots=[], wall_seconds=1))
+            self.assertFalse((source / "vlrb/r0.json").exists())
+            with patch.object(report.vlrb_official, "_read_records", return_value=records), \
+                    patch.object(report, "subsets", return_value=slices), \
+                    patch.object(pipeline, "load_rows", return_value=data[:1]), \
+                    patch.object(report, "_validated_system", wraps=report._validated_system) as validated:
+                result = report.init_report(dict(data_root=".", datasets={"vlrb": "test.parquet"}),
+                                            target, source)
+            self.assertEqual([call.args[0] for call in validated.call_args_list], [
+                origin / "vlrb/r0.json", source / "vlrb/initial.json", target / "vlrb/initial.json"])
+            self.assertEqual(result["source_run"], str(source))
+            self.assertEqual(result["systems"]["r0"]["full"]["correct"], 2)
+            self.assertEqual(result["systems"]["old_s0"]["full"]["correct"], 4)
+            paired = result["paired"]["old_s0_to_new_s0"]["full"]
+            self.assertEqual((paired["corrected"], paired["harmed"], paired["net_corrected"]),
+                             (1, 0, 1))
+
     def test_artifact_cost_deduplicates_reused_calls(self):
         data = rows(1)
         rubric = pipeline.build_multicrit_open_ended_init_rubric()

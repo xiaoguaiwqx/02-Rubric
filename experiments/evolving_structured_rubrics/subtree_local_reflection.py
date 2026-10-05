@@ -339,13 +339,16 @@ def check(config, target):
     legacy["protocol"] = base.PROTOCOL
     base.check(legacy, target / "checks", require_manager_thinking=False,
                allow_stage_concurrency_change=True,
+               allow_worker_backend_change=True,
                discovery_count=config.get("discovery_sample_count", 100))
     discovery_ids = {r["sample_id"] for r in base.load_rows(config, "discovery")}
     if discovery_ids.intersection(r["sample_id"] for r in base.load_rows(config, "dev")):
         raise ValueError("Discovery and Dev sample IDs overlap")
-    base.freeze_config(config, target, allow_stage_concurrency_change=True)
+    base.freeze_config(config, target, allow_stage_concurrency_change=True,
+                       allow_worker_backend_change=True)
     write(target / "runtime_settings.json", dict(manager_timeout=config["manager"]["timeout"],
-          manager_stage_concurrency=config["manager"].get("stage_concurrency", {})))
+          manager_stage_concurrency=config["manager"].get("stage_concurrency", {}),
+          worker_backend_pool=config["worker"]["backend_pool"]))
 
 
 def main():

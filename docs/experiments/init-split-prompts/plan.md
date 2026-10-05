@@ -2,7 +2,7 @@
 
 日期：2026-10-03
 分支：init-split-prompts
-状态：代码重构与独立入口已实现，69项离线测试通过；正式实验待启动。
+状态：英文 v1/v2 的 S0 实验已完成；下文保留原重构方案。2026-10-05 的顺序 children 上下文实验见文末，当前仅实现代码，不运行模型实验。
 
 ## 1. 目标与本轮范围
 
@@ -256,5 +256,47 @@ python -u -m experiments.evolving_structured_rubrics.run_subtree_experiment repo
     --source-run $sourceRun `
     2>&1 | Tee-Object -FilePath "$runRoot/report-init.log"
 
+if ($LASTEXITCODE -ne 0) { throw "结果对比失败，请检查 report-init.log" }
+```
+
+## 顺序 children 上下文实验（2026-10-05，已完成）
+
+执行状态：v3 的 S0 初始化与正式 K=3 外评已完成，观察结果见 [results.md](results.md)。下面保留该次实验的预先约定范围与运行命令。
+
+实施时最小接线及对应测试完成，全套 73 项离线测试通过，随后由用户执行模型实验；该版代码当时未单独提交。当前已恢复 v3 实现，76 项离线测试通过。
+
+本次仅改变 children 阶段：全部根的职责仍来自 R0，额外提供本轮之前完成的子准则。Root 1 不看到任何 children；Root 2 看到本轮 Root 1；依次递增，Root 5 看到本轮 Root 1–4。系统提示词补充职责协调与独立执行的说明，不要求不同根完全互斥。中文注释与英文模板同步保留在 `init_split.py`。
+
+通过 `init --reuse-init-patterns --source-run` 读取偏好导向 v2 保存的 `init/rXX/library.json` 和 `init/summary.json` 中的 clusters，跳过 signature、cluster 模型调用。新运行不使用旧 S0/Final 的 children 作为输入；它们仅作为比较基线。正常初始化也采用同一顺序 children 生成函数，signature/cluster 的提示词、选例及 R0 上下文保持原样。
+
+沿用原模型、配置、数据划分、A/B 日程和正式 K=3 计分。新输出记录复用来源、签名与聚类材料、本轮 children 请求、S0 和发现集 K=1 报告；Manager 成本只统计本次 children 调用，预期五个逻辑请求，失败重试另计。`report-init` 对比原始 R0、v2 S0 和新 S0；v2 未重复保存 R0 外评时，从其 `source.json` 指向的原始运行读取正式预测，不重新评测 R0。
+
+主要观察未参与初始化 1147、幻觉留出 648、General/Hallucination/Reasoning 的 Strict ACC 与配对变化，并检查子准则职责重叠及描述长度。一次与历史 S0 的对照包含重新生成的随机性，不能据此断言上下文单独带来收益。
+
+以下命令由用户执行，仅生成与评估新 S0，不运行后续演化：
+
+```powershell
+Set-Location D:\3-Work\02-DD-LLM\02-Rubric
+conda activate critiq
+
+$sourceRun = "output/init_split/seed11/template_en_v2/g5"
+$config = "$sourceRun/run_config.json"
+$runRoot = "output/init_split/seed11/template_en_v3_sequential"
+New-Item -ItemType Directory -Force -Path $runRoot | Out-Null
+
+python -u -m experiments.evolving_structured_rubrics.run_subtree_experiment init `
+    --config $config --output-root $runRoot --variant g5 `
+    --source-run $sourceRun --reuse-init-patterns --attempt-limit 10 `
+    2>&1 | Tee-Object -FilePath "$runRoot/init.log"
+if ($LASTEXITCODE -ne 0) { throw "Init Split 失败，请检查 init.log" }
+
+python -u -m experiments.evolving_structured_rubrics.run_subtree_experiment vlrb-s0 `
+    --config $config --output-root $runRoot --variant g5 --attempt-limit 10 `
+    2>&1 | Tee-Object -FilePath "$runRoot/vlrb-s0.log"
+if ($LASTEXITCODE -ne 0) { throw "VLRB 评测失败，请检查 vlrb-s0.log" }
+
+python -u -m experiments.evolving_structured_rubrics.run_subtree_experiment report-init `
+    --config $config --output-root $runRoot --variant g5 --source-run $sourceRun `
+    2>&1 | Tee-Object -FilePath "$runRoot/report-init.log"
 if ($LASTEXITCODE -ne 0) { throw "结果对比失败，请检查 report-init.log" }
 ```

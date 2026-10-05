@@ -146,6 +146,7 @@ from .model_call_support import file_sha256
 # 涉及多个优缺点时，应说明哪些因素影响比较，以及如何进行取舍。
 
 # 参考全部根准则的职责分工，保持子准则属于目标根。
+# 参考本轮前面已经生成的子准则，明确目标根对偏好判断的贡献，并保持本组子准则可由对应 Worker 独立使用。
 # 不要将具体样本答案、样本 ID 或固定 A/B 偏好写入准则。
 
 # 只返回一个 JSON 对象：
@@ -164,6 +165,10 @@ from .model_call_support import file_sha256
 # CHILDREN_USER_TEMPLATE = """## 全部根准则
 # 以下根准则用于理解各维度的职责：
 # {roots_context}
+
+# ## 本轮前面已经生成的子准则
+# 以下子准则在本轮初始化的前面阶段生成：
+# {previous_children_context}
 
 # ## 本次生成子准则的目标根
 # 根 ID：{target_root_id}
@@ -314,6 +319,7 @@ The name should concisely summarize the main point in judging preference.
 When multiple strengths and weaknesses are involved, explain which factors affect the comparison and how to weigh them.
 
 Refer to the responsibilities of all root criteria and keep the child criteria within the target root's scope.
+Consider the previously generated child criteria when identifying this root's contribution to preference judgment. Keep its child group independently usable by its Worker.
 Do not encode specific sample answers, sample IDs, or a fixed preference for A or B in the criteria.
 
 Return only one JSON object:
@@ -332,6 +338,10 @@ Return only one JSON object:
 CHILDREN_USER_TEMPLATE = """## All root criteria
 Use the following root criteria to understand the responsibilities of each dimension:
 {roots_context}
+
+## Previously generated child criteria
+The following child criteria were generated earlier in this initialization:
+{previous_children_context}
 
 ## Target root for child generation
 Root ID: {target_root_id}
@@ -354,7 +364,7 @@ PROMPTS = dict(signature=SIGNATURE_SYSTEM_PROMPT, cluster=CLUSTER_SYSTEM_PROMPT,
                children=CHILDREN_SYSTEM_PROMPT)
 USER_TEMPLATES = dict(signature=SIGNATURE_USER_TEMPLATE, cluster=CLUSTER_USER_TEMPLATE,
                       children=CHILDREN_USER_TEMPLATE)
-PROMPT_VERSION = "init-split-template-en-v2"
+PROMPT_VERSION = "init-split-template-en-v3-sequential-children"
 
 
 def render_user_prompt(stage, payload):
@@ -366,6 +376,13 @@ def render_user_prompt(stage, payload):
             for item in payload["roots"]),
         target_root_id=root["root_id"], target_root_name=root["name"],
         target_root_description=root["description"],
+        previous_children_context="\n\n".join(
+            f"### {item['root_id']}: {item['name']}\n"
+            + "\n\n".join(
+                f"Name: {child['name']}\nDescription: {child['description']}"
+                for child in item["children"])
+            for item in payload.get("previous_children", [])
+        ) or "No child criteria have been generated yet.",
     )
     if stage == "signature":
         case = payload["case"]
@@ -437,6 +454,10 @@ def case_payload(row, record, root):
     return case
 
 
+def project_previous_children(rubric, groups):
+    return pipeline.project_rubric(pipeline.replace_groups(rubric, groups), groups)
+
+
 def signatures(manager, directory, root, rubric, rows, current):
     records = pipeline.system_records(current)
 
@@ -453,7 +474,20 @@ def signatures(manager, directory, root, rubric, rows, current):
         "signature", manager.config["concurrency"]))
 
 
-def generate_group(manager, directory, root, rubric, library):
+def generate_children(manager, directory, root, rubric, library, clusters, previous_groups):
+    payload = dict(
+        roots=pipeline.project_rubric(rubric),
+        root=pipeline.project_rubric(rubric, [root])[0],
+        signatures=[s for s in library if s["applicable"]], clusters=clusters,
+        previous_children=project_previous_children(rubric, previous_groups),
+    )
+    proposal = manager.call("children", directory / "children.json", payload,
+                            user_text=render_user_prompt("children", payload))
+    pipeline.replace_groups(rubric, {root: proposal["children"]})
+    return proposal
+
+
+def generate_group(manager, directory, root, rubric, library, previous_groups=None):
     selected = [s for s in library if s["applicable"]]
     if len(selected) < 4:
         return None
@@ -463,10 +497,8 @@ def generate_group(manager, directory, root, rubric, library):
                             user_text=render_user_prompt("cluster", payload))
     if len(clusters["clusters"]) < 2:
         return None
-    payload = dict(**payload, clusters=clusters)
-    proposal = manager.call("children", directory / "children.json", payload,
-                            user_text=render_user_prompt("children", payload))
-    pipeline.replace_groups(rubric, {root: proposal["children"]})
+    proposal = generate_children(manager, directory, root, rubric, library,
+                                 clusters, previous_groups or {})
     return proposal, clusters
 
 
@@ -476,8 +508,6 @@ def reuse_source(config, target, source):
     if source == target:
         raise ValueError("source run and new output must be different directories")
     source_config = load_json(source / "run_config.json")
-    if config["worker"] != source_config["worker"]:
-        raise ValueError("source R0 Worker configuration differs")
     for key in ("model", "base_url", "request_kwargs"):
         if config["manager"][key] != source_config["manager"][key]:
             raise ValueError(f"source Manager {key} differs")
@@ -519,7 +549,8 @@ def reuse_source(config, target, source):
     return r0
 
 
-def initialize(config, target, rows, manager=None, attempts=10, r0=None):
+def initialize(config, target, rows, manager=None, attempts=10, r0=None,
+               reuse_patterns_from=None):
     """Create S0 and an epoch-zero state; leave evolution explicitly incomplete."""
     started = time.perf_counter()
     r0 = pipeline.build_multicrit_open_ended_init_rubric() if r0 is None else r0
@@ -527,6 +558,12 @@ def initialize(config, target, rows, manager=None, attempts=10, r0=None):
         dict(config["manager"], env_file=config.get("env_file", ".env")), attempts)
     protocol = dict(version=PROMPT_VERSION, system_prompts=PROMPTS,
                     user_templates=USER_TEMPLATES)
+    source_roots = None
+    if reuse_patterns_from is not None:
+        reuse_patterns_from = Path(reuse_patterns_from).resolve()
+        source_summary = load_json(reuse_patterns_from / "init/summary.json")
+        source_roots = {item["root_id"]: item for item in source_summary["roots"]}
+        protocol["reuse_patterns_from"] = str(reuse_patterns_from)
     path = target / "init/protocol.json"
     if path.exists() and load_json(path) != protocol:
         raise ValueError("Init Split prompts changed; use a new output directory")
@@ -542,24 +579,36 @@ def initialize(config, target, rows, manager=None, attempts=10, r0=None):
         primary = [r for r in rows if
                    records[r["sample_id"]]["subtrees"][root]["parsed"]["answer"] != r["answer"]]
         print(f"init root={root}: primary cases={len(primary)}", flush=True)
-        library = signatures(manager, directory / "signatures", root, r0, primary, baseline)
-        folder = directory / "primary"
-        generated = generate_group(manager, folder, root, r0, library)
-        extra = []
-        if generated is None:
-            seen = {r["sample_id"] for r in primary}
-            extra = [r for r in rows if r["sample_id"] not in seen]
-            print(f"init root={root}: supplement cases={len(extra)}", flush=True)
-            library += signatures(manager, directory / "signatures", root, r0, extra, baseline)
-            folder = directory / "expanded"
-            generated = generate_group(manager, folder, root, r0, library)
+        if source_roots is not None:
+            source_root = source_roots[root]
+            library = load_json(reuse_patterns_from / f"init/r{i:02d}/library.json")
+            clusters = source_root["clusters"]
+            write(directory / "reused/clusters.json", clusters)
+            proposal = generate_children(manager, directory / "reused", root, r0,
+                                         library, clusters, groups)
+            generated = proposal, clusters
+            expanded_count = source_root["expanded_count"]
+            print(f"init root={root}: reused signatures and clusters", flush=True)
+        else:
+            library = signatures(manager, directory / "signatures", root, r0, primary, baseline)
+            folder = directory / "primary"
+            generated = generate_group(manager, folder, root, r0, library, groups)
+            extra = []
+            if generated is None:
+                seen = {r["sample_id"] for r in primary}
+                extra = [r for r in rows if r["sample_id"] not in seen]
+                print(f"init root={root}: supplement cases={len(extra)}", flush=True)
+                library += signatures(manager, directory / "signatures", root, r0, extra, baseline)
+                folder = directory / "expanded"
+                generated = generate_group(manager, folder, root, r0, library, groups)
+            expanded_count = len(extra)
         write(directory / "library.json", library)
         if generated is None:
             raise RuntimeError(f"{root}: insufficient supported patterns for two initial clusters; S0 not created")
         proposal, clusters = generated
         groups[root] = proposal["children"]
         diagnostics.append(dict(
-            root_id=root, primary_count=len(primary), expanded_count=len(extra),
+            root_id=root, primary_count=len(primary), expanded_count=expanded_count,
             signature_count=len(library), applicable_count=sum(s["applicable"] for s in library),
             clusters=clusters, children_count=len(proposal["children"]),
             description_characters=sum(len(c["description"]) for c in proposal["children"])))

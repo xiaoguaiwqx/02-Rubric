@@ -107,7 +107,10 @@ def run_stage(args: argparse.Namespace) -> None:
         r0 = (init_split.reuse_source(config, target, source) if source is not None
               else StructuredRubric.load_json(target / "r0/rubric.json"))
         rows = rubric_pipeline.load_rows(config, "discovery")
-        init_split.initialize(config, target, rows, attempts=args.attempt_limit, r0=r0)
+        options = dict(attempts=args.attempt_limit, r0=r0)
+        if args.reuse_init_patterns:
+            options["reuse_patterns_from"] = source
+        init_split.initialize(config, target, rows, **options)
     elif args.stage == "vlrb-s0":
         rubric = StructuredRubric.load_json(target / "init/rubric.json")
         value, records, _ = rubric_pipeline.evaluate_external(
@@ -163,6 +166,8 @@ def main() -> None:
     parser.add_argument("--variant", choices=("f5", "g5", "gn"), default="g5")
     parser.add_argument("--source-run", type=Path,
                         help="existing variant directory for R0/report reuse, e.g. output/.../g5")
+    parser.add_argument("--reuse-init-patterns", action="store_true",
+                        help="init only: reuse source signatures/clusters and regenerate children sequentially")
     parser.add_argument("--seed", type=int, default=11)
     parser.add_argument("--warmup-count", type=int,
                         default=generated_root_initialization.WARMUP_COUNT,
@@ -170,6 +175,8 @@ def main() -> None:
     parser.add_argument("--attempt-limit", type=int, default=10)
     parser.add_argument("--root-attempt-limit", type=int, default=10)
     args = parser.parse_args()
+    if args.reuse_init_patterns and (args.stage != "init" or args.source_run is None):
+        parser.error("--reuse-init-patterns requires init and --source-run")
     if args.attempt_limit < 1 or args.root_attempt_limit < 1:
         parser.error("attempt limits must be positive")
     if args.warmup_count < 1:

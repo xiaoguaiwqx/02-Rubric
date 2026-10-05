@@ -33,8 +33,8 @@
     "api_key_env": "GUIJI_API_KEY",
     "concurrency": 4,
     "stage_concurrency": {
-      "signature": 20,
-      "case_reflection": 20
+      "signature": 12,
+      "case_reflection": 12
     },
     "timeout": 300,
     "request_kwargs": {
