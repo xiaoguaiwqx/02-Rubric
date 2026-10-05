@@ -20,7 +20,7 @@
       "endpoints": [
         {
           "endpoint_id": "qwen3vl8b-local",
-          "base_url": "http://10.102.137.255:8000/v1",
+          "base_url": "http://10.102.138.0:8001/v1",
           "checkpoint_root": "Qwen3-VL-8B-Instruct",
           "max_concurrency": 50
         }
