@@ -106,9 +106,7 @@ init 完成后保存 epoch=0、completed=false 的演化状态；vlrb-s0 直接�
 
 ## 指标与结果产物
 
-VLRB 外评按官方推理代码的交换方式，每条样本的每次评判独立以 50% 概率交换回答，不强制交替或单样本位置均衡。使用局部随机数生成器和 seed42，按样本 ID 排序预生成 K=3 日程，R0、S0、Final 共用这份日程；换位信息随预测保存，投票前还原为原始回答。至少两票选择同一个原始回答才形成最终判断，否则计为弃权。新产物记录 `order_protocol=independent-random-v1` 和 `order_seed=42`。
-
-阶段日志标记 `K=3`，打印的 Strict ACC 与正式报告一致。运行时的 A/B 相对多数指标用于诊断；正式结果读取 VLRB 阶段报告中的 `official`，或汇总报告中的切片指标。这里只对齐官方的独立随机换位方式：当前仍使用 K=3 和现有解码参数，官方论文主结果使用 K=5、temperature=0.2、top_p=0.2。[官方推理代码](https://github.com/vl-rewardbench/VL_RewardBench/blob/main/inference_hf.py)。
+VLRB 评测按官方推理代码的交换方式，每条样本的每次评判独立以 50% 概率交换回答A/B的顺序。使用局部随机数生成器和 seed42，按样本 ID 排序预生成 K=3 交换顺序。[官方推理代码](https://github.com/vl-rewardbench/VL_RewardBench/blob/main/inference_hf.py)。
 
 已保存的交替换位结果保留原协议，历史报告仍可读取。改用随机换位须使用新输出目录，并重新评测用于对照的 R0/S0/Final；不能沿用旧的 VLRB 预测或将不同换位协议混入同一份配对报告。`prepare` 继续使用原冻结训练顺序，初始化、演化和数据划分不受外评换位修改影响。
 
