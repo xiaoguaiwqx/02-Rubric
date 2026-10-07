@@ -1,5 +1,9 @@
 # 实验索引
 
+VLRB 训练子集统一保存在本地 `data/VL_RewardBench/splits/`：Hallucination100 为 [hallucination100/seed11/discovery_100.jsonl](../../data/VL_RewardBench/splits/hallucination100/seed11/discovery_100.jsonl)，Reasoning70 为 [reasoning70/seed11/discovery_70.jsonl](../../data/VL_RewardBench/splits/reasoning70/seed11/discovery_70.jsonl)。两者引用已有共享图像，不复制图片；冻结 ID 和划分说明保留在各自实验文档中。
+
+Reasoning70 的 seed11 训练集已按原 Hallucination100 方法抽取并固定：Reasoning 317 条中，现有 70 条作为训练集，其余全部 247 条作为留出集，不进行留出集近重复排除。训练实际包含 MathVerse 35、MMMU-Pro 35 条；未额外设置子任务配额。方法与数据位置见 [划分说明](vlrb-reasoning70/README.md)，冻结 ID 和来源哈希见 [split manifest](vlrb-reasoning70/seed11_split.json)。训练 JSONL 与共享图片仅保存在本地 `data/VL_RewardBench/`，尚未运行该划分的模型实验。
+
 RLAIF-V 挖掘数据已于 2026-10-05 完整下载至 `data/RLAIF-V/`，来源为 [openbmb/RLAIF-V-Dataset](https://huggingface.co/datasets/openbmb/RLAIF-V-Dataset)，版本 `cdfc8c13778434e38afd538b0641ea942df4af78`。14 个 Parquet 分片共 83,132 条、12,708,910,785 字节，全部通过官方 SHA-256 核对；图片字节包含在分片中。来源和问题类型分布见本地 `selection_summary.json`，版本、行数和哈希见 `download_manifest.json`，筛选示例见 `LOCAL_USAGE.md`。本次只准备数据，尚未选定挖掘子集、检查与 VLRB 的重叠或启动新实验；后续固定挖掘划分时应记录与全量 VLRB 1,247 条的去重规则。
 
 Init Split 提示词重构与独立验证见[计划](init-split-prompts/plan.md)、[执行进度](init-split-prompts/tracker.md)和[实验结果](init-split-prompts/results.md)。在 init-split-prompts 分支复用已保存的 G5 seed11 五根 R0，比较初始化 S0 的正式 VLRB K=3 结果；英文模板 v1、偏好导向 v2 与顺序 children v3 均已完成。当前 v3 全量 Strict ACC 为 77.23%（963/1247），未参与初始化为 76.11%（873/1147），幻觉留出集为 86.73%（562/648）。相对 v2，全量净增加 1 个正确判断、未参与初始化净减少 4 个、幻觉留出集净增加 9 个；结果文档保留各版本、配对变化与主要负结果。

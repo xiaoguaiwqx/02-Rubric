@@ -141,7 +141,7 @@ def _log_system_metrics(name, value, vlrb_records=None):
     if vlrb_records is not None:
         from . import vlrb_official as vlrb
         metrics = vlrb.official_system_metrics(vlrb_records, vlrb._votes(value))
-        label = " (official K=3)"
+        label = " (K=3)"
     print(f"{name}: Strict ACC={metrics['strict_accuracy']:.2%}{label}", flush=True)
 
 
@@ -154,6 +154,10 @@ def evaluate(config, target, name, rows, rubric, *, baseline=None, changed=None,
             raise ValueError(f"{path}: rubric changed")
         if [s["sample_id"] for s in value["samples"]] != [r["sample_id"] for r in rows]:
             raise ValueError(f"{path}: sample order changed")
+        if vlrb_records is not None and orders is not None:
+            if any(tuple(sample["orders"]) != tuple(orders[sample["sample_id"]])
+                   for sample in value["samples"]):
+                raise ValueError(f"{path}: VLRB swap schedule changed; use a new output directory")
         if not value["metrics"]["technical_failure_count"]:
             if vlrb_records is not None:
                 _log_system_metrics(name, value, vlrb_records)
@@ -167,6 +171,11 @@ def evaluate(config, target, name, rows, rubric, *, baseline=None, changed=None,
         baseline=baseline, changed_root_ids=changed, orders_by_id=orders,
         endpoint_ids=[e["endpoint_id"] for e in worker["backend_pool"]["endpoints"]],
         total_attempt_limit=attempts)
+    if vlrb_records is not None:
+        from . import vlrb_official as vlrb
+        value["order_protocol"] = vlrb.ORDER_PROTOCOL
+        value["order_seed"] = vlrb.SEED
+        write(path, value)
     if value["metrics"]["technical_failure_count"]:
         raise RuntimeError(f"{path}: technical failures; inspect cache and resume with a larger --attempt-limit")
     _log_system_metrics(name, value, vlrb_records)
@@ -217,6 +226,8 @@ def external(config, target, dataset, attempts):
                   k=before["k"], identical_rubric_reuse=not changed)
     if records is not None:
         from . import vlrb_official as vlrb
+        report["order_protocol"] = before.get("order_protocol", vlrb.LEGACY_ORDER_PROTOCOL)
+        report["order_seed"] = before.get("order_seed", vlrb.SEED)
         a = vlrb.official_system_metrics(records, vlrb._votes(before))
         b = vlrb.official_system_metrics(records, vlrb._votes(after))
         report["official"] = dict(initial=a, final=b,

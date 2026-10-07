@@ -37,7 +37,8 @@ def prepare(config: dict, root: Path, seed: int) -> None:
             or len(heldout_ids) != 648 or set(train_ids) & set(heldout_ids)
             or set(train_ids + heldout_ids) - set(by_id)):
         raise ValueError("frozen Hallucination100 ID split differs from benchmark")
-    schedule = vlrb_official._order_schedule(records)
+    schedule = vlrb_official._order_schedule(
+        records, protocol=vlrb_official.LEGACY_ORDER_PROTOCOL)
     rows = []
     for sample_id in train_ids:
         item = by_id[sample_id]
@@ -117,6 +118,7 @@ def run_stage(args: argparse.Namespace) -> None:
             config, target, "vlrb", "initial", rubric, args.attempt_limit)
         atomic_write_json(target / "vlrb/s0_report.json", dict(
             k=value["k"], rubric_sha256=rubric.rubric_sha256,
+            order_protocol=value["order_protocol"], order_seed=value["order_seed"],
             runtime=value["metrics"],
             official=vlrb_official.official_system_metrics(records, vlrb_official._votes(value)),
         ))
@@ -147,6 +149,7 @@ def run_stage(args: argparse.Namespace) -> None:
         )
         atomic_write_json(target / "vlrb/r0_report.json", dict(
             k=value["k"], rubric_sha256=rubric.rubric_sha256,
+            order_protocol=value["order_protocol"], order_seed=value["order_seed"],
             runtime=value["metrics"],
             official=vlrb_official.official_system_metrics(records, vlrb_official._votes(value)),
         ))

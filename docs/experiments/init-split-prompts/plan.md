@@ -271,6 +271,8 @@ if ($LASTEXITCODE -ne 0) { throw "结果对比失败，请检查 report-init.log
 
 沿用原模型、配置、数据划分、A/B 日程和正式 K=3 计分。新输出记录复用来源、签名与聚类材料、本轮 children 请求、S0 和发现集 K=1 报告；Manager 成本只统计本次 children 调用，预期五个逻辑请求，失败重试另计。`report-init` 对比原始 R0、v2 S0 和新 S0；v2 未重复保存 R0 外评时，从其 `source.json` 指向的原始运行读取正式预测，不重新评测 R0。
 
+后续演化完成后的完整 `report` 同样支持来源复用：本地缺少 R0 正式预测、生成记录或共享预热记录时，沿 `source.json` 逐级读取原始来源；S0 与 Final 始终使用当前运行的产物。报告的 `costs.reused_artifacts` 列出实际复用路径，`historical_cost_reused` 标明历史成本复用；Manager/Worker 的本轮调用统计仍来自当前目录，来源文件不复制或改写。
+
 主要观察未参与初始化 1147、幻觉留出 648、General/Hallucination/Reasoning 的 Strict ACC 与配对变化，并检查子准则职责重叠及描述长度。一次与历史 S0 的对照包含重新生成的随机性，不能据此断言上下文单独带来收益。
 
 以下命令由用户执行，仅生成与评估新 S0，不运行后续演化：
@@ -300,3 +302,48 @@ python -u -m experiments.evolving_structured_rubrics.run_subtree_experiment repo
     2>&1 | Tee-Object -FilePath "$runRoot/report-init.log"
 if ($LASTEXITCODE -ne 0) { throw "结果对比失败，请检查 report-init.log" }
 ```
+
+五轮演化与测试
+```powershell
+Set-Location D:\3-Work\02-DD-LLM\02-Rubric
+conda activate critiq
+
+$runRoot = "output/init_split/seed11/template_en_v3_sequential"
+$config = "$runRoot/g5/run_config.json"
+
+# 1. 从已有 v3 S0 开始演化
+python -u -m experiments.evolving_structured_rubrics.run_subtree_experiment evolve `
+    --config $config --output-root $runRoot --variant g5 --attempt-limit 10 `
+    2>&1 | Tee-Object -FilePath "$runRoot/evolve.log" -Append
+
+if ($LASTEXITCODE -ne 0) { throw "演化失败，请检查 evolve.log" }
+
+# 2. Dev 外评
+python -u -m experiments.evolving_structured_rubrics.run_subtree_experiment dev `
+    --config $config --output-root $runRoot --variant g5 --attempt-limit 10 `
+    2>&1 | Tee-Object -FilePath "$runRoot/dev.log" -Append
+
+if ($LASTEXITCODE -ne 0) { throw "Dev 评测失败，请检查 dev.log" }
+
+# 3. 正式 VLRB K=3 外评，复用已有 S0 评测
+python -u -m experiments.evolving_structured_rubrics.run_subtree_experiment vlrb `
+    --config $config --output-root $runRoot --variant g5 --attempt-limit 120 `
+    2>&1 | Tee-Object -FilePath "$runRoot/vlrb.log" -Append
+
+if ($LASTEXITCODE -ne 0) { throw "VLRB 评测失败，请检查 vlrb.log" }
+
+# 4. 完整 R0 / S0 / Final 报告，读取来源中的 R0 记录
+python -u -m experiments.evolving_structured_rubrics.run_subtree_experiment report `
+    --config $config --output-root $runRoot --variant g5 `
+    2>&1 | Tee-Object -FilePath "$runRoot/report.log" -Append
+
+if ($LASTEXITCODE -ne 0) { throw "报告生成失败，请检查 report.log" }
+```
+
+## 后续外评：独立随机换位
+
+上述 v1–v4 已完成实验使用冻结的交替换位 K=3，其历史预测与结果保留。后续外评改为官方推理代码中的逐次独立随机交换：每次以 50% 概率交换，允许连续不换或连续交换；使用 seed42，按样本 ID 排序预生成同一份 K=3 日程，供待比较的 Rubric 共用。新产物保存 `order_protocol=independent-random-v1`、`order_seed=42` 及逐次换位信息，投票前还原原始回答身份。
+
+本次仅修改外评换位，K=3、Worker/Arbiter prompt、解码参数、Strict/Covered 计分、初始化和演化规则保持原值。prepare 不改变已冻结发现集的回答顺序。这里只对齐官方交换方式，并非完整复现论文的 K=5 和解码设置。[官方推理代码](https://github.com/vl-rewardbench/VL_RewardBench/blob/main/inference_hf.py)。
+
+重新评测时使用新输出目录，可复用冻结的 R0、S0、Final Rubric 和训练产物，但 R0/S0/Final 的 VLRB 预测都要按新日程推理。旧目录只读，旧预测不能作为新协议配对报告中的 R0 或 S0 基线。实现与离线验证不代表新协议实验已经运行。

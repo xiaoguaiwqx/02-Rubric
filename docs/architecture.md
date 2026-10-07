@@ -30,7 +30,7 @@ init_split.py 使用独立、固定的三条中文系统提示词和三个带参
 
 初始化先选目标 Worker 与 gold 不一致的发现集案例，None 也进入审查，但不强制判为错误。不足 4 条有效 signature 或 2 个支持 cluster 时，补充该发现集剩余案例；仍不足则停止，不降低阈值。cluster 至少含两个不同签名、ID 不跨组重复，每根 children 保持 2–5 条。根本身不改动。rubric_pipeline.py 继续承担 Rubric 组装、共享 children 校验、配置冻结和外评；演化的逐例反思与局部接受规则保持原实现。
 
-init 可复用匹配的已有 R0/K=1 报告，保存 S0 后停止。vlrb-s0 通过 rubric_pipeline.evaluate_external 评测指定冻结 S0，不要求演化完成；原 S0/Final 外评也使用共享路径，保持原命名、A/B 日程及未改动 root 的报告复用。report-init 用正式 K=3 预测配对比较 R0、旧 S0、新 S0，不依赖 Final，并从系统产物的调用遥测汇总成本，避免遍历全部 Worker 缓存。详细协议见[Init Split 实验计划](experiments/init-split-prompts/plan.md)。
+init 可复用匹配的已有 R0/K=1 报告，保存 S0 后停止。vlrb-s0 通过 rubric_pipeline.evaluate_external 评测指定冻结 S0，不要求演化完成；S0/Final 外评也使用共享路径，在相同回答顺序下复用未改动 root 的报告。新的 VLRB 外评使用 seed42 预生成逐样本、逐次独立随机换位的 K=3 日程，并保存 order_protocol 和 order_seed。prepare 的发现集仍使用原冻结顺序；历史报告按原交替日程核对，新旧换位结果不混入同一份配对报告。report-init 用正式 K=3 预测配对比较 R0、旧 S0、新 S0，不依赖 Final，并从系统产物的调用遥测汇总成本，避免遍历全部 Worker 缓存。详细协议见[Init Split 实验计划](experiments/init-split-prompts/plan.md)。
 
 `generated_root_initialization.py` 默认抽取五个预热样例，可通过 `roots --warmup-count` 改变抽样数量；默认行为保留冻结的抽样、A/B 随机翻转和顺序，并恢复全局随机状态。G5/GN 从同一份预热对话分叉，生成请求只改变 root 数量要求；恢复时重建已成功的对话历史并跳过成功调用。预热数量、样例及历史仍由现有请求缓存记录，改变数量须使用新输出目录。辅助函数均有实际调用，显式预热样例、协议参数及数量提示词变体继续保留，以支持已有实验复现。固定 F5 对照仍由 `rubric_pipeline.build_multicrit_open_ended_init_rubric` 创建。
 

@@ -20,6 +20,16 @@ SPLIT_MANIFEST = (Path(__file__).resolve().parents[2] / "docs/experiments"
 VARIANTS = ("f5", "g5", "gn")
 
 
+def _r0_artifact(target: Path, relative: str) -> Path:
+    """Prefer local R0 artifacts, then follow the recorded reuse source."""
+    target = target.resolve()
+    path = target / relative
+    while not path.is_file() and (target / "source.json").is_file():
+        target = Path(load_json(target / "source.json")["source_run"])
+        path = target / relative
+    return path.resolve()
+
+
 def subsets(records: Sequence[Mapping[str, Any]], split: Mapping[str, Any]) -> dict[str, set[str]]:
     """Use the original 100/648/1146 split, including its near-duplicate exclusion."""
     all_ids = {row["sample_id"] for row in records}
@@ -94,6 +104,12 @@ def paired_bootstrap_ci(records: Sequence[Mapping[str, Any]],
                 ci95=[values[int(0.025 * iterations)],
                       values[min(iterations - 1, int(0.975 * iterations))]],
                 iterations=iterations, seed=seed)
+
+
+def _report_orders(records: Sequence[Mapping[str, Any]], path: Path):
+    """Validate old reports against their frozen protocol, and new reports against random swaps."""
+    protocol = load_json(path).get("order_protocol", vlrb_official.LEGACY_ORDER_PROTOCOL)
+    return protocol, vlrb_official._order_schedule(records, protocol=protocol)
 
 
 def _validated_system(path: Path, rubric: StructuredRubric,
@@ -191,8 +207,10 @@ def _generation_cost(root: Path, variant: str) -> dict | None:
     if variant == "f5":
         return None
     result = {}
-    for label, path in (("shared_warmup", root / "warmup/transcript.json"),
-                        ("root_generation", root / variant / "r0/generation.json")):
+    target = root / variant
+    for label, path in (
+            ("shared_warmup", _r0_artifact(target, "../warmup/transcript.json")),
+            ("root_generation", _r0_artifact(target, "r0/generation.json"))):
         value = load_json(path)
         entries = value["turns"] if label == "shared_warmup" else [value]
         attempts = [attempt for entry in entries for attempt in entry["attempts"]]
@@ -229,11 +247,18 @@ def variant_report(config: dict, root: Path, variant: str,
     result = load_json(target / "report.json")
     rows = rubric_pipeline.load_rows(config, "discovery")
     rubrics = _rubrics(target)
-    orders = vlrb_official._order_schedule(records)
+    order_protocol, orders = _report_orders(records, target / "vlrb/initial.json")
     systems, roots, predictions = {}, {}, {}
     wall_seconds = {}
+    relatives = ["vlrb/r0.json"]
+    if variant != "f5":
+        relatives += ["r0/generation.json", "../warmup/transcript.json"]
+    r0_artifacts = {relative: _r0_artifact(target, relative) for relative in relatives}
+    reused_artifacts = {relative: str(path) for relative, path in r0_artifacts.items()
+                        if path != (target / relative).resolve()}
     for stage, name in (("r0", "r0"), ("s0", "initial"), ("final", "final")):
-        value, votes = _validated_system(target / f"vlrb/{name}.json", rubrics[stage],
+        path = r0_artifacts["vlrb/r0.json"] if stage == "r0" else target / f"vlrb/{name}.json"
+        value, votes = _validated_system(path, rubrics[stage],
                                          records, orders)
         predictions[stage] = votes
         systems[stage] = {label: subset_metrics(records, votes, ids)
@@ -280,15 +305,17 @@ def variant_report(config: dict, root: Path, variant: str,
         root_generation=_generation_cost(root, variant),
         wall_seconds_by_artifact=wall_seconds,
         source_output=str(target),
-        historical_cost_reused=False,
+        historical_cost_reused=bool(reused_artifacts),
+        reused_artifacts=reused_artifacts,
     )
     generation = None
     if variant != "f5":
-        item = load_json(target / "r0/generation.json")
+        item = load_json(r0_artifacts["r0/generation.json"])
         generation = dict(count_reason=item["parsed"]["count_reason"],
                           warmup_history_sha256=item["request"]["warmup_history_sha256"],
                           attempt_count=len(item["attempts"]))
     result["generated_roots"] = dict(
+        order_protocol=order_protocol, order_seed=vlrb_official.SEED,
         root_count=len(rubrics["r0"].root_ids),
         root_catalog=[dict(root_id=root_id,
                            name=rubrics["r0"].get_node(root_id).criterion.name,
@@ -360,12 +387,9 @@ def init_report(config: dict, target: Path, source: Path) -> dict:
     parquet = Path(config["data_root"]) / config["datasets"]["vlrb"]
     records = vlrb_official._read_records(target / "vlrb", parquet_path=parquet)
     slices = subsets(records, load_json(SPLIT_MANIFEST))
-    orders = vlrb_official._order_schedule(records)
+    order_protocol, orders = _report_orders(records, target / "vlrb/initial.json")
     systems, roots, official, predictions, values = {}, {}, {}, {}, {}
-    r0_predictions = source / "vlrb/r0.json"
-    if not r0_predictions.is_file():
-        r0_source = Path(load_json(source / "source.json")["source_run"])
-        r0_predictions = r0_source / "vlrb/r0.json"
+    r0_predictions = _r0_artifact(source, "vlrb/r0.json")
     for label, path in (("r0", r0_predictions),
                         ("old_s0", source / "vlrb/initial.json"),
                         ("new_s0", target / "vlrb/initial.json")):
@@ -404,6 +428,7 @@ def init_report(config: dict, target: Path, source: Path) -> dict:
             raise ValueError(f"{label}: discovery report differs")
     result = dict(
         protocol="init-split-comparison-v1", k=3, source_run=str(source),
+        order_protocol=order_protocol, order_seed=vlrb_official.SEED,
         rubric_sha256={label: rubric.rubric_sha256 for label, rubric in rubrics.items()},
         systems=systems, roots=roots, official=official, paired=paired,
         discovery_k1={label: value["metrics"] for label, value in training.items()},
@@ -421,7 +446,7 @@ def init_report(config: dict, target: Path, source: Path) -> dict:
     for label in ("r0", "old_s0", "new_s0"):
         metrics = systems[label]["heldout_hallucination"]
         print(f"{label} heldout: {metrics['correct']}/{metrics['total']} "
-              f"({metrics['strict_acc']:.2%}, official K=3)", flush=True)
+              f"({metrics['strict_acc']:.2%}, K=3)", flush=True)
     return result
 
 
@@ -435,7 +460,7 @@ def combined_report(root: Path, records: Sequence[Mapping[str, Any]],
                for variant in VARIANTS}
     if not all(reports.values()):
         return
-    warmup = load_json(root / "warmup/transcript.json")
+    warmup = load_json(_r0_artifact(root / "g5", "../warmup/transcript.json"))
     samples = warmup["request"]["samples"]
     result = dict(
         seed=load_json(SPLIT_MANIFEST)["seed"],
@@ -449,13 +474,17 @@ def combined_report(root: Path, records: Sequence[Mapping[str, Any]],
         systems={v: reports[v]["systems"] for v in VARIANTS},
         roots={v: reports[v]["roots"] for v in VARIANTS},
         costs={v: reports[v]["costs"] for v in VARIANTS}, paired={})
-    orders = vlrb_official._order_schedule(records)
+    order_protocol, orders = _report_orders(records, root / "f5/vlrb/initial.json")
+    result["order_protocol"] = order_protocol
+    result["order_seed"] = vlrb_official.SEED
     predictions = {}
     for variant in VARIANTS:
         rubrics = _rubrics(root / variant)
         for stage, name in (("r0", "r0"), ("s0", "initial"), ("final", "final")):
+            path = (_r0_artifact(root / variant, "vlrb/r0.json") if stage == "r0"
+                    else root / variant / f"vlrb/{name}.json")
             _, predictions[variant, stage] = _validated_system(
-                root / variant / f"vlrb/{name}.json", rubrics[stage], records, orders)
+                path, rubrics[stage], records, orders)
     comparisons = (
         ("gn_final_vs_f5_final", ("f5", "final"), ("gn", "final")),
         ("g5_final_vs_f5_final", ("f5", "final"), ("g5", "final")),
@@ -484,7 +513,8 @@ def report(config: dict, root: Path, variant: str) -> None:
     if [row["sample_id"] for row in rows] != split["train_ids"]:
         return  # The original Discovery100 protocol uses the ordinary subtree report.
     target = root / variant
-    required = [target / f"vlrb/{name}.json" for name in ("r0", "initial", "final")]
+    required = [_r0_artifact(target, "vlrb/r0.json"),
+                target / "vlrb/initial.json", target / "vlrb/final.json"]
     if not all(path.is_file() for path in required):
         missing = [str(path) for path in required if not path.is_file()]
         raise RuntimeError(f"complete R0/S0/Final VLRB evaluation before report: {missing}")

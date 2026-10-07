@@ -300,6 +300,8 @@ class TestInitSplit(unittest.TestCase):
         data = rows(3)
         rubric = pipeline.build_multicrit_open_ended_init_rubric()
         value = artifact(data, rubric, 3, k=3)
+        value["order_protocol"] = entry.vlrb_official.ORDER_PROTOCOL
+        value["order_seed"] = entry.vlrb_official.SEED
         for rep in ("1", "2"):
             value["samples"][0]["replicates"][rep]["arbiter"]["parsed"]["answer"] = "None"
         value["metrics"] = pipeline.system.metrics(value, data)
