@@ -1,15 +1,39 @@
 # 实验索引
 
-主要框架图为 [assets/framework.png](../../assets/framework.png)。方法概览、三个配置示例的区别与运行命令统一维护在仓库 [README](../../README.md)。当前 Hallucination100 参考配置使用 Strict + Preserve5；原 Discovery100 的 Covered/Strict 示例均使用 0 条保留案例。G5/GN 共用预热历史，默认五样例，可通过 `roots --warmup-count` 设置；F5 为人工固定五根对照。
+方法、配置与统一命令入口见仓库 [README](../../README.md)，代码职责与输入边界见 [架构说明](../architecture.md)。主要框架图为 [assets/framework.png](../../assets/framework.png)。
 
-当前主线是[子树逐例反思与局部竞争](subtree-local-reflection/plan.md)。[最终实验结果](subtree-local-reflection/results.md)集中展示八行主对比表、当前配置和主要结论；[最新框架 PPT](subtree-local-reflection/framework.pptx)说明方法与实验。Hallucination100 的详细实验记录见[冻结方案及已观察结果](vlrb-hallucination100-generated-roots/plan.md)，可复现的 seed11 样本 ID 和来源哈希见 [split manifest](vlrb-hallucination100-generated-roots/seed11_split.json)。
+## 当前方法与冻结数据
 
-G5 seed11 的 2026-10-03 重跑与历史运行对比已归档于生成 root 实验文档第 9 节，包含正式 R0/S0/Final、clean1146、配对统计、演化轨迹、耗时及负结果。PPT 第 11 页最后三行使用本次结果；文档第 8 节保留旧结果。两次初始化内容不同，不能把分数差直接解释为代码重构收益。
+| 实验 | 主要内容 | 说明与证据 |
+|---|---|---|
+| 子树逐例反思与局部竞争 | R0、S0、局部候选验证、Global Arbiter 与 Final | [冻结协议](subtree-local-reflection/plan.md)、[历史结果表](subtree-local-reflection/results.md) |
+| Hallucination100 生成 root | seed11 冻结训练100、幻觉留出648，Strict + Preserve5 | [原协议与历史结果](vlrb-hallucination100-generated-roots/plan.md)、[划分 ID](vlrb-hallucination100-generated-roots/seed11_split.json) |
+| 英文 V3 Init Split | 偏好导向 signature/cluster，仅 children 参考本轮前序子准则 | [初始化与随机换位结果摘要](init-split-prompts/results.md) |
+| Reasoning70 | 固定训练70，其余全部 Reasoning247 留出，十对预热、V3 初始化、五轮演化 | [协议、结果与完整命令](vlrb-reasoning70/README.md)、[划分 ID](vlrb-reasoning70/seed11_split.json) |
 
-当前代码入口是 `experiments.evolving_structured_rubrics.run_subtree_experiment`：`prepare` 还原发现集，`roots` 创建 F5/G5/GN，`vlrb-r0` 测裸 root，`evolve` 运行 S0 与局部演化，`dev`/`vlrb` 做冻结后的独立评测，`report` 汇总结果。具体命令见仓库 [README](../../README.md)。VLRB 正式指标和阶段日志使用 K=3 至少两票一致；保存产物中的运行时相对多数值仅用于诊断。
+VLRB 训练子集放在本地 `data/VL_RewardBench/splits/`：
 
-生成 root 实验的 `report` 对同一批完整 VLRB 预测离线计算训练 100、非训练 1147、去近重复 1146、未见幻觉 648 和官方类别切片，并保留 R0/S0/Final、各 root、配对变化及成本。三组变体均有完整报告时，seed 目录再输出 F5/G5/GN 配对汇总；全量 1247 指标包含训练样本。
+- Hallucination100：[discovery_100.jsonl](../../data/VL_RewardBench/splits/hallucination100/seed11/discovery_100.jsonl)。
+- Reasoning70：[discovery_70.jsonl](../../data/VL_RewardBench/splits/reasoning70/seed11/discovery_70.jsonl)。
 
-旧 Gate/Cascade、joint、Phase17–22、类别专属 Rubric、十样例预热和迁移审计的代码与实验文档保存在 `codex/subtree-local-reflection` 分支；原 CritiQ-V 保存在 `CritiQ-V`。这些探索中的负结果仍属于研究历史，不能当作当前方法的运行入口。历史本地原始产物归档于 `output/archive/`，两个核心实验目录保留原位。整个 `output/` 仅本地保存，不再由 Git 跟踪；研究证据只提交必要的结果摘要、split 元数据和可编辑 PPT。
+两者引用共享的 `data/VL_RewardBench/dataset_images/`，不复制图片。训练 JSONL、图像、实际服务配置及原始产物保持本地保存；Git 只保存示例配置、必要的结果摘要和冻结 split 元数据。
 
-本地输出目录已按[目录归档清单](output-archive.md)整理：最新完整运行和核心对照保留原路径，历史探索按系列整目录迁移；原来跟踪的 268 个历史文件已取消 Git 跟踪，本地文件内容不改写。
+## 入口与计分
+
+统一入口为 `experiments.evolving_structured_rubrics.run_subtree_experiment`：`prepare` 准备划分，`roots` 创建 F5/G5/GN，`init` 独立生成 S0，`evolve` 继续局部演化，`vlrb-r0`/`vlrb-s0`/`vlrb` 评测冻结版本，`report`/`report-init` 离线汇总已保存预测。G5/GN 默认五对预热，可通过 `roots --warmup-count` 设置；Reasoning70 的协议显式使用十对。
+
+新外评使用 `independent-random-v1`：seed42 为每条样本的每次判断独立决定是否交换回答。先还原原回答身份，K=3 至少两票一致，否则弃权，Strict ACC 将弃权计错。旧 `alternating-v1` 结果保留为历史证据；不同换位协议不混入同一份配对报告。方法阶段 K=1 和正式外评 K=3 分别记录。
+
+Hallucination100 的报告保留训练100、未训练1147、clean1146、幻觉留出648及三个官方类别；Reasoning70 使用训练70、全部非训练1177、Reasoning留出247及三个官方类别。全量1247与训练切片包含学习数据，不能作为独立未见样本证据。
+
+## 主要观察
+
+幻觉数据生成的 V3 在独立随机换位下，R0/S0/Final 的全量 Strict ACC 为 **74.26% / 77.63% / 76.82%**，幻觉留出648为 **82.56% / 86.88% / 86.73%**。这些是固定版本的外评，详细来源及历史交替换位对照见 [V3 摘要](init-split-prompts/results.md)。
+
+Reasoning70 的 Reasoning247 Strict ACC 为 R0 **64.78%（160/247）**、S0 **63.16%（156/247）**、Final **61.94%（153/247）**，本次没有观察到主任务提升。Final 在 General 中有2次技术失败，完整报告汇总仍被阻断；[结果文档](vlrb-reasoning70/README.md#已观察结果g5-seed11)按保存预测重算并注明此状态。保留负结果，不能以局部 Worker 更新被接受代替整体系统改善。
+
+## 历史分支与本地产物
+
+`init-split-prompts` 分支保存完整提示词探索、计划、进度、各版本对照和 PPT 更新。主线保留英文 V3 核心实现与精简结果；历史 [框架 PPT](subtree-local-reflection/framework.pptx) 留作参考，其旧结果不代表当前随机换位协议。
+
+旧 Gate/Cascade、joint、Phase17–22 和其他历史 runner 保存在 `codex/subtree-local-reflection`；原 CritiQ-V 保存在 `CritiQ-V`。整个 `output/` 只在本地保存，历史产物位置见 [目录归档清单](output-archive.md)。

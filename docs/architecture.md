@@ -5,7 +5,7 @@ flowchart LR
     W[偏好预热：默认五样例] --> G[偏好归纳 G5/GN]
     G --> R[R0：根准则]
     H[人工固定 F5] --> R
-    R --> S[S0：错误签名、聚类、整组 children]
+    R --> S[S0：偏好模式签名、聚类、整组 children]
     S --> E[每棵完整子树一次 Worker 判断]
     E --> A[Global Arbiter 系统偏好]
     E --> F[逐 root、逐案例反思]
@@ -18,15 +18,23 @@ flowchart LR
 
 主要框架图见 [assets/framework.png](../assets/framework.png)，方法概览与运行说明见仓库 [README](../README.md)。图以五根为例，GN 支持 2–7 根。每轮冻结同一份 Rubric，各 root 遍历发现集逐例反思并独立验证候选，轮末组装获胜组。
 
-`structured_rubrics/` 提供 Agent、JSON 解析、Rubric schema、验证、后端规格和调用遥测。`experiments/evolving_structured_rubrics/` 中 `generated_root_initialization.py` 负责预热及 R0，`rubric_pipeline.py` 负责 S0 与外评，`subtree_local_reflection.py` 负责逐例反思和局部接受，`aligned_system_runtime.py` 负责 Worker/Arbiter 判断与报告复用。`aligned_prompts.py` 固定 prompt 和解析器，`model_call_support.py` 固定请求身份与多模态内容，`vlrb_official.py` 固定正式 K=3 日程和指标。`run_subtree_experiment.py` 是这三个阶段的命令入口。
+structured_rubrics/ 提供 Agent、JSON 解析、Rubric schema、后端规格和调用遥测。experiments/evolving_structured_rubrics/ 中 generated_root_initialization.py 负责预热及 R0；init_split.py 集中 S0 的提示词模板、输入渲染、校验与初始化流程；rubric_pipeline.py 提供共享 Rubric 组装与评测工具；subtree_local_reflection.py 负责逐例反思和局部接受；aligned_system_runtime.py 负责 Worker/Arbiter 判断与报告复用。aligned_prompts.py 固定 Worker/Arbiter prompt 和解析器，model_call_support.py 固定其请求身份与多模态内容，vlrb_official.py 固定正式 K=3 日程和指标。run_subtree_experiment.py 调度这些阶段。
 
 局部接受可配置为 Covered ACC 或 Strict ACC；Preserve5 是独立的正确案例提示干预。配置区别见 [README 配置表](../README.md#配置与数据)，当前方案的对比表见[最终实验结果](experiments/subtree-local-reflection/results.md)。正式 VLRB 采用至少两票一致的 K=3 多数口径；`aligned_system_runtime.metrics` 的相对多数仅用于运行时诊断。两者不能混作同一结果。
 
-配置示例的区别见 [README 配置表](../README.md#配置与数据)：Hallucination100 的 `generated_roots.example.json` 使用 Strict + Preserve5；原 Discovery100 的两个示例分别使用 Covered 和 Strict，均不加入保留案例。它们的预热、发现集和局部候选验证是不同阶段；Preserve5 不改变预热数量，后者通过 `roots --warmup-count` 设置，默认五条。
+配置示例的区别见 [README 配置表](../README.md#配置与数据)：Hallucination100 与 Reasoning70 使用 Strict + Preserve5；原 Discovery100 的两个示例分别使用 Covered 和 Strict，均不加入保留案例。预热、发现集和局部候选验证是不同阶段；Preserve5 不改变预热数量。`roots --warmup-count` 默认五条，Reasoning70 的命令显式指定十对。
 
-`manager_runtime.py` 提供 Manager 调用、解析、缓存、并发、429 冷却及最多 10 次尝试，并保留初始化的 `signature`、`cluster`、`children` 三个阶段。`subtree_local_reflection_manager.py` 注入演化的 `case_reflection`、`subtree_split` prompt 和校验。旧 `system`、`root` 阶段已移出当前代码；历史实现保留在实验分支。
+manager_runtime.py 提供通用 Manager 调用、JSON 解析、缓存、并发、429 冷却及最多 10 次尝试。提示词和阶段校验由调用方注入；初始化用户文本由模板渲染，缓存记录真正发送的系统提示词与用户文本。演化继续发送原有 JSON 用户输入，请求字段与缓存身份不变。subtree_local_reflection_manager.py 只负责演化的 case_reflection、subtree_split prompt 与校验，五根下两条系统提示词哈希保持冻结值。旧 system、root 阶段保留在历史实验分支。
 
-`rubric_pipeline.py` 的 S0 初始化先对各 root 判断错误的案例生成 signature；不足 4 条有效 signature 或 2 个支持 cluster 时，补充其余发现集案例后再尝试生成 children。初始化请求继续保留 `revision_goal=""`、`initial=True`、固定的初始 Split 描述，以及目标 root 报告和完整 Arbiter 理由；旧候选/旧基线输入和非初始化分支已移除。演化的逐例反思使用独立的局部 payload。外评、配置冻结及成本统计沿用原实现。
+`init_split.py` 当前使用英文 V3 的三条独立系统提示词和三个描述性用户模板，中文草稿保留为注释。全部根上下文始终来自同一份 R0，仅描述 ID、名称与职责；signature 结合案例图像、A/B 原文、目标 Worker 的分析/理由/判断及整体人类偏好，提炼有证据支持的比较依据；cluster 归纳有效 signature 的共同偏好模式；children 将这些模式转成整组判断指导。只有 children 阶段读取本轮前序根已生成的子准则，signature/cluster 不读取它们。Global Arbiter 报告不进入初始化 Manager。
+
+初始化先选目标 Worker 与 gold 不一致的发现集案例，None 也进入审查，但不强制判为错误。不足 4 条有效 signature 或 2 个支持 cluster 时，补充该发现集剩余案例；仍不足则停止，不降低阈值。cluster 至少含两个不同签名、ID 不跨组重复，每根 children 保持 2–5 条。根本身不改动。rubric_pipeline.py 继续承担 Rubric 组装、共享 children 校验、配置冻结和外评；演化的逐例反思与局部接受规则保持原实现。
+
+`init` 可复用已有 R0/K=1 报告，核对来源 Manager、发现集原文、图像和 A/B 映射；Worker 模型与解码一致由实验配置保证，允许服务地址改变。初始化保存 S0 及 epoch=0、completed=false 状态后停止。`--reuse-init-patterns` 只复用来源 signature/cluster 并重新生成 children，完整初始化不加该参数。`vlrb-s0` 通过 `rubric_pipeline.evaluate_external` 评测冻结 S0，不要求 Final；`evolve` 可从此状态继续。S0/Final 外评在同一回答顺序下复用未改动 root 的报告。
+
+新的 VLRB 外评使用 seed42、按样本 ID 排序预生成逐次独立随机换位的 K=3 日程，保存 `order_protocol` 与 `order_seed`。先将每票还原到原回答身份，再要求至少两票一致；否则弃权，Strict ACC 将弃权计错。`prepare` 的训练顺序保持原冻结协议；历史报告按原交替日程核对，新旧换位结果不混入同一份配对报告。`report-init` 离线配对比较同一 R0、旧 S0、新 S0，不依赖 Final。协议与精简结果见 [Init Split 摘要](experiments/init-split-prompts/results.md)。
+
+`generated_roots_report.py` 通过显式 `split_manifest` 选择冻结切片：Hallucination100 保留训练100、未训练1147、clean1146及幻觉留出648；Reasoning70 保留训练70、未训练1177及其余全部 Reasoning247。来源数据、训练顺序与划分不随外评换位改变；报告保留各 root、配对变化、置信区间和成本。
 
 `generated_root_initialization.py` 默认抽取五个预热样例，可通过 `roots --warmup-count` 改变抽样数量；默认行为保留冻结的抽样、A/B 随机翻转和顺序，并恢复全局随机状态。G5/GN 从同一份预热对话分叉，生成请求只改变 root 数量要求；恢复时重建已成功的对话历史并跳过成功调用。预热数量、样例及历史仍由现有请求缓存记录，改变数量须使用新输出目录。辅助函数均有实际调用，显式预热样例、协议参数及数量提示词变体继续保留，以支持已有实验复现。固定 F5 对照仍由 `rubric_pipeline.build_multicrit_open_ended_init_rubric` 创建。
 
@@ -34,4 +42,4 @@ flowchart LR
 
 原 Gate/Cascade、joint、分层反思和历史 runner 的完整实现保存在 `codex/subtree-local-reflection` 分支及阶段标签。当前入口不会导入那些模块。
 
-整理验收在 `critiq` 环境中运行 `python -m unittest discover -s tests -p "test_*.py"`，60 项离线测试通过。README 的七条阶段命令与实际 CLI 参数一致，三个示例的接受指标、Preserve5、并发和轮数也已核对。用已完成的 G5 seed11 缓存复核五样例预热与 R0 生成请求，以及 S0 的 148 个 Manager 请求，生成的 Rubric 与已保存产物一致；正式 K=3 重算的 R0、S0、Final 正确数分别为 925、933、945（分母均为 1247）。核对不调用模型，不改写原始预测、缓存或图像。
+当前离线测试覆盖根上下文、前序 children 可见范围、图像附件、缓存恢复、聚类约束、独立 S0 外评、两种冻结划分及正式配对报告。方法代码来自 `init-split-prompts` 的 `52596ff`，合入时保持其英文 V3、Worker/Arbiter prompt、局部接受规则和计分实现；重构前协议与完整探索记录仍保存在历史分支。测试通过不等同于模型效果改善，已观察的收益和负结果分别保存在实验摘要。

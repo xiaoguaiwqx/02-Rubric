@@ -6,6 +6,8 @@
 
 当前主线的运行入口是仓库 README 中的 `run_subtree_experiment`；下文保留原实验冻结时的命令与目录，所涉及的完整历史 runner 可在 `codex/subtree-local-reflection` 分支查看。seed11 精确 split ID 和来源哈希已另存为本目录 `seed11_split.json`。
 
+固定的 seed11 训练集现另存于本地 [data/VL_RewardBench/splits/hallucination100/seed11/discovery_100.jsonl](../../../data/VL_RewardBench/splits/hallucination100/seed11/discovery_100.jsonl)，与 Reasoning70 的训练文件统一放在 `data/VL_RewardBench/splits/`。100 条样本的 ID、顺序、问题、A/B 回答和人类标签与已保存实验一致；图片路径统一引用共享的 `data/VL_RewardBench/dataset_images/`。原输出文件、冻结划分和现有运行配置保持不变。
+
 ## 1. 研究问题与可支持的结论
 
 | 编号 | 问题 | 所需证据 |
