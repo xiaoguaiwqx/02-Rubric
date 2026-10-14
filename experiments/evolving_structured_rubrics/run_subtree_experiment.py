@@ -1,4 +1,4 @@
-"""Run R0 generation, subtree evolution, and frozen external evaluation."""
+"""Run R0 generation, independent S0 initialization, evolution, and external evaluation."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from structured_rubrics.structured.schema import StructuredRubric
 
-from . import (generated_root_initialization, generated_roots_report, rubric_pipeline,
+from . import (generated_root_initialization, generated_roots_report, init_split, rubric_pipeline,
                subtree_local_reflection, vlrb_official)
 from .model_call_support import file_sha256
 from .experiment_utils import atomic_write_json, load_json
@@ -22,8 +22,12 @@ SPLIT_MANIFEST = (Path(__file__).resolve().parents[2] / "docs/experiments"
 
 
 def prepare(config: dict, root: Path, seed: int) -> None:
-    """Materialize the frozen Hallucination100 rows from their benchmark IDs."""
-    split = load_json(SPLIT_MANIFEST)
+    """Prepare a frozen training split without changing its sample or A/B order."""
+    data_root = Path(config["data_root"])
+    split = load_json(data_root / config.get("split_manifest", SPLIT_MANIFEST))
+    category = split.get("category", "hallucination")
+    train_count = split.get("train_count", 100)
+    heldout_count = split.get("heldout_count", 648)
     if seed != split["seed"]:
         raise ValueError(f"only frozen seed {split['seed']} is available")
     parquet = Path(config["data_root"]) / config["datasets"]["vlrb"]
@@ -33,16 +37,17 @@ def prepare(config: dict, root: Path, seed: int) -> None:
     by_id = {item["sample_id"]: item for item in records}
     train_ids = split["train_ids"]
     heldout_ids = split["heldout_ids"]
-    if (len(train_ids) != 100 or len(set(train_ids)) != 100
-            or len(heldout_ids) != 648 or set(train_ids) & set(heldout_ids)
+    if (len(train_ids) != train_count or len(set(train_ids)) != train_count
+            or len(heldout_ids) != heldout_count or set(train_ids) & set(heldout_ids)
             or set(train_ids + heldout_ids) - set(by_id)):
-        raise ValueError("frozen Hallucination100 ID split differs from benchmark")
-    schedule = vlrb_official._order_schedule(records)
+        raise ValueError("frozen training/heldout ID split differs from benchmark")
+    schedule = vlrb_official._order_schedule(
+        records, protocol=vlrb_official.LEGACY_ORDER_PROTOCOL)
     rows = []
     for sample_id in train_ids:
         item = by_id[sample_id]
-        if item["group"] != "hallucination":
-            raise ValueError(f"{sample_id}: frozen train ID is not hallucination")
+        if item["group"] != category:
+            raise ValueError(f"{sample_id}: frozen train ID is not {category}")
         order = schedule[sample_id][0]
         rows.append(dict(
             sample_id=sample_id, image_path=item["image_path"],
@@ -52,13 +57,21 @@ def prepare(config: dict, root: Path, seed: int) -> None:
             source=vlrb_official._official_dataset(item["benchmark_id"]),
             domain="visual",
         ))
-    discovery = root / "discovery_100.jsonl"
-    payload = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows)
-    if discovery.exists() and discovery.read_text(encoding="utf-8") != payload:
-        raise ValueError(f"frozen discovery rows changed at {discovery}")
-    discovery.parent.mkdir(parents=True, exist_ok=True)
-    discovery.write_text(payload, encoding="utf-8")
+    frozen = data_root / split["train_jsonl"] if "train_jsonl" in split else None
+    if frozen is not None and frozen.is_file():
+        if file_sha256(frozen) != split["train_jsonl_sha256"]:
+            raise ValueError("frozen training JSONL changed")
+        discovery = frozen.resolve()
+    else:
+        discovery = root / f"discovery_{train_count}.jsonl"
+        payload = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows)
+        if discovery.exists() and discovery.read_text(encoding="utf-8") != payload:
+            raise ValueError(f"frozen discovery rows changed at {discovery}")
+        discovery.parent.mkdir(parents=True, exist_ok=True)
+        discovery.write_text(payload, encoding="utf-8")
     prepared = dict(config)
+    if "split_manifest" in config:
+        prepared["discovery_sample_count"] = train_count
     prepared["datasets"] = dict(config["datasets"], discovery=str(discovery))
     target = root / "config.json"
     if target.exists() and load_json(target) != prepared:
@@ -102,7 +115,31 @@ def run_stage(args: argparse.Namespace) -> None:
         return
 
     subtree_local_reflection.check(config, target)
-    if args.stage == "evolve":
+    if args.stage == "init":
+        source = args.source_run
+        r0 = (init_split.reuse_source(config, target, source) if source is not None
+              else StructuredRubric.load_json(target / "r0/rubric.json"))
+        rows = rubric_pipeline.load_rows(config, "discovery")
+        options = dict(attempts=args.attempt_limit, r0=r0)
+        if args.reuse_init_patterns:
+            options["reuse_patterns_from"] = source
+        init_split.initialize(config, target, rows, **options)
+    elif args.stage == "vlrb-s0":
+        rubric = StructuredRubric.load_json(target / "init/rubric.json")
+        value, records, _ = rubric_pipeline.evaluate_external(
+            config, target, "vlrb", "initial", rubric, args.attempt_limit)
+        atomic_write_json(target / "vlrb/s0_report.json", dict(
+            k=value["k"], rubric_sha256=rubric.rubric_sha256,
+            order_protocol=value["order_protocol"], order_seed=value["order_seed"],
+            runtime=value["metrics"],
+            official=vlrb_official.official_system_metrics(records, vlrb_official._votes(value)),
+        ))
+    elif args.stage == "report-init":
+        source = args.source_run
+        if source is None:
+            source = Path(load_json(target / "source.json")["source_run"])
+        generated_roots_report.init_report(config, target, source)
+    elif args.stage == "evolve":
         r0 = StructuredRubric.load_json(target / "r0/rubric.json")
         manager = make_manager(
             dict(config["manager"], env_file=config.get("env_file", ".env")),
@@ -124,6 +161,7 @@ def run_stage(args: argparse.Namespace) -> None:
         )
         atomic_write_json(target / "vlrb/r0_report.json", dict(
             k=value["k"], rubric_sha256=rubric.rubric_sha256,
+            order_protocol=value["order_protocol"], order_seed=value["order_seed"],
             runtime=value["metrics"],
             official=vlrb_official.official_system_metrics(records, vlrb_official._votes(value)),
         ))
@@ -136,11 +174,15 @@ def run_stage(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stage", choices=("prepare", "roots", "evolve", "vlrb-r0",
-                                          "dev", "vlrb", "report"))
+    parser.add_argument("stage", choices=("prepare", "roots", "init", "evolve", "vlrb-r0",
+                                          "vlrb-s0", "dev", "vlrb", "report", "report-init"))
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--variant", choices=("f5", "g5", "gn"), default="g5")
+    parser.add_argument("--source-run", type=Path,
+                        help="existing variant directory for R0/report reuse, e.g. output/.../g5")
+    parser.add_argument("--reuse-init-patterns", action="store_true",
+                        help="init only: reuse source signatures/clusters and regenerate children sequentially")
     parser.add_argument("--seed", type=int, default=11)
     parser.add_argument("--warmup-count", type=int,
                         default=generated_root_initialization.WARMUP_COUNT,
@@ -148,6 +190,8 @@ def main() -> None:
     parser.add_argument("--attempt-limit", type=int, default=10)
     parser.add_argument("--root-attempt-limit", type=int, default=10)
     args = parser.parse_args()
+    if args.reuse_init_patterns and (args.stage != "init" or args.source_run is None):
+        parser.error("--reuse-init-patterns requires init and --source-run")
     if args.attempt_limit < 1 or args.root_attempt_limit < 1:
         parser.error("attempt limits must be positive")
     if args.warmup_count < 1:

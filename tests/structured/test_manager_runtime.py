@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import Mock
 
 from experiments.evolving_structured_rubrics import manager_runtime as runtime
+from experiments.evolving_structured_rubrics import init_split as initialization
 from experiments.evolving_structured_rubrics import subtree_local_reflection_manager as local
 
 
@@ -28,15 +29,13 @@ class TestManagerRuntime(unittest.TestCase):
                            concurrency=4, timeout=300,
                            request_kwargs=dict(temperature=0.2))
 
-    def test_current_stage_prompts_match_frozen_five_root_protocol(self):
+    def test_evolution_prompts_match_frozen_five_root_protocol(self):
         expected = {
-            "signature": "d5e828cf47fb8652734227cbf0e5f6493a1bcd48a79ad6cf8bde580c289ab1cb",
-            "cluster": "27b2b75935e6832a34f3d9586f46600339e11e0531bc2eef4bfce1d3b437ed5e",
-            "children": "0d8f548a17c61793447c95d25926349be58427102f3bd699650f070b9f83379e",
             "case_reflection": "eb4ed7467f9fb3c24f154df3cab7552241aa8f8ec17b1670b82b7e04a202daf0",
             "subtree_split": "494cbde262d048cac9ea06299c43691cd99e92cb9693380e02761ec1dbf2be99",
         }
-        self.assertEqual(set(runtime.PROMPTS), {"signature", "cluster", "children"})
+        self.assertEqual(set(initialization.PROMPTS), {"signature", "cluster", "children"})
+        self.assertFalse(hasattr(runtime, "PROMPTS"))
         prompts = local.local_prompts_for_root_count(5)
         self.assertEqual(set(prompts), set(expected))
         for stage, digest in expected.items():
@@ -47,7 +46,7 @@ class TestManagerRuntime(unittest.TestCase):
         valid = r'{"applicable":true,"signature":"Check \sqrt{5}","basis":"Visible formula"}'
         create = Mock(side_effect=[response(valid, "length"), response(valid)])
         client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
-        manager = runtime.Manager(self.config, client=client)
+        manager = initialization.make_manager(self.config, client=client)
         payload = dict(root=dict(root_id="r1"))
         with TemporaryDirectory() as temporary, redirect_stdout(StringIO()):
             path = Path(temporary) / "signature.json"
@@ -62,19 +61,19 @@ class TestManagerRuntime(unittest.TestCase):
         self.assertEqual(create.call_count, 2)
         self.assertEqual(record["request"], dict(
             stage="signature", model=self.config["model"], base_url=self.config["base_url"],
-            prompt=runtime.PROMPTS["signature"], request_kwargs=self.config["request_kwargs"],
+            prompt=initialization.PROMPTS["signature"], request_kwargs=self.config["request_kwargs"],
             payload=payload, images=[]))
         self.assertEqual(len(record["attempts"]), 2)
         self.assertIn("response truncated", record["attempts"][0]["error"])
         request = create.call_args_list[1].kwargs
-        self.assertEqual(request["messages"][0]["content"], runtime.PROMPTS["signature"])
+        self.assertEqual(request["messages"][0]["content"], initialization.PROMPTS["signature"])
         self.assertIn("Previous output validation failed: ValueError: response truncated",
                       request["messages"][1]["content"][-1]["text"])
 
     def test_default_retry_limit_stops_after_ten_attempts(self):
         create = Mock(side_effect=ValueError("offline failure"))
         client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
-        manager = runtime.Manager(self.config, client=client)
+        manager = initialization.make_manager(self.config, client=client)
         with TemporaryDirectory() as temporary, redirect_stdout(StringIO()):
             path = Path(temporary) / "signature.json"
             with self.assertRaisesRegex(RuntimeError, "failed after 10 attempts"):

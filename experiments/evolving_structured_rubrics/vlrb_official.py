@@ -1,7 +1,8 @@
-"""Frozen VL-RewardBench K=3 data, schedule, and official metrics."""
+"""VL-RewardBench data, independent random swaps, and K=3 metrics."""
 from __future__ import annotations
 import hashlib
 import math
+import random
 from collections import Counter
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -11,6 +12,8 @@ from .model_call_support import file_sha256
 K = 3
 SEED = 42
 EXPECTED_COUNT = 1247
+ORDER_PROTOCOL = "independent-random-v1"
+LEGACY_ORDER_PROTOCOL = "alternating-v1"
 
 
 def _parquet_path() -> Path:
@@ -135,8 +138,16 @@ def _official_group(sample_id: str) -> str:
     return mapping[_official_dataset(sample_id)]
 
 
-def _order_schedule(records: Sequence[Mapping[str, Any]]) -> dict[str, tuple[int, int, int]]:
-    """Return an exactly balanced A/B/A vs B/A/B schedule."""
+def _order_schedule(records: Sequence[Mapping[str, Any]], *,
+                    protocol: str = ORDER_PROTOCOL) -> dict[str, tuple[int, int, int]]:
+    """Draw each swap independently; retain the historical training/report schedule."""
+
+    if protocol == ORDER_PROTOCOL:
+        generator = random.Random(SEED)
+        return {sample_id: tuple(generator.choice([0, 1]) for _ in range(K))
+                for sample_id in sorted(str(row["sample_id"]) for row in records)}
+    if protocol != LEGACY_ORDER_PROTOCOL:
+        raise ValueError(f"unknown VLRB order protocol: {protocol}")
 
     ordered_ids = sorted(
         (str(row["sample_id"]) for row in records),

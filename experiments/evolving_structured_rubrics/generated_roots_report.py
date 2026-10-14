@@ -1,4 +1,4 @@
-"""Offline R0/S0/Final summaries for the frozen Hallucination100 comparison."""
+"""Offline R0/S0/Final summaries for frozen VLRB training/heldout splits."""
 
 from __future__ import annotations
 
@@ -20,13 +20,39 @@ SPLIT_MANIFEST = (Path(__file__).resolve().parents[2] / "docs/experiments"
 VARIANTS = ("f5", "g5", "gn")
 
 
+def load_split(config: Mapping[str, Any]) -> dict:
+    path = Path(config.get("data_root", ".")) / config.get("split_manifest", SPLIT_MANIFEST)
+    return load_json(path)
+
+
+def heldout_label(slices: Mapping[str, set[str]]) -> str:
+    return next(name for name in slices if name.startswith("heldout_"))
+
+
+def _r0_artifact(target: Path, relative: str) -> Path:
+    """Prefer local R0 artifacts, then follow the recorded reuse source."""
+    target = target.resolve()
+    path = target / relative
+    while not path.is_file() and (target / "source.json").is_file():
+        target = Path(load_json(target / "source.json")["source_run"])
+        path = target / relative
+    return path.resolve()
+
+
 def subsets(records: Sequence[Mapping[str, Any]], split: Mapping[str, Any]) -> dict[str, set[str]]:
-    """Use the original 100/648/1146 split, including its near-duplicate exclusion."""
+    """Keep historical hallucination slices and use all nontraining Reasoning rows."""
     all_ids = {row["sample_id"] for row in records}
     train = set(split["train_ids"])
     heldout = set(split["heldout_ids"])
     groups = {name: {row["sample_id"] for row in records if row["group"] == name}
               for name in ("general", "hallucination", "reasoning")}
+    if split.get("category") == "reasoning":
+        if ((len(all_ids), len(train), len(heldout)) != (1247, 70, 247)
+                or not train <= groups["reasoning"]
+                or heldout != groups["reasoning"] - train):
+            raise RuntimeError("frozen Reasoning70 split differs from benchmark")
+        return dict(full=all_ids, train=train, nontrain_1177=all_ids - train,
+                    heldout_reasoning=heldout, **groups)
     clean = heldout | groups["general"] | groups["reasoning"]
     if (len(all_ids), len(train), len(heldout), len(clean)) != (1247, 100, 648, 1146):
         raise RuntimeError("frozen VLRB subset sizes changed")
@@ -94,6 +120,12 @@ def paired_bootstrap_ci(records: Sequence[Mapping[str, Any]],
                 ci95=[values[int(0.025 * iterations)],
                       values[min(iterations - 1, int(0.975 * iterations))]],
                 iterations=iterations, seed=seed)
+
+
+def _report_orders(records: Sequence[Mapping[str, Any]], path: Path):
+    """Validate old reports against their frozen protocol, and new reports against random swaps."""
+    protocol = load_json(path).get("order_protocol", vlrb_official.LEGACY_ORDER_PROTOCOL)
+    return protocol, vlrb_official._order_schedule(records, protocol=protocol)
 
 
 def _validated_system(path: Path, rubric: StructuredRubric,
@@ -191,8 +223,10 @@ def _generation_cost(root: Path, variant: str) -> dict | None:
     if variant == "f5":
         return None
     result = {}
-    for label, path in (("shared_warmup", root / "warmup/transcript.json"),
-                        ("root_generation", root / variant / "r0/generation.json")):
+    target = root / variant
+    for label, path in (
+            ("shared_warmup", _r0_artifact(target, "../warmup/transcript.json")),
+            ("root_generation", _r0_artifact(target, "r0/generation.json"))):
         value = load_json(path)
         entries = value["turns"] if label == "shared_warmup" else [value]
         attempts = [attempt for entry in entries for attempt in entry["attempts"]]
@@ -229,11 +263,18 @@ def variant_report(config: dict, root: Path, variant: str,
     result = load_json(target / "report.json")
     rows = rubric_pipeline.load_rows(config, "discovery")
     rubrics = _rubrics(target)
-    orders = vlrb_official._order_schedule(records)
+    order_protocol, orders = _report_orders(records, target / "vlrb/initial.json")
     systems, roots, predictions = {}, {}, {}
     wall_seconds = {}
+    relatives = ["vlrb/r0.json"]
+    if variant != "f5":
+        relatives += ["r0/generation.json", "../warmup/transcript.json"]
+    r0_artifacts = {relative: _r0_artifact(target, relative) for relative in relatives}
+    reused_artifacts = {relative: str(path) for relative, path in r0_artifacts.items()
+                        if path != (target / relative).resolve()}
     for stage, name in (("r0", "r0"), ("s0", "initial"), ("final", "final")):
-        value, votes = _validated_system(target / f"vlrb/{name}.json", rubrics[stage],
+        path = r0_artifacts["vlrb/r0.json"] if stage == "r0" else target / f"vlrb/{name}.json"
+        value, votes = _validated_system(path, rubrics[stage],
                                          records, orders)
         predictions[stage] = votes
         systems[stage] = {label: subset_metrics(records, votes, ids)
@@ -260,13 +301,14 @@ def variant_report(config: dict, root: Path, variant: str,
         roots[stage + "_train"] = _training_root_metrics(value, rows, rubrics[stage])
         wall_seconds[stage + "_train"] = value.get("wall_seconds")
     paired = {}
+    primary = heldout_label(slices)
     for comparison, before, after in (("r0_to_s0", "r0", "s0"),
                                       ("r0_to_final", "r0", "final"),
                                       ("final_vs_s0", "s0", "final")):
         paired[comparison] = {}
         for label, ids in slices.items():
             item = paired_metrics(records, predictions[before], predictions[after], ids)
-            if label == "heldout_hallucination":
+            if label == primary:
                 item["bootstrap"] = paired_bootstrap_ci(
                     records, predictions[before], predictions[after], ids)
             paired[comparison][label] = item
@@ -280,15 +322,17 @@ def variant_report(config: dict, root: Path, variant: str,
         root_generation=_generation_cost(root, variant),
         wall_seconds_by_artifact=wall_seconds,
         source_output=str(target),
-        historical_cost_reused=False,
+        historical_cost_reused=bool(reused_artifacts),
+        reused_artifacts=reused_artifacts,
     )
     generation = None
     if variant != "f5":
-        item = load_json(target / "r0/generation.json")
+        item = load_json(r0_artifacts["r0/generation.json"])
         generation = dict(count_reason=item["parsed"]["count_reason"],
                           warmup_history_sha256=item["request"]["warmup_history_sha256"],
                           attempt_count=len(item["attempts"]))
     result["generated_roots"] = dict(
+        order_protocol=order_protocol, order_seed=vlrb_official.SEED,
         root_count=len(rubrics["r0"].root_ids),
         root_catalog=[dict(root_id=root_id,
                            name=rubrics["r0"].get_node(root_id).criterion.name,
@@ -297,13 +341,134 @@ def variant_report(config: dict, root: Path, variant: str,
         root_generation=generation, systems=systems, roots=roots,
         paired=paired, costs=costs)
     atomic_write_json(target / "report.json", result)
-    heldout = systems["final"]["heldout_hallucination"]
-    print(f"{variant} Final heldout: {heldout['correct']}/{heldout['total']} "
+    heldout = systems["final"][primary]
+    print(f"{variant} Final {primary}: {heldout['correct']}/{heldout['total']} "
           f"({heldout['strict_acc']:.2%})", flush=True)
 
 
+def artifact_worker_cost(values: Sequence[Mapping[str, Any]]) -> dict[str, dict]:
+    """Sum saved compact telemetry without traversing thousands of cache files."""
+    totals = {kind: dict(logical_calls=0, model_generations=0, api_attempts=0,
+                         input_tokens=0, output_tokens=0, latency_seconds=0.0,
+                         missing_usage_calls=0) for kind in ("subtree", "arbiter")}
+    seen = set()
+    for value in values:
+        for sample in value["samples"]:
+            for replicate in sample["replicates"].values():
+                groups = (("subtree", replicate["subtrees"].values()),
+                          ("arbiter", [replicate["arbiter"]]))
+                for kind, calls in groups:
+                    for call in calls:
+                        key = call.get("cache_key")
+                        if key is not None:
+                            if key in seen:
+                                continue
+                            seen.add(key)
+                        metrics = call.get("metrics", {})
+                        cost = totals[kind]
+                        cost["logical_calls"] += 1
+                        cost["model_generations"] += call.get("model_generation_count", 0)
+                        for field in ("api_attempts", "input_tokens", "output_tokens",
+                                      "latency_seconds"):
+                            cost[field] += metrics.get(field, 0) or 0
+                        if (metrics.get("usage_complete") is False
+                                or metrics.get("input_tokens") is None
+                                or metrics.get("output_tokens") is None):
+                            cost["missing_usage_calls"] += 1
+    return totals
+
+
+def init_report(config: dict, target: Path, source: Path) -> dict:
+    """Compare a frozen new S0 with the saved R0 and old S0, without Final."""
+    from .model_call_support import file_sha256
+
+    source = Path(source).resolve()
+    if (target / "source.json").is_file():
+        provenance = load_json(target / "source.json")
+        if Path(provenance["source_run"]).resolve() != source:
+            raise ValueError("comparison source differs from initialization source")
+        if any(file_sha256(source / name) != digest
+               for name, digest in provenance["source_files"].items()):
+            raise ValueError("saved comparison source changed")
+    r0 = StructuredRubric.load_json(source / "r0/rubric.json")
+    reused = StructuredRubric.load_json(target / "r0/rubric.json")
+    if r0.rubric_sha256 != reused.rubric_sha256:
+        raise ValueError("new initialization did not use the comparison R0")
+    rubrics = dict(r0=r0, old_s0=StructuredRubric.load_json(source / "init/rubric.json"),
+                   new_s0=StructuredRubric.load_json(target / "init/rubric.json"))
+    for rubric in rubrics.values():
+        if (rubric.root_ids != r0.root_ids
+                or any(rubric.get_node(root).to_dict() != r0.get_node(root).to_dict()
+                       for root in r0.root_ids)):
+            raise ValueError("initialization changed the frozen roots")
+    parquet = Path(config["data_root"]) / config["datasets"]["vlrb"]
+    records = vlrb_official._read_records(target / "vlrb", parquet_path=parquet)
+    slices = subsets(records, load_split(config))
+    order_protocol, orders = _report_orders(records, target / "vlrb/initial.json")
+    systems, roots, official, predictions, values = {}, {}, {}, {}, {}
+    r0_predictions = _r0_artifact(source, "vlrb/r0.json")
+    for label, path in (("r0", r0_predictions),
+                        ("old_s0", source / "vlrb/initial.json"),
+                        ("new_s0", target / "vlrb/initial.json")):
+        value, votes = _validated_system(path, rubrics[label], records, orders)
+        values[label], predictions[label] = value, votes
+        systems[label] = {name: subset_metrics(records, votes, ids)
+                          for name, ids in slices.items()}
+        roots[label] = {root: {name: subset_metrics(
+            records, _root_predictions(value, root), ids) for name, ids in slices.items()}
+            for root in r0.root_ids}
+        metrics = vlrb_official.official_system_metrics(records, vlrb_official._votes(value))
+        official[label] = {key: item for key, item in metrics.items()
+                           if key not in {"original_index_predictions", "predictions_by_order"}}
+    paired = {}
+    for label, before, after in (("r0_to_old_s0", "r0", "old_s0"),
+                                 ("r0_to_new_s0", "r0", "new_s0"),
+                                 ("old_s0_to_new_s0", "old_s0", "new_s0")):
+        paired[label] = {}
+        for name, ids in slices.items():
+            item = paired_metrics(records, predictions[before], predictions[after], ids)
+            item["net_corrected"] = item["corrected"] - item["harmed"]
+            if name in {heldout_label(slices), "clean_1146", "nontrain_1147", "nontrain_1177"}:
+                item["bootstrap"] = paired_bootstrap_ci(
+                    records, predictions[before], predictions[after], ids)
+            paired[label][name] = item
+    training = {label: load_json(directory / "init/system.json")
+                for label, directory in (("old_s0", source), ("new_s0", target))}
+    rows = rubric_pipeline.load_rows(config, "discovery")
+    if {r["sample_id"] for r in rows} != slices["train"]:
+        raise ValueError("initialization discovery set differs from the frozen split")
+    for label, value in training.items():
+        if (value["k"] != 1 or value["rubric_sha256"] != rubrics[label].rubric_sha256
+                or [s["sample_id"] for s in value["samples"]] != [r["sample_id"] for r in rows]
+                or value["metrics"]["technical_failure_count"]
+                or value["metrics"] != system.metrics(value, rows)):
+            raise ValueError(f"{label}: discovery report differs")
+    result = dict(
+        protocol="init-split-comparison-v1", k=3, source_run=str(source),
+        order_protocol=order_protocol, order_seed=vlrb_official.SEED,
+        rubric_sha256={label: rubric.rubric_sha256 for label, rubric in rubrics.items()},
+        systems=systems, roots=roots, official=official, paired=paired,
+        discovery_k1={label: value["metrics"] for label, value in training.items()},
+        initialization=load_json(target / "init/summary.json"),
+        costs=dict(
+            old_s0=dict(manager=rubric_pipeline.manager_cost([source / "init"]),
+                        worker=artifact_worker_cost([training["old_s0"], values["old_s0"]])),
+            new_s0=dict(manager=rubric_pipeline.manager_cost([target / "init"]),
+                        worker=artifact_worker_cost([training["new_s0"], values["new_s0"]])),
+            reused_r0_new_calls=0,
+            vlrb_wall_seconds={label: value.get("wall_seconds") for label, value in values.items()},
+        ),
+    )
+    atomic_write_json(target / "init_comparison.json", result)
+    for label in ("r0", "old_s0", "new_s0"):
+        metrics = systems[label][heldout_label(slices)]
+        print(f"{label} heldout: {metrics['correct']}/{metrics['total']} "
+              f"({metrics['strict_acc']:.2%}, K=3)", flush=True)
+    return result
+
+
 def combined_report(root: Path, records: Sequence[Mapping[str, Any]],
-                    slices: Mapping[str, set[str]]) -> None:
+                    slices: Mapping[str, set[str]], *, split: Mapping[str, Any] | None = None) -> None:
     """Write F5/G5/GN comparisons after all three variant reports exist."""
     paths = [root / variant / "report.json" for variant in VARIANTS]
     if not all(path.is_file() for path in paths):
@@ -312,10 +477,10 @@ def combined_report(root: Path, records: Sequence[Mapping[str, Any]],
                for variant in VARIANTS}
     if not all(reports.values()):
         return
-    warmup = load_json(root / "warmup/transcript.json")
+    warmup = load_json(_r0_artifact(root / "g5", "../warmup/transcript.json"))
     samples = warmup["request"]["samples"]
     result = dict(
-        seed=load_json(SPLIT_MANIFEST)["seed"],
+        seed=(load_json(SPLIT_MANIFEST) if split is None else split)["seed"],
         warmup=dict(sample_ids=[sample["sample_id"] for sample in samples],
                     source_counts=dict(Counter(sample["source"] for sample in samples)),
                     flipped_sample_ids=[sample["sample_id"] for sample in samples
@@ -326,13 +491,17 @@ def combined_report(root: Path, records: Sequence[Mapping[str, Any]],
         systems={v: reports[v]["systems"] for v in VARIANTS},
         roots={v: reports[v]["roots"] for v in VARIANTS},
         costs={v: reports[v]["costs"] for v in VARIANTS}, paired={})
-    orders = vlrb_official._order_schedule(records)
+    order_protocol, orders = _report_orders(records, root / "f5/vlrb/initial.json")
+    result["order_protocol"] = order_protocol
+    result["order_seed"] = vlrb_official.SEED
     predictions = {}
     for variant in VARIANTS:
         rubrics = _rubrics(root / variant)
         for stage, name in (("r0", "r0"), ("s0", "initial"), ("final", "final")):
+            path = (_r0_artifact(root / variant, "vlrb/r0.json") if stage == "r0"
+                    else root / variant / f"vlrb/{name}.json")
             _, predictions[variant, stage] = _validated_system(
-                root / variant / f"vlrb/{name}.json", rubrics[stage], records, orders)
+                path, rubrics[stage], records, orders)
     comparisons = (
         ("gn_final_vs_f5_final", ("f5", "final"), ("gn", "final")),
         ("g5_final_vs_f5_final", ("f5", "final"), ("g5", "final")),
@@ -349,7 +518,7 @@ def combined_report(root: Path, records: Sequence[Mapping[str, Any]],
         result["paired"][label] = {}
         for name, ids in slices.items():
             item = paired_metrics(records, before, after, ids)
-            if name == "heldout_hallucination":
+            if name == heldout_label(slices):
                 item["bootstrap"] = paired_bootstrap_ci(records, before, after, ids)
             result["paired"][label][name] = item
     atomic_write_json(root / "report.json", result)
@@ -357,11 +526,14 @@ def combined_report(root: Path, records: Sequence[Mapping[str, Any]],
 
 def report(config: dict, root: Path, variant: str) -> None:
     rows = rubric_pipeline.load_rows(config, "discovery")
-    split = load_json(SPLIT_MANIFEST)
+    split = load_split(config)
     if [row["sample_id"] for row in rows] != split["train_ids"]:
+        if "split_manifest" in config:
+            raise ValueError("discovery samples differ from the selected frozen split")
         return  # The original Discovery100 protocol uses the ordinary subtree report.
     target = root / variant
-    required = [target / f"vlrb/{name}.json" for name in ("r0", "initial", "final")]
+    required = [_r0_artifact(target, "vlrb/r0.json"),
+                target / "vlrb/initial.json", target / "vlrb/final.json"]
     if not all(path.is_file() for path in required):
         missing = [str(path) for path in required if not path.is_file()]
         raise RuntimeError(f"complete R0/S0/Final VLRB evaluation before report: {missing}")
@@ -369,4 +541,7 @@ def report(config: dict, root: Path, variant: str) -> None:
     records = vlrb_official._read_records(target / "vlrb", parquet_path=parquet)
     slices = subsets(records, split)
     variant_report(config, root, variant, records, slices)
-    combined_report(root, records, slices)
+    if "split_manifest" in config:
+        combined_report(root, records, slices, split=split)
+    else:
+        combined_report(root, records, slices)

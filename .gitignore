@@ -27,3 +27,4 @@ data/**/*.arrow
 data/discovery_v2_demo_v3/
 data/VL_RewardBench/
 data/Multimodal_RewardBench/
+data/RLAIF-V/

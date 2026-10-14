@@ -3,6 +3,7 @@
 import hashlib
 from contextlib import redirect_stdout
 from io import StringIO
+from itertools import product
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -273,10 +274,59 @@ class TestSubtreeCore(unittest.TestCase):
                             redirect_stdout(output):
                         result = method.evaluate(config, target, name, data, rubric,
                                                  vlrb_records=records)
-                    self.assertIn(f"{name}: Strict ACC=66.67% (official K=3)", output.getvalue())
+                    self.assertIn(f"{name}: Strict ACC=66.67% (K=3)", output.getvalue())
                     self.assertNotIn("100.00%", output.getvalue())
                     self.assertEqual(result["metrics"], value["metrics"])
                     self.assertEqual(evaluate.call_count, 0 if cached else 1)
+                    if not cached:
+                        self.assertEqual(result["order_protocol"], vlrb.ORDER_PROTOCOL)
+                        self.assertEqual(result["order_seed"], vlrb.SEED)
+                        saved = method.load_json(target / f"{name}.json")
+                        self.assertEqual(saved["order_protocol"], vlrb.ORDER_PROTOCOL)
+
+    def test_vlrb_swaps_are_reproducible_independent_draws(self):
+        records = [dict(sample_id=f"s{i:03d}") for i in range(100)]
+        orders = vlrb._order_schedule(records)
+        self.assertEqual(orders, vlrb._order_schedule(list(reversed(records))))
+        self.assertEqual(set(orders.values()), set(product((0, 1), repeat=3)))
+
+    def test_vlrb_votes_restore_original_answer_for_every_swap_sequence(self):
+        data = rows(3)
+        rubric = method.build_multicrit_open_ended_init_rubric()
+        prefixes = ("vlfeedback", "RLHF", "mathverse")
+        groups = ("general", "hallucination", "reasoning")
+        for gold in (0, 1):
+            for orders in product((0, 1), repeat=3):
+                with self.subTest(gold=gold, orders=orders):
+                    value = artifact(data, rubric, 3, k=3)
+                    for sample in value["samples"]:
+                        for index, order in enumerate(orders):
+                            replicate = sample["replicates"][str(index)]
+                            replicate["order"] = order
+                            replicate["arbiter"]["parsed"]["answer"] = "A" if gold == order else "B"
+                    value["metrics"] = system.metrics(value, data)
+                    records = [dict(sample_id=row["sample_id"], benchmark_id=f"{prefixes[i]}_{i}",
+                                    group=groups[i], preferred_original_index=gold)
+                               for i, row in enumerate(data)]
+                    result = vlrb.official_system_metrics(records, vlrb._votes(value))
+                    self.assertEqual(result["original_index_predictions"], [gold] * 3)
+                    self.assertEqual(result["correct_count"], 3)
+
+    def test_vlrb_resume_does_not_reuse_a_different_swap_schedule(self):
+        data = rows(3)
+        rubric = method.build_multicrit_open_ended_init_rubric()
+        value = artifact(data, rubric, 3, k=3)
+        for sample in value["samples"]:
+            sample["orders"] = [0, 0, 0]
+        records = [dict(sample_id=row["sample_id"]) for row in data]
+        orders = vlrb._order_schedule(records)
+        with TemporaryDirectory() as temporary, patch.object(system, "evaluate") as evaluate:
+            target = Path(temporary)
+            method.write(target / "vlrb/initial.json", value)
+            with self.assertRaisesRegex(ValueError, "swap schedule changed"):
+                method.evaluate({}, target, "vlrb/initial", data, rubric,
+                                orders=orders, vlrb_records=records)
+            evaluate.assert_not_called()
 
     def test_formal_k3_majority_keeps_abstention(self):
         records = [dict(sample_id="a", benchmark_id="hallucination_a", group="hallucination",

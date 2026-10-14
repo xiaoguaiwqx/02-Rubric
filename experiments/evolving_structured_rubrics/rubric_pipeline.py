@@ -1,4 +1,4 @@
-"""S0 initialization and frozen external evaluation for local reflection."""
+"""Shared Rubric construction, data, evaluation, configuration, and costs."""
 from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -7,6 +7,7 @@ from structured_rubrics.structured.schema import StructuredRubric, RubricNode, R
 from structured_rubrics.structured.semantics import EdgeCondition
 from . import aligned_system_runtime as system
 from .experiment_utils import atomic_write_json as write, load_json
+from .manager_runtime import nonempty
 
 PROTOCOL = "framework-v6-hierarchical-v1"
 
@@ -98,6 +99,24 @@ def replace_groups(current, groups):
     return StructuredRubric(nodes, tuple(edges), current.root_ids)
 
 
+def validate_children(result):
+    """Shared complete-child-group schema for initialization and evolution."""
+    if not isinstance(result, dict):
+        raise ValueError("expected a JSON object")
+    children = result.get("children")
+    if not isinstance(children, list) or not 2 <= len(children) <= 5:
+        raise ValueError("need 2-5 children")
+    names = []
+    for child in children:
+        child["name"] = nonempty(child.get("name"), "child name")
+        child["description"] = nonempty(child.get("description"), "child description")
+        names.append(child["name"])
+    if len(names) != len(set(names)):
+        raise ValueError("child names must be distinct within the root")
+    nonempty(result.get("change_summary"), "change_summary")
+    return result
+
+
 def load_rows(config, split):
     data_root = Path(config["data_root"])
     path = data_root / config["datasets"][split]
@@ -116,27 +135,13 @@ def system_records(value):
     return {s["sample_id"]: s["replicates"]["0"] for s in value["samples"]}
 
 
-def case_payload(row, record, root):
-    if record["order"] != 0:
-        raise ValueError("reflection expects the frozen Discovery K=1 original order")
-    reports = {r: c["parsed"] for r, c in record["subtrees"].items()
-               if r == root}
-    arbiter = record["arbiter"]["parsed"]
-    if any(not isinstance(arbiter.get(k), str) or not arbiter[k].strip()
-           for k in ("analysis_a", "analysis_b", "thought")):
-        raise ValueError(f"{row['sample_id']}: missing full Arbiter reason")
-    case = {k: row[k] for k in ("sample_id", "question", "A", "B")}
-    case.update(gold=row["answer"], current=dict(reports=reports, arbiter=arbiter))
-    return case
-
-
 def _log_system_metrics(name, value, vlrb_records=None):
     metrics = value["metrics"]
     label = ""
     if vlrb_records is not None:
         from . import vlrb_official as vlrb
         metrics = vlrb.official_system_metrics(vlrb_records, vlrb._votes(value))
-        label = " (official K=3)"
+        label = " (K=3)"
     print(f"{name}: Strict ACC={metrics['strict_accuracy']:.2%}{label}", flush=True)
 
 
@@ -149,6 +154,10 @@ def evaluate(config, target, name, rows, rubric, *, baseline=None, changed=None,
             raise ValueError(f"{path}: rubric changed")
         if [s["sample_id"] for s in value["samples"]] != [r["sample_id"] for r in rows]:
             raise ValueError(f"{path}: sample order changed")
+        if vlrb_records is not None and orders is not None:
+            if any(tuple(sample["orders"]) != tuple(orders[sample["sample_id"]])
+                   for sample in value["samples"]):
+                raise ValueError(f"{path}: VLRB swap schedule changed; use a new output directory")
         if not value["metrics"]["technical_failure_count"]:
             if vlrb_records is not None:
                 _log_system_metrics(name, value, vlrb_records)
@@ -162,6 +171,11 @@ def evaluate(config, target, name, rows, rubric, *, baseline=None, changed=None,
         baseline=baseline, changed_root_ids=changed, orders_by_id=orders,
         endpoint_ids=[e["endpoint_id"] for e in worker["backend_pool"]["endpoints"]],
         total_attempt_limit=attempts)
+    if vlrb_records is not None:
+        from . import vlrb_official as vlrb
+        value["order_protocol"] = vlrb.ORDER_PROTOCOL
+        value["order_seed"] = vlrb.SEED
+        write(path, value)
     if value["metrics"]["technical_failure_count"]:
         raise RuntimeError(f"{path}: technical failures; inspect cache and resume with a larger --attempt-limit")
     _log_system_metrics(name, value, vlrb_records)
@@ -173,88 +187,36 @@ def parallel(items, fn, concurrency):
         return list(pool.map(fn, items))
 
 
-def signatures(manager, directory, root, rubric, rows, current):
-    records = system_records(current)
-    def one(row):
-        sid = row["sample_id"]
-        payload = dict(root=project_rubric(rubric, [root])[0], revision_goal="",
-                       case=case_payload(row, records[sid], root))
-        result = manager.call("signature", directory / f"{row['_signature_id']}.json",
-                              payload, [row])
-        return dict(signature_id=row["_signature_id"], sample_id=sid, **result)
-    return parallel(rows, one, manager.config.get("stage_concurrency", {}).get(
-        "signature", manager.config["concurrency"]))
-
-
-def generate_group(manager, directory, root, rubric, library, reflection):
-    selected = [s for s in library if s["applicable"]]
-    if len(selected) < 4:
-        return None
-    payload = dict(root=project_rubric(rubric, [root])[0], initial=True,
-                   revision=reflection, signatures=selected)
-    clusters = manager.call("cluster", directory / "clusters.json", payload)
-    if len(clusters["clusters"]) < 2:
-        return None
-    proposal = manager.call("children", directory / "children.json",
-                            dict(**payload, clusters=clusters))
-    # Validate the actual schema before treating a model proposal as complete.
-    replace_groups(rubric, {root: proposal["children"]})
-    return proposal
-
-
-def initialize(config, target, rows, manager, attempts, r0=None):
-    r0 = build_multicrit_open_ended_init_rubric() if r0 is None else r0
-    write(target / "r0/rubric.json", r0.to_dict())
-    baseline = evaluate(config, target, "r0/system", rows, r0, attempts=attempts)
-    records = system_records(baseline)
-    groups = {}
-    for i, root in enumerate(r0.root_ids, 1):
-        directory = target / f"init/r{i:02d}"
-        primary = [r for r in rows if records[r["sample_id"]]["subtrees"][root]["parsed"]["answer"] != r["answer"]]
-        library = signatures(manager, directory / "signatures", root, r0, primary, baseline)
-        reflection = dict(action="revise", revision_goal="Initial split: improve reusable local judging instructions.")
-        proposal = generate_group(manager, directory / "primary", root, r0, library,
-                                  reflection)
-        if proposal is None:
-            seen = {r["sample_id"] for r in primary}
-            extra = [r for r in rows if r["sample_id"] not in seen]
-            library += signatures(manager, directory / "signatures", root, r0, extra, baseline)
-            proposal = generate_group(manager, directory / "expanded", root, r0, library,
-                                      reflection)
-        write(directory / "library.json", library)
-        if proposal is None:
-            raise RuntimeError(f"{root}: insufficient supported patterns for two initial clusters; S0 not created")
-        groups[root] = proposal["children"]
-    s0 = replace_groups(r0, groups)
-    write(target / "init/rubric.json", s0.to_dict())
-    initial_system = evaluate(config, target, "init/system", rows, s0, attempts=attempts)
-    if not (target / "state.json").exists():
-        write(target / "state.json", dict(epoch=0, rubric=s0.to_dict(),
-              baseline="init/system", completed=False, stop_reason=None))
-    return s0, initial_system
+def evaluate_external(config, target, dataset, name, rubric, attempts=10,
+                      *, baseline=None, changed=None, records=None):
+    """Evaluate a specified frozen Rubric, independently of evolution state."""
+    if dataset == "vlrb":
+        from . import vlrb_official as vlrb
+        if records is None:
+            records = vlrb._read_records(target / "vlrb", parquet_path=Path(config["data_root"]) / config["datasets"]["vlrb"])
+        rows = system.support.vlrb_rows(records)
+        orders = vlrb._order_schedule(records)
+    else:
+        rows, orders = load_rows(config, dataset), None
+    value = evaluate(config, target, f"{dataset}/{name}", rows, rubric,
+                     orders=orders, attempts=attempts, baseline=baseline,
+                     changed=changed, vlrb_records=records)
+    return value, records, rows
 
 
 def external(config, target, dataset, attempts):
     state = load_json(target / "state.json")
     if not state["completed"]:
         raise RuntimeError("Freeze Final before external evaluation")
-    records = None
-    if dataset == "vlrb":
-        from . import vlrb_official as vlrb
-        records = vlrb._read_records(target / "vlrb", parquet_path=Path(config["data_root"]) / config["datasets"]["vlrb"])
-        rows = system.support.vlrb_rows(records)
-        orders = vlrb._order_schedule(records)
-    else:
-        rows, orders = load_rows(config, dataset), None
     initial = StructuredRubric.load_json(target / "init/rubric.json")
     final = StructuredRubric.from_dict(state["rubric"])
-    before = evaluate(config, target, f"{dataset}/initial", rows, initial,
-                      orders=orders, attempts=attempts, vlrb_records=records)
+    before, records, rows = evaluate_external(
+        config, target, dataset, "initial", initial, attempts)
     changed = [r for r in final.root_ids
                if system._root_subtree_sha256(initial, r) != system._root_subtree_sha256(final, r)]
-    after = before if not changed else evaluate(
-        config, target, f"{dataset}/final", rows, final, orders=orders, attempts=attempts,
-        baseline=before, changed=changed, vlrb_records=records)
+    after = before if not changed else evaluate_external(
+        config, target, dataset, "final", final, attempts, baseline=before,
+        changed=changed, records=records)[0]
     if not changed:
         write(target / f"{dataset}/final.json", after)
         if records is not None:
@@ -263,6 +225,9 @@ def external(config, target, dataset, attempts):
                   paired=system.paired(before["metrics"], after["metrics"], rows),
                   k=before["k"], identical_rubric_reuse=not changed)
     if records is not None:
+        from . import vlrb_official as vlrb
+        report["order_protocol"] = before.get("order_protocol", vlrb.LEGACY_ORDER_PROTOCOL)
+        report["order_seed"] = before.get("order_seed", vlrb.SEED)
         a = vlrb.official_system_metrics(records, vlrb._votes(before))
         b = vlrb.official_system_metrics(records, vlrb._votes(after))
         report["official"] = dict(initial=a, final=b,
@@ -295,14 +260,20 @@ def manager_cost(directories):
     return cost
 
 
-def freeze_config(config, target, *, allow_stage_concurrency_change=False):
-    """Keep the initial snapshot; allow only Manager timeout to change on resume."""
+def freeze_config(config, target, *, allow_stage_concurrency_change=False,
+                  allow_worker_backend_change=False):
+    """Keep the initial snapshot while allowing selected runtime settings to change."""
     frozen = target / "run_config.json"
     if frozen.exists():
         previous = load_json(frozen)
         previous["manager"]["timeout"] = config["manager"]["timeout"]
         if allow_stage_concurrency_change:
             previous["manager"]["stage_concurrency"] = config["manager"].get("stage_concurrency", {})
+        if allow_worker_backend_change:
+            previous_pool = previous["worker"]["backend_pool"]
+            current_pool = config["worker"]["backend_pool"]
+            for key in ("global_request_concurrency", "endpoints"):
+                previous_pool[key] = current_pool[key]
         if previous != config:
             raise ValueError("run configuration changed; use a new output directory")
     else:
@@ -311,14 +282,11 @@ def freeze_config(config, target, *, allow_stage_concurrency_change=False):
 
 
 def check(config, target, *, require_manager_thinking=True, allow_stage_concurrency_change=False,
-          discovery_count=100):
+          discovery_count=100, allow_worker_backend_change=False):
     if config["protocol"] != PROTOCOL or not 1 <= config["max_epochs"] <= 5:
         raise ValueError("wrong protocol or max_epochs outside 1-5")
     if require_manager_thinking and config["manager"]["request_kwargs"].get("extra_body", {}).get("enable_thinking") is not True:
         raise ValueError("This experiment requires Manager thinking enabled")
-    pool = config["worker"]["backend_pool"]
-    if pool["global_request_concurrency"] != 50 or sum(e["max_concurrency"] for e in pool["endpoints"]) != 50:
-        raise ValueError("Worker shared concurrency must be 50")
     for split, count in (("discovery", discovery_count), ("dev", 150)):
         rows = load_rows(config, split)
         if len(rows) != count:
@@ -333,5 +301,6 @@ def check(config, target, *, require_manager_thinking=True, allow_stage_concurre
         write(manifest, rows)
     if not (Path(config["data_root"]) / config["datasets"]["vlrb"]).is_file():
         raise FileNotFoundError("configured VLRB parquet is missing")
-    freeze_config(config, target, allow_stage_concurrency_change=allow_stage_concurrency_change)
+    freeze_config(config, target, allow_stage_concurrency_change=allow_stage_concurrency_change,
+                  allow_worker_backend_change=allow_worker_backend_change)
     print(f"check passed: Discovery{discovery_count}, Dev150, VLRB path; no API calls", flush=True)
